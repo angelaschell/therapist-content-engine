@@ -330,20 +330,20 @@ AUDIENCE: High-functioning women navigating grief and attachment wounds.
 
 INSTAGRAM FORMAT: Hook in line 1. Short punchy line breaks. No bullet points in captions. Trust the reader. ManyChat CTA format: "Comment [KEYWORD] and I'll send it to you."`;
 
-async function callClaude(prompt, endpoint="content", extra={}) {
-  const body = endpoint === "dm"
-    ? { message: extra.message, lead_temperature: extra.lead_temperature }
-    : endpoint === "flow"
-    ? { keyword: extra.keyword, offer: extra.offer }
-    : { content_type: extra.content_type||"Instagram Caption", pillar: extra.pillar||"Grief Education", topic: prompt, tone: extra.tone||"clinical-but-warm", cta_trigger: extra.cta||null };
+const ANTHROPIC_KEY = "YOUR-KEY-HERE";
 
-  const res = await fetch(`https://therapist-content-engine.onrender.com/generate/${endpoint === "flow" ? "manychat-flow" : endpoint === "dm" ? "dm-response" : "content"}`, {
+async function callClaude(prompt, endpoint, extra) {
+  extra = extra || {};
+  var content = prompt;
+  if (endpoint === "dm") content = `DM received: "${extra.message}"\nLead temp: ${extra.lead_temperature}\nWrite Angela's response. Human, direct.\n\n---\nSUGGESTED TRIGGER: [keyword]\nREASONING: [one sentence]\nNEXT STEP: [24hr follow-up]`;
+  else if (endpoint === "flow") content = `Write a 3-message ManyChat flow for Angela Schellenberg.\nTrigger: ${extra.keyword}\nOffer: ${extra.offer}\n\nMESSAGE 1 - Instant reply\nMESSAGE 2 - 2 hour follow-up\nMESSAGE 3 - 24 hour last touch\n\nAngela's voice. No em dashes. Human.`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    headers: {"Content-Type":"application/json","x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
+    body: JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:ANGELA_SYSTEM,messages:[{role:"user",content:content}]})
   });
   const data = await res.json();
-  return data.content || data.response || data.flow;
+  return data.content[0].text;
 }
 
 fetch("https://therapist-content-engine.onrender.com/").then(r => {
