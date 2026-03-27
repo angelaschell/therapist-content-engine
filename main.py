@@ -1,13 +1,9 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
 import anthropic
 import os
-import uuid
-from supabase import create_client
 
-app = FastAPI(title="Therapist Content Engine API")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,43 +14,13 @@ app.add_middleware(
 )
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 ANGELA_SYSTEM = """You are Angela Schellenberg's AI content assistant. Write exactly as Angela would.
-
-VOICE: Direct. Clinical-but-accessible. No hedging. No fluff. Short punchy lines. Rhythm over grammar.
-
+VOICE: Direct. Clinical-but-accessible. No hedging. Short punchy lines. Rhythm over grammar.
 NEVER USE: Em dashes, "healing era", "holding space", "trauma dump", "do the work", "you are not broken", generic AI language.
-
-PILLARS: Grief education (neuroscience-backed), Mother Hunger (credit Kelly McDaniel), EMDR and bilateral stimulation, Equine therapy at Shakti Ranch Malibu, Somatic healing and attachment repair.
-
+PILLARS: Grief education, Mother Hunger (credit Kelly McDaniel), EMDR, Equine therapy at Shakti Ranch Malibu, Somatic healing.
 AUDIENCE: High-functioning women navigating grief and attachment wounds.
-
-FORMAT: Hook in line 1. Short punchy line breaks. No bullet points in captions. Trust the reader."""
-
-
-class ContentRequest(BaseModel):
-    content_type: str
-    pillar: str
-    topic: str
-    tone: str = "clinical-but-warm"
-    cta_trigger: Optional[str] = None
-
-
-class DMRequest(BaseModel):
-    message: str
-    lead_temperature: str
-
-
-class FlowRequest(BaseModel):
-    keyword: str
-    offer: str
-
-
-class AnalyzeStyleRequest(BaseModel):
-    instagram_urls: Optional[str] = None
-    notes: Optional[str] = None
+FORMAT: Hook in line 1. Short punchy line breaks. No bullet points. Trust the reader."""
 
 
 @app.get("/")
@@ -63,86 +29,46 @@ async def root():
 
 
 @app.post("/generate/content")
-async def generate_content(req: ContentRequest):
-    cta_str = ""
-    if req.cta_trigger:
-        cta_str = f'\n\nEnd with: "Comment {req.cta_trigger} and I\'ll send it to you."'
+async def generate_content(req: Request):
+    data = await req.json()
+    topic = data.get("topic", "")
+    content_type = data.get("content_type", "Instagram Caption")
+    pillar = data.get("pillar", "Grief Education")
+    tone = data.get("tone", "clinical-but-warm")
+    cta = data.get("cta_trigger", "")
+    cta_str = f'\n\nEnd with: "Comment {cta} and I\'ll send it to you."' if cta else ""
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1000,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f"Generate a {req.content_type}.\nPillar: {req.pillar}\nTone: {req.tone}\nTopic: {req.topic}{cta_str}\nNo em dashes. Short punchy lines."}]
+        messages=[{"role": "user", "content": f"Generate a {content_type}.\nPillar: {pillar}\nTone: {tone}\nTopic: {topic}{cta_str}\nNo em dashes. Short punchy lines."}]
     )
     return {"content": response.content[0].text}
 
 
 @app.post("/generate/dm-response")
-async def generate_dm_response(req: DMRequest):
+async def generate_dm_response(req: Request):
+    data = await req.json()
+    message = data.get("message", "")
+    lead_temp = data.get("lead_temperature", "")
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=600,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f'DM received: "{req.message}"\nLead temp: {req.lead_temperature}\n\nWrite Angela\'s response. Human, direct, not salesy.\n\n---\nSUGGESTED TRIGGER: [keyword]\nREASONING: [one sentence]\nNEXT STEP: [24hr follow-up]'}]
+        messages=[{"role": "user", "content": f'DM: "{message}"\nLead temp: {lead_temp}\nWrite Angela\'s response. Human, direct.\n\n---\nSUGGESTED TRIGGER: [keyword]\nREASONING: [one sentence]\nNEXT STEP: [24hr follow-up]'}]
     )
     return {"response": response.content[0].text}
 
 
 @app.post("/generate/manychat-flow")
-async def generate_manychat_flow(req: FlowRequest):
+async def generate_manychat_flow(req: Request):
+    data = await req.json()
+    keyword = data.get("keyword", "")
+    offer = data.get("offer", "")
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=800,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f"Write a 3-message ManyChat flow.\nTrigger: {req.keyword}\nOffer: {req.offer}\n\nMESSAGE 1 - Instant reply\nMESSAGE 2 - 2 hour follow-up\nMESSAGE 3 - 24 hour last touch\n\nAngela's voice. No em dashes. Human."}]
+        messages=[{"role": "user", "content": f"Write a 3-message ManyChat flow.\nTrigger: {keyword}\nOffer: {offer}\n\nMESSAGE 1 - Instant reply\nMESSAGE 2 - 2 hour follow-up\nMESSAGE 3 - 24 hour last touch\n\nAngela's voice. No em dashes. Human."}]
     )
     return {"flow": response.content[0].text}
-
-
-@app.post("/brand/upload")
-async def upload_brand_asset(file: UploadFile = File(...), asset_type: str = Form("carousel")):
-    try:
-        db = create_client(SUPABASE_URL, SUPABASE_KEY)
-        file_content = await file.read()
-        file_ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "png"
-        file_name = f"{asset_type}/{uuid.uuid4()}.{file_ext}"
-        db.storage.from_("brand-assets").upload(
-            file_name,
-            file_content,
-            {"content-type": file.content_type or "image/png"}
-        )
-        public_url = f"{SUPABASE_URL}/storage/v1/object/public/brand-assets/{file_name}"
-        return {"url": public_url, "filename": file.filename, "type": asset_type}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/brand/assets")
-async def get_brand_assets():
-    try:
-        db = create_client(SUPABASE_URL, SUPABASE_KEY)
-        files = db.storage.from_("brand-assets").list()
-        assets = []
-        for f in files:
-            if f.get("name"):
-                url = f"{SUPABASE_URL}/storage/v1/object/public/brand-assets/{f['name']}"
-                assets.append({"name": f["name"], "url": url})
-        return {"assets": assets}
-    except Exception as e:
-        return {"assets": []}
-
-
-@app.post("/brand/analyze-style")
-async def analyze_style(req: AnalyzeStyleRequest):
-    prompt = "Analyze the visual and content style for Angela Schellenberg's carousels."
-    if req.instagram_urls:
-        prompt += f"\n\nInstagram accounts to reference: {req.instagram_urls}"
-    if req.notes:
-        prompt += f"\n\nStyle notes: {req.notes}"
-    prompt += "\n\nWrite a practical style guide covering: visual style, slide structure, hook patterns, text density, tone, and what makes these carousels perform. Rosa will use this to design."
-    response = claude_client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
-        system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return {"style_guide": response.content[0].text}
