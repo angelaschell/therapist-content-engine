@@ -330,19 +330,20 @@ AUDIENCE: High-functioning women navigating grief and attachment wounds.
 
 INSTAGRAM FORMAT: Hook in line 1. Short punchy line breaks. No bullet points in captions. Trust the reader. ManyChat CTA format: "Comment [KEYWORD] and I'll send it to you."`;
 
-async function callClaude(prompt) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+async function callClaude(prompt, endpoint="content", extra={}) {
+  const body = endpoint === "dm"
+    ? { message: extra.message, lead_temperature: extra.lead_temperature }
+    : endpoint === "flow"
+    ? { keyword: extra.keyword, offer: extra.offer }
+    : { content_type: extra.content_type||"Instagram Caption", pillar: extra.pillar||"Grief Education", topic: prompt, tone: extra.tone||"clinical-but-warm", cta_trigger: extra.cta||null };
+
+  const res = await fetch(`https://therapist-content-engine.onrender.com/generate/${endpoint === "flow" ? "manychat-flow" : endpoint === "dm" ? "dm-response" : "content"}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: ANGELA_SYSTEM,
-      messages: [{ role: "user", content: prompt }]
-    })
+    body: JSON.stringify(body)
   });
   const data = await res.json();
-  return data.content[0].text;
+  return data.content || data.response || data.flow;
 }
 
 fetch("https://therapist-content-engine.onrender.com/").then(r => {
