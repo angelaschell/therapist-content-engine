@@ -1,8 +1,8 @@
-fastapi==0.95.2
-uvicorn==0.22.0
-anthropic==0.18.1
-supabase==1.0.3
-praw==7.7.1
-httpx==0.23.3
-python-dotenv==1.0.0
+fastapi
+uvicorn
+anthropic
+praw
+python-dotenv
 pydantic==1.10.13
+httpx==0.23.3
+supabase==1.0.3
