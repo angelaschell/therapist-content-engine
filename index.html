@@ -347,7 +347,7 @@ async function callClaude(prompt, endpoint, extra) {
   const data = await res.json();
   return data.content || data.response || data.flow;
 }
-
+  
 fetch("https://therapist-content-engine.onrender.com/").then(r => {
   if (r.ok) { document.getElementById("dot").style.background = "#6fcf97"; document.getElementById("status-txt").textContent = "Backend live"; }
   else throw 0;
