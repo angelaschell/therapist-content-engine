@@ -6,7 +6,7 @@ Built for Angela Schellenberg | Sellable to any therapist
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import anthropic
 import os
 from datetime import datetime
@@ -67,10 +67,9 @@ class OnboardRequest(BaseModel):
     target_audience: str
     voice_description: str
     never_use_words: List[str]
-    offers: List[dict]         # [{"keyword": "HEAL", "offer": "1:1 Session"}]
-    instagram_handle: str
-    brand_colors: dict
-
+   offers: List[Dict[str, Any]] = []
+instagram_handle: str = ""
+brand_colors: Dict[str, Any] = {}
 
 # ─── Build Brand-Aware System Prompt ─────────────────────────────────────────
 
