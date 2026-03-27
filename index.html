@@ -22,9 +22,10 @@ body{background:#3B2145;font-family:'Jost',sans-serif;color:#F7EBE0;min-height:1
 .desc{color:rgba(210,199,255,.65);font-size:14px;margin-bottom:22px;line-height:1.6}
 .card{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.15);border-radius:14px;padding:22px;margin-bottom:14px}
 label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;display:block;margin-bottom:6px;font-weight:500}
-select,textarea{background:rgba(247,235,224,.07);border:1px solid rgba(144,169,236,.25);border-radius:8px;color:#F7EBE0;padding:10px 13px;font-size:14px;width:100%;font-family:'Jost',sans-serif;outline:none;-webkit-appearance:none}
+select,textarea,input[type=text]{background:rgba(247,235,224,.07);border:1px solid rgba(144,169,236,.25);border-radius:8px;color:#F7EBE0;padding:10px 13px;font-size:14px;width:100%;font-family:'Jost',sans-serif;outline:none;-webkit-appearance:none}
 textarea{resize:vertical;line-height:1.5;min-height:88px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center}
 .btn{background:#90A9EC;color:#3B2145;border:none;border-radius:8px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif}
 .btn:disabled{opacity:.5;cursor:default}
@@ -56,6 +57,16 @@ textarea{resize:vertical;line-height:1.5;min-height:88px}
 .trig-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .trig-kw{font-size:12px;font-weight:600;min-width:130px}
 .trig-offer{font-size:12px;color:rgba(247,235,224,.5);line-height:1.4}
+.upload-zone{border:2px dashed rgba(144,169,236,.3);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:16px}
+.upload-zone:hover{border-color:rgba(144,169,236,.6)}
+.upload-zone.drag-over{border-color:#90A9EC;background:rgba(144,169,236,.05)}
+.upload-zone-text{font-size:14px;color:rgba(210,199,255,.6);line-height:1.6}
+.upload-zone-text strong{color:#90A9EC;display:block;font-size:16px;margin-bottom:6px}
+.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.asset-item{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.15);border-radius:10px;overflow:hidden}
+.asset-img{width:100%;height:120px;object-fit:cover}
+.asset-name{font-size:11px;color:rgba(210,199,255,.5);padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.style-guide-out{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.15);border-radius:10px;padding:20px;color:#F7EBE0;font-size:14px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;margin-top:14px}
 option{background:#2a1733}
 </style>
 </head>
@@ -80,6 +91,8 @@ option{background:#2a1733}
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
 </div>
 <div class="main">
+
+<!-- CONTENT STUDIO -->
 <div id="content" class="tab-panel">
   <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
   <div class="card">
@@ -149,6 +162,8 @@ option{background:#2a1733}
     <div class="out" id="content-out"></div>
   </div>
 </div>
+
+<!-- DM ENGINE -->
 <div id="dm" class="tab-panel" style="display:none">
   <p class="desc">Paste an incoming DM. Get a human Angela-voiced response plus the right trigger.</p>
   <div class="warn">Copy responses here and paste into ManyChat flows or send manually.</div>
@@ -175,6 +190,8 @@ option{background:#2a1733}
     <div class="out" id="dm-out"></div>
   </div>
 </div>
+
+<!-- MANYCHAT FLOWS -->
 <div id="flows" class="tab-panel" style="display:none">
   <p class="desc">Click any trigger to generate a complete 3-message ManyChat sequence.</p>
   <div class="trig-section">
@@ -224,8 +241,45 @@ option{background:#2a1733}
     <div class="out" id="flow-out"></div>
   </div>
 </div>
+
+<!-- BRAND VAULT -->
 <div id="vault" class="tab-panel" style="display:none">
-  <p class="desc">Your brand reference. Share with Rosa and Mia.</p>
+  <p class="desc">Your brand reference and style library. Upload carousel examples, paste Instagram accounts you love, and let Claude analyze your style.</p>
+
+  <!-- Style Library -->
+  <div class="card">
+    <div class="vault-head" style="color:#FFC696">Style Library</div>
+
+    <label>Upload Carousel Examples</label>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <div class="upload-zone-text">
+        <strong>Drop images here or click to browse</strong>
+        JPG, PNG — your carousels, screenshots, style references
+      </div>
+    </div>
+    <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+
+    <div id="asset-grid" class="asset-grid"></div>
+
+    <div style="margin-top:16px">
+      <label>Instagram Accounts You Love (for style reference)</label>
+      <textarea id="insta-urls" style="min-height:70px" placeholder="e.g. @lori.gottlieb @nedratawwab @the.holistic.psychologist&#10;Paste any accounts whose carousel style resonates with you."></textarea>
+    </div>
+
+    <div style="margin-top:12px">
+      <label>Style Notes (optional)</label>
+      <textarea id="style-notes" style="min-height:60px" placeholder="e.g. I like clean layouts, bold hooks, dark backgrounds. I don't like cluttered slides or too much text per slide."></textarea>
+    </div>
+
+    <div class="btns" style="margin-top:16px">
+      <button class="btn" id="analyze-btn" onclick="analyzeStyle()">Analyze My Style</button>
+      <button class="ghost" id="copy-style" style="display:none" onclick="copyIt('style-guide-out','copy-style','Copy Style Guide')">Copy Style Guide</button>
+    </div>
+
+    <div id="style-guide-out" class="style-guide-out" style="display:none"></div>
+  </div>
+
+  <!-- Voice Rules -->
   <div class="card">
     <div class="vault-head" style="color:#90A9EC">Voice Rules</div>
     <div class="vault-rule">Direct. Clinical-but-accessible. No hedging. No fluff.</div>
@@ -234,15 +288,20 @@ option{background:#2a1733}
     <div class="vault-rule">Names experiences people feel but cannot articulate.</div>
     <div class="vault-rule">Says it once, says it plainly. Never over-explains.</div>
   </div>
+
+  <!-- Never Use -->
   <div class="card">
     <div class="vault-head" style="color:#e8796e">Never Use</div>
-    <div class="vault-rule vault-bad">Em dashes</div>
+    <div class="vault-rule vault-bad">Em dashes (—)</div>
     <div class="vault-rule vault-bad">"You are not broken" / "Healing era" / "Holding space"</div>
     <div class="vault-rule vault-bad">"Trauma dump" / "Do the work"</div>
     <div class="vault-rule vault-bad">Soft landing phrases / Generic AI language</div>
   </div>
+
+  <!-- Brand Colors -->
   <div class="card">
     <div class="vault-head" style="color:#D2C7FF">2026 Brand Colors</div>
+    <div style="font-size:10px;color:rgba(210,199,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Parent Brand</div>
     <div class="swatch-grid">
       <div class="swatch"><div class="swatch-box" style="background:#3B2145"></div><div class="swatch-name">Deep Fig</div><div class="swatch-hex">#3B2145</div></div>
       <div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div>
@@ -250,22 +309,38 @@ option{background:#2a1733}
       <div class="swatch"><div class="swatch-box" style="background:#D2C7FF"></div><div class="swatch-name">Lavender</div><div class="swatch-hex">#D2C7FF</div></div>
       <div class="swatch"><div class="swatch-box" style="background:#F7EBE0"></div><div class="swatch-name">Warm Cream</div><div class="swatch-hex">#F7EBE0</div></div>
     </div>
-    <div class="retired"><strong>Retired - never use</strong><span>Teal #AADCDB - Sage #91CBB7 - Hot Pink #FB8CF0 - Navy #0d0d55 - Burnt Orange #E17F15</span></div>
+    <div class="retired"><strong>Retired — never use</strong><span>Teal #AADCDB · Sage #91CBB7 · Hot Pink #FB8CF0 · Navy #0d0d55 · Burnt Orange #E17F15</span></div>
+  </div>
+
+  <!-- Trigger Map -->
+  <div class="card">
+    <div class="vault-head" style="color:#F3DA8B">ManyChat Trigger Map</div>
+    <div class="trig-map">
+      <div class="trig-row"><span class="trig-kw" style="color:#90A9EC">HEAL / UNTANGLE / STEADY</span><span class="trig-offer">1:1 Therapy</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#90A9EC">EMDR</span><span class="trig-offer">EMDR Therapy</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#FFC696">MALIBURETREAT</span><span class="trig-offer">Healing with Horses Retreat</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">UNLEARN</span><span class="trig-offer">Mother Hunger Course</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">GRIEFRELIEF / GRIEFTOOLS</span><span class="trig-offer">Grief Relief Series</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TOOLS</span><span class="trig-offer">101 Tools</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#D3E0F1">WORTHY</span><span class="trig-offer">Emotional Starter Kit</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#FFC696">EQUINE / HORSEHEALING</span><span class="trig-offer">Equine Digital Product</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">MOM</span><span class="trig-offer">Community Circle</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">COMMUNITYCALL</span><span class="trig-offer">Motherless Daughters Group</span></div>
+      <div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TAPPERS</span><span class="trig-offer">Dharma Dr.</span></div>
+    </div>
   </div>
 </div>
+
 </div>
+
 <script>
 var BACKEND = "https://therapist-content-engine.onrender.com";
+var uploadedAssets = [];
 
 fetch(BACKEND + "/").then(function(r) {
-  if (r.ok) {
-    document.getElementById("dot").style.background = "#6fcf97";
-    document.getElementById("status-txt").textContent = "Live";
-  } else { throw 0; }
-}).catch(function() {
-  document.getElementById("dot").style.background = "#e87070";
-  document.getElementById("status-txt").textContent = "Offline";
-});
+  if (r.ok) { document.getElementById("dot").style.background = "#6fcf97"; document.getElementById("status-txt").textContent = "Live"; }
+  else throw 0;
+}).catch(function() { document.getElementById("dot").style.background = "#e87070"; document.getElementById("status-txt").textContent = "Offline"; });
 
 function showTab(id, el) {
   document.querySelectorAll(".tab-panel").forEach(function(p) { p.style.display = "none"; });
@@ -301,9 +376,7 @@ function genContent() {
   }).catch(function() {
     document.getElementById("content-out").textContent = "Error connecting to backend.";
     document.getElementById("content-out-wrap").style.display = "block";
-  }).finally(function() {
-    btn.textContent = "Generate Content"; btn.disabled = false;
-  });
+  }).finally(function() { btn.textContent = "Generate Content"; btn.disabled = false; });
 }
 
 function clearContent() {
@@ -328,28 +401,85 @@ function genDM() {
   }).catch(function() {
     document.getElementById("dm-out").textContent = "Error connecting to backend.";
     document.getElementById("dm-out-wrap").style.display = "block";
-  }).finally(function() {
-    btn.textContent = "Generate DM Response"; btn.disabled = false;
-  });
+  }).finally(function() { btn.textContent = "Generate DM Response"; btn.disabled = false; });
 }
 
 function genFlow(keyword, offer, color, btn) {
-  document.querySelectorAll(".trig-btn").forEach(function(b) {
-    b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0";
-  });
+  document.querySelectorAll(".trig-btn").forEach(function(b) { b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0"; });
   btn.style.background = color; btn.style.color = "#3B2145";
   document.getElementById("flow-out-wrap").style.display = "block";
   document.getElementById("flow-label").textContent = keyword + " - " + offer;
   document.getElementById("flow-out").textContent = "Writing " + keyword + " flow...";
   callBackend("manychat-flow", { keyword: keyword, offer: offer }).then(function(data) {
     document.getElementById("flow-out").textContent = data.flow || "Error. Try again.";
-  }).catch(function() {
-    document.getElementById("flow-out").textContent = "Error connecting to backend.";
+  }).catch(function() { document.getElementById("flow-out").textContent = "Error connecting to backend."; });
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById("upload-zone").classList.add("drag-over"); }
+function handleDragLeave(e) { document.getElementById("upload-zone").classList.remove("drag-over"); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("upload-zone").classList.remove("drag-over");
+  processFiles(e.dataTransfer.files);
+}
+function handleFileSelect(e) { processFiles(e.target.files); }
+
+function processFiles(files) {
+  Array.from(files).forEach(function(file) {
+    if (!file.type.startsWith("image/")) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedAssets.push({ name: file.name, url: e.target.result, type: "carousel" });
+      renderAssetGrid();
+    };
+    reader.readAsDataURL(file);
   });
 }
 
+function renderAssetGrid() {
+  var grid = document.getElementById("asset-grid");
+  grid.innerHTML = uploadedAssets.map(function(a, i) {
+    return '<div class="asset-item"><img class="asset-img" src="' + a.url + '" alt="' + a.name + '"><div class="asset-name">' + a.name + '</div></div>';
+  }).join("");
+}
+
+function analyzeStyle() {
+  var urls = document.getElementById("insta-urls").value.trim();
+  var notes = document.getElementById("style-notes").value.trim();
+  var assetCount = uploadedAssets.length;
+
+  if (!urls && !notes && assetCount === 0) {
+    alert("Add some Instagram accounts or style notes first.");
+    return;
+  }
+
+  var btn = document.getElementById("analyze-btn");
+  btn.textContent = "Analyzing..."; btn.disabled = true;
+
+  var prompt = "Analyze and create a style guide for Angela Schellenberg's carousels.";
+  if (assetCount > 0) prompt += "\n\nShe has uploaded " + assetCount + " carousel example images for reference.";
+  if (urls) prompt += "\n\nInstagram accounts whose style she loves:\n" + urls;
+  if (notes) prompt += "\n\nHer style notes:\n" + notes;
+  prompt += "\n\nWrite a detailed, practical style guide covering:\n1. Visual style (colors, backgrounds, layout)\n2. Slide structure and flow\n3. Hook patterns for slide 1\n4. Text density per slide\n5. Typography feel\n6. What makes these carousels stop the scroll\n\nRosa will use this guide when designing. Make it specific and actionable.";
+
+  fetch(BACKEND + "/generate/content", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content_type: "Style Guide", pillar: "Brand", topic: prompt, tone: "educational / expert" })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    var out = document.getElementById("style-guide-out");
+    out.textContent = data.content || "Error. Try again.";
+    out.style.display = "block";
+    document.getElementById("copy-style").style.display = "inline-block";
+  }).catch(function() {
+    document.getElementById("style-guide-out").textContent = "Error. Try again.";
+    document.getElementById("style-guide-out").style.display = "block";
+  }).finally(function() { btn.textContent = "Analyze My Style"; btn.disabled = false; });
+}
+
 function copyIt(outId, btnId, origText) {
-  navigator.clipboard.writeText(document.getElementById(outId).textContent);
+  var text = document.getElementById(outId).textContent;
+  navigator.clipboard.writeText(text);
   var btn = document.getElementById(btnId);
   btn.textContent = "Copied!";
   setTimeout(function() { btn.textContent = origText; }, 2200);
