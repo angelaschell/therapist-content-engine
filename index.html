@@ -15,8 +15,8 @@ body{background:#3B2145;font-family:'Jost',sans-serif;color:#F7EBE0;min-height:1
 .status{display:flex;gap:6px;align-items:center;justify-content:flex-end}
 .dot{width:7px;height:7px;border-radius:50%;background:#e87070}
 .status-txt{font-size:11px;color:rgba(210,199,255,.45)}
-.tabs{background:#2a1733;border-bottom:1px solid rgba(144,169,236,.12);display:flex;padding:0 24px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tab{background:none;border:none;color:rgba(247,235,224,.4);padding:14px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;transition:color .2s}
+.tabs{background:#2a1733;border-bottom:1px solid rgba(144,169,236,.12);display:flex;padding:0 24px;overflow-x:auto}
+.tab{background:none;border:none;color:rgba(247,235,224,.4);padding:14px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap}
 .tab.active{color:#90A9EC;border-bottom-color:#90A9EC;font-weight:500}
 .main{max-width:800px;margin:0 auto;padding:28px 20px}
 .desc{color:rgba(210,199,255,.65);font-size:14px;margin-bottom:22px;line-height:1.6}
@@ -24,14 +24,11 @@ body{background:#3B2145;font-family:'Jost',sans-serif;color:#F7EBE0;min-height:1
 label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;display:block;margin-bottom:6px;font-weight:500}
 select,textarea{background:rgba(247,235,224,.07);border:1px solid rgba(144,169,236,.25);border-radius:8px;color:#F7EBE0;padding:10px 13px;font-size:14px;width:100%;font-family:'Jost',sans-serif;outline:none;-webkit-appearance:none}
 textarea{resize:vertical;line-height:1.5;min-height:88px}
-select:focus,textarea:focus{border-color:rgba(144,169,236,.6)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-@media(max-width:560px){.grid2{grid-template-columns:1fr}}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center}
-.btn{background:#90A9EC;color:#3B2145;border:none;border-radius:8px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;letter-spacing:.04em;transition:opacity .2s}
+.btn{background:#90A9EC;color:#3B2145;border:none;border-radius:8px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif}
 .btn:disabled{opacity:.5;cursor:default}
-.ghost{background:rgba(144,169,236,.13);color:#F7EBE0;border:none;border-radius:8px;padding:9px 15px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:background .2s}
-.ghost:hover{background:rgba(144,169,236,.22)}
+.ghost{background:rgba(144,169,236,.13);color:#F7EBE0;border:none;border-radius:8px;padding:9px 15px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif}
 .out-wrap{margin-top:16px}
 .out-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;margin-bottom:7px;font-weight:500}
 .out{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.15);border-radius:10px;padding:20px;color:#F7EBE0;font-size:15px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;min-height:80px}
@@ -39,7 +36,7 @@ select:focus,textarea:focus{border-color:rgba(144,169,236,.6)}
 .trig-section{margin-bottom:18px}
 .trig-group-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(210,199,255,.4);margin-bottom:9px;font-weight:500}
 .trig-btns{display:flex;flex-wrap:wrap;gap:7px}
-.trig-btn{border-radius:8px;padding:9px 15px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:500;font-size:13px;background:rgba(255,255,255,.05);color:#F7EBE0;border:1px solid rgba(144,169,236,.3);transition:all .2s}
+.trig-btn{border-radius:8px;padding:9px 15px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:500;font-size:13px;background:rgba(255,255,255,.05);color:#F7EBE0;border:1px solid rgba(144,169,236,.3)}
 .flow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
 .vault-rule{font-size:15px;color:#F7EBE0;margin-bottom:9px;padding-left:13px;border-left:2px solid #90A9EC;line-height:1.5;font-family:'Cormorant Garamond',serif}
 .vault-bad{border-left-color:#e8796e}
@@ -53,10 +50,9 @@ select:focus,textarea:focus{border-color:rgba(144,169,236,.6)}
 .retired strong{font-size:10px;color:#e8796e;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 .retired span{font-size:11px;color:rgba(247,235,224,.4)}
 .perf-row{display:flex;gap:14px;margin-bottom:11px;align-items:flex-start}
-.perf-stat{font-size:11px;color:#FFC696;font-weight:600;min-width:130px;padding-top:2px;letter-spacing:.03em}
+.perf-stat{font-size:11px;color:#FFC696;font-weight:600;min-width:130px;padding-top:2px}
 .perf-desc{font-size:15px;color:#F7EBE0;font-family:'Cormorant Garamond',serif;line-height:1.5}
 .trig-map{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-@media(max-width:480px){.trig-map{grid-template-columns:1fr}}
 .trig-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .trig-kw{font-size:12px;font-weight:600;min-width:130px}
 .trig-offer{font-size:12px;color:rgba(247,235,224,.5);line-height:1.4}
@@ -64,7 +60,6 @@ option{background:#2a1733}
 </style>
 </head>
 <body>
-
 <div class="header">
   <div>
     <div class="sub">Angela Schellenberg</div>
@@ -74,23 +69,19 @@ option{background:#2a1733}
     <div class="handle">@angelaschellenberg</div>
     <div class="status">
       <div class="dot" id="dot"></div>
-      <div class="status-txt" id="status-txt">Checking backend...</div>
+      <div class="status-txt" id="status-txt">Checking...</div>
     </div>
   </div>
 </div>
-
 <div class="tabs">
   <button class="tab active" onclick="showTab('content',this)">Content Studio</button>
   <button class="tab" onclick="showTab('dm',this)">DM Engine</button>
   <button class="tab" onclick="showTab('flows',this)">ManyChat Flows</button>
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
 </div>
-
 <div class="main">
-
-<!-- CONTENT STUDIO -->
 <div id="content" class="tab-panel">
-  <p class="desc">Generate brand-aligned content in your voice, across every format. Your pillars, your triggers, your rules.</p>
+  <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
   <div class="card">
     <div class="grid2">
       <div><label>Content Type</label>
@@ -108,11 +99,11 @@ option{background:#2a1733}
       <div><label>Pillar</label>
         <select id="pillar">
           <option>Grief Education</option>
-          <option>Mother Hunger© (Kelly McDaniel)</option>
-          <option>EMDR & Bilateral Stimulation</option>
+          <option>Mother Hunger (Kelly McDaniel)</option>
+          <option>EMDR and Bilateral Stimulation</option>
           <option>Equine Therapy</option>
           <option>Somatic Healing</option>
-          <option>Attachment & Childhood Wounds</option>
+          <option>Attachment and Childhood Wounds</option>
         </select>
       </div>
     </div>
@@ -129,27 +120,23 @@ option{background:#2a1733}
       <div><label>ManyChat CTA (optional)</label>
         <select id="cta">
           <option value="">No CTA</option>
-          <option value="HEAL">Comment HEAL → 1:1 Session</option>
-          <option value="UNTANGLE">Comment UNTANGLE → 1:1 Session</option>
-          <option value="STEADY">Comment STEADY → 1:1 Session</option>
-          <option value="MALIBURETREAT">Comment MALIBURETREAT → Retreat</option>
-          <option value="UNLEARN">Comment UNLEARN → Mother Hunger Course</option>
-          <option value="GRIEFRELIEF">Comment GRIEFRELIEF → Grief Series</option>
-          <option value="GRIEFTOOLS">Comment GRIEFTOOLS → Grief Series</option>
-          <option value="TOOLS">Comment TOOLS → 101 Tools</option>
-          <option value="WORTHY">Comment WORTHY → Starter Kit</option>
-          <option value="EQUINE">Comment EQUINE → Equine Product</option>
-          <option value="HORSEHEALING">Comment HORSEHEALING → Equine Product</option>
-          <option value="MOM">Comment MOM → Community</option>
-          <option value="COMMUNITYCALL">Comment COMMUNITYCALL → Motherless Daughters</option>
-          <option value="EMDR">Comment EMDR → EMDR Therapy</option>
-          <option value="TAPPERS">Comment TAPPERS → Dharma Dr.</option>
+          <option value="HEAL">HEAL - 1:1 Session</option>
+          <option value="UNTANGLE">UNTANGLE - 1:1 Session</option>
+          <option value="STEADY">STEADY - 1:1 Session</option>
+          <option value="MALIBURETREAT">MALIBURETREAT - Retreat</option>
+          <option value="UNLEARN">UNLEARN - Mother Hunger Course</option>
+          <option value="GRIEFRELIEF">GRIEFRELIEF - Grief Series</option>
+          <option value="TOOLS">TOOLS - 101 Tools</option>
+          <option value="WORTHY">WORTHY - Starter Kit</option>
+          <option value="EQUINE">EQUINE - Equine Product</option>
+          <option value="MOM">MOM - Community</option>
+          <option value="EMDR">EMDR - EMDR Therapy</option>
         </select>
       </div>
     </div>
     <div style="margin-bottom:4px">
       <label>Topic / Angle / Hook Idea</label>
-      <textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye. Why it doesn't show up as sadness."></textarea>
+      <textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea>
     </div>
     <div class="btns">
       <button class="btn" id="gen-btn" onclick="genContent()">Generate Content</button>
@@ -162,22 +149,20 @@ option{background:#2a1733}
     <div class="out" id="content-out"></div>
   </div>
 </div>
-
-<!-- DM ENGINE -->
 <div id="dm" class="tab-panel" style="display:none">
-  <p class="desc">Paste an incoming DM. Get a human Angela-voiced response plus the right ManyChat trigger to use.</p>
-  <div class="warn">ManyChat's API requires a server connection. Copy these responses and paste directly into ManyChat flows or send manually. Use ManyChat Flows tab for full 3-message sequences.</div>
+  <p class="desc">Paste an incoming DM. Get a human Angela-voiced response plus the right trigger.</p>
+  <div class="warn">Copy responses here and paste into ManyChat flows or send manually.</div>
   <div class="card">
     <div style="margin-bottom:12px"><label>Incoming DM</label>
       <textarea id="dm-in" style="min-height:100px" placeholder="Paste the DM exactly as it came in..."></textarea>
     </div>
     <div style="margin-bottom:4px"><label>Lead Temperature</label>
       <select id="lead-temp">
-        <option>Cold follower — first contact, no context</option>
-        <option>Warm — mentioned a pain point or resonated with a post</option>
-        <option>Hot — asking about a specific offer</option>
+        <option>Cold follower - first contact</option>
+        <option>Warm - mentioned a pain point</option>
+        <option>Hot - asking about a specific offer</option>
         <option>Returning or past client</option>
-        <option>Peer, colleague, or collaborator</option>
+        <option>Peer or collaborator</option>
       </select>
     </div>
     <div class="btns">
@@ -190,11 +175,8 @@ option{background:#2a1733}
     <div class="out" id="dm-out"></div>
   </div>
 </div>
-
-<!-- MANYCHAT FLOWS -->
 <div id="flows" class="tab-panel" style="display:none">
-  <p class="desc">Click any trigger keyword to generate a complete 3-message automation sequence. Copy directly into ManyChat.</p>
-
+  <p class="desc">Click any trigger to generate a complete 3-message ManyChat sequence.</p>
   <div class="trig-section">
     <div class="trig-group-label">1:1 Therapy</div>
     <div class="trig-btns">
@@ -205,20 +187,19 @@ option{background:#2a1733}
     </div>
   </div>
   <div class="trig-section">
-    <div class="trig-group-label">Retreat — April 30 to May 3, 2026</div>
+    <div class="trig-group-label">Retreat - April 30 to May 3 2026</div>
     <div class="trig-btns">
       <button class="trig-btn" onclick="genFlow('MALIBURETREAT','Healing with Horses Somatic Grief Retreat','#FFC696',this)">MALIBURETREAT</button>
     </div>
   </div>
   <div class="trig-section">
-    <div class="trig-group-label">Courses & Digital Products</div>
+    <div class="trig-group-label">Courses and Digital Products</div>
     <div class="trig-btns">
-      <button class="trig-btn" onclick="genFlow('UNLEARN','Mother Hunger© Course','#D2C7FF',this)">UNLEARN</button>
+      <button class="trig-btn" onclick="genFlow('UNLEARN','Mother Hunger Course','#D2C7FF',this)">UNLEARN</button>
       <button class="trig-btn" onclick="genFlow('GRIEFRELIEF','Grief Relief Video Series','#E5ACD7',this)">GRIEFRELIEF</button>
-      <button class="trig-btn" onclick="genFlow('GRIEFTOOLS','Grief Relief Video Series','#E5ACD7',this)">GRIEFTOOLS</button>
       <button class="trig-btn" onclick="genFlow('TOOLS','101 Tools','#F3DA8B',this)">TOOLS</button>
       <button class="trig-btn" onclick="genFlow('WORTHY','Emotional Starter Kit','#D3E0F1',this)">WORTHY</button>
-      <button class="trig-btn" onclick="genFlow('TAPPERS','Dharma Dr.','#F3DA8B',this)">TAPPERS</button>
+      <button class="trig-btn" onclick="genFlow('TAPPERS','Dharma Dr','#F3DA8B',this)">TAPPERS</button>
     </div>
   </div>
   <div class="trig-section">
@@ -235,7 +216,6 @@ option{background:#2a1733}
       <button class="trig-btn" onclick="genFlow('COMMUNITYCALL','Motherless Daughters Thursday Group','#D2C7FF',this)">COMMUNITYCALL</button>
     </div>
   </div>
-
   <div id="flow-out-wrap" style="display:none" class="out-wrap">
     <div class="flow-header">
       <div class="out-label" id="flow-label"></div>
@@ -244,42 +224,25 @@ option{background:#2a1733}
     <div class="out" id="flow-out"></div>
   </div>
 </div>
-
-<!-- BRAND VAULT -->
 <div id="vault" class="tab-panel" style="display:none">
-  <p class="desc">Your brand reference. Share with Rosa and Mia so everyone works from the same source.</p>
-
+  <p class="desc">Your brand reference. Share with Rosa and Mia.</p>
   <div class="card">
     <div class="vault-head" style="color:#90A9EC">Voice Rules</div>
     <div class="vault-rule">Direct. Clinical-but-accessible. No hedging. No fluff.</div>
-    <div class="vault-rule">Short punchy lines. Rhythm over grammar. Incomplete sentences are fine.</div>
+    <div class="vault-rule">Short punchy lines. Rhythm over grammar.</div>
     <div class="vault-rule">Humor-forward when appropriate, especially equine content.</div>
-    <div class="vault-rule">Names experiences people feel but can't articulate. That's the superpower.</div>
+    <div class="vault-rule">Names experiences people feel but cannot articulate.</div>
     <div class="vault-rule">Says it once, says it plainly. Never over-explains.</div>
-    <div class="vault-rule">Writes for high-functioning women navigating grief and attachment wounds.</div>
   </div>
-
   <div class="card">
     <div class="vault-head" style="color:#e8796e">Never Use</div>
-    <div class="vault-rule vault-bad">Em dashes (—) — use commas or periods instead</div>
-    <div class="vault-rule vault-bad">"You are not broken"</div>
-    <div class="vault-rule vault-bad">"Healing era" / "Holding space" / "Trauma dump"</div>
-    <div class="vault-rule vault-bad">"Do the work" / "It's not X, it's Y" framing</div>
-    <div class="vault-rule vault-bad">Soft landing phrases that dull the point</div>
-    <div class="vault-rule vault-bad">Generic AI-sounding language</div>
-    <div class="vault-rule vault-bad">Excessive qualifiers or hedging</div>
+    <div class="vault-rule vault-bad">Em dashes</div>
+    <div class="vault-rule vault-bad">"You are not broken" / "Healing era" / "Holding space"</div>
+    <div class="vault-rule vault-bad">"Trauma dump" / "Do the work"</div>
+    <div class="vault-rule vault-bad">Soft landing phrases / Generic AI language</div>
   </div>
-
-  <div class="card">
-    <div class="vault-head" style="color:#FFC696">Top Performing Content (by data)</div>
-    <div class="perf-row"><span class="perf-stat">Highest Reach</span><span class="perf-desc">Posts naming unnamed grief concepts</span></div>
-    <div class="perf-row"><span class="perf-stat">Highest Send Rate</span><span class="perf-desc">Posts challenging grief platitudes</span></div>
-    <div class="perf-row"><span class="perf-stat">Best Engagement</span><span class="perf-desc">Tender universal statements to motherless daughters</span></div>
-  </div>
-
   <div class="card">
     <div class="vault-head" style="color:#D2C7FF">2026 Brand Colors</div>
-    <div style="font-size:10px;color:rgba(210,199,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Parent Brand</div>
     <div class="swatch-grid">
       <div class="swatch"><div class="swatch-box" style="background:#3B2145"></div><div class="swatch-name">Deep Fig</div><div class="swatch-hex">#3B2145</div></div>
       <div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div>
@@ -287,97 +250,60 @@ option{background:#2a1733}
       <div class="swatch"><div class="swatch-box" style="background:#D2C7FF"></div><div class="swatch-name">Lavender</div><div class="swatch-hex">#D2C7FF</div></div>
       <div class="swatch"><div class="swatch-box" style="background:#F7EBE0"></div><div class="swatch-name">Warm Cream</div><div class="swatch-hex">#F7EBE0</div></div>
     </div>
-    <div style="font-size:10px;color:rgba(210,199,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">GT&YM Sub-brand</div>
-    <div class="swatch-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#FFC696"></div><div class="swatch-name">Peach</div><div class="swatch-hex">#FFC696</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#F3DA8B"></div><div class="swatch-name">Yellow</div><div class="swatch-hex">#F3DA8B</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#E5ACD7"></div><div class="swatch-name">Pink</div><div class="swatch-hex">#E5ACD7</div></div>
-    </div>
-    <div class="retired"><strong>Retired — never use</strong><span>Teal #AADCDB · Sage #91CBB7 · Hot Pink #FB8CF0 · Navy #0d0d55 · Burnt Orange #E17F15</span></div>
-  </div>
-
-  <div class="card">
-    <div class="vault-head" style="color:#F3DA8B">ManyChat Trigger Map</div>
-    <div class="trig-map">
-      <div class="trig-row"><span class="trig-kw" style="color:#90A9EC">HEAL / UNTANGLE / STEADY</span><span class="trig-offer">1:1 Therapy Session</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#90A9EC">EMDR</span><span class="trig-offer">EMDR Therapy</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#FFC696">MALIBURETREAT</span><span class="trig-offer">Healing with Horses Retreat</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">UNLEARN</span><span class="trig-offer">Mother Hunger© Course</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">GRIEFRELIEF / GRIEFTOOLS</span><span class="trig-offer">Grief Relief Video Series</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TOOLS</span><span class="trig-offer">101 Tools</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#D3E0F1">WORTHY</span><span class="trig-offer">Emotional Starter Kit</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#FFC696">EQUINE / HORSEHEALING</span><span class="trig-offer">Equine Digital Product</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">MOM</span><span class="trig-offer">Community Circle</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">COMMUNITYCALL</span><span class="trig-offer">Motherless Daughters Group</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TAPPERS</span><span class="trig-offer">Dharma Dr.</span></div>
-    </div>
+    <div class="retired"><strong>Retired - never use</strong><span>Teal #AADCDB - Sage #91CBB7 - Hot Pink #FB8CF0 - Navy #0d0d55 - Burnt Orange #E17F15</span></div>
   </div>
 </div>
-
 </div>
-
 <script>
-const ANGELA_SYSTEM = `You are Angela Schellenberg's AI content assistant. Write exactly as Angela would, not how you think a therapist sounds.
+var BACKEND = "https://therapist-content-engine.onrender.com";
 
-VOICE: Direct. Clinical-but-accessible. No hedging. No fluff. Short punchy lines. Rhythm over grammar. Incomplete sentences are fine for rhythm. Says it once, says it plainly. Never over-explains.
-
-NEVER USE: Em dashes, "healing era", "holding space", "trauma dump", "do the work", "you are not broken", soft landing phrases that dull the point, generic AI-sounding language, excessive qualifiers.
-
-PILLARS: Grief education (neuroscience-backed), Mother Hunger© (always credit Kelly McDaniel), EMDR and bilateral stimulation, Equine therapy at Shakti Ranch Malibu, Somatic healing and attachment repair.
-
-AUDIENCE: High-functioning women navigating grief and attachment wounds.
-
-INSTAGRAM FORMAT: Hook in line 1. Short punchy line breaks. No bullet points in captions. Trust the reader. ManyChat CTA format: "Comment [KEYWORD] and I'll send it to you."`;
-
-async function callClaude(prompt, endpoint, extra) {
-  extra = extra || {};
-  var url, body;
-  if (endpoint === "flow") {
-    url = "https://therapist-content-engine.onrender.com/generate/manychat-flow";
-    body = { keyword: extra.keyword, offer: extra.offer };
-  } else if (endpoint === "dm") {
-    url = "https://therapist-content-engine.onrender.com/generate/dm-response";
-    body = { message: extra.message, lead_temperature: extra.lead_temperature };
-  } else {
-    url = "https://therapist-content-engine.onrender.com/generate/content";
-    body = { content_type: extra.content_type || "Instagram Caption", pillar: extra.pillar || "Grief Education", topic: prompt, tone: extra.tone || "clinical-but-warm", cta_trigger: extra.cta || null };
-  }
-  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const data = await res.json();
-  return data.content || data.response || data.flow;
-}
-  
-fetch("https://therapist-content-engine.onrender.com/").then(r => {
-  if (r.ok) { document.getElementById("dot").style.background = "#6fcf97"; document.getElementById("status-txt").textContent = "Backend live"; }
-  else throw 0;
-}).catch(() => { document.getElementById("dot").style.background = "#e87070"; document.getElementById("status-txt").textContent = "Direct mode"; });
+fetch(BACKEND + "/").then(function(r) {
+  if (r.ok) {
+    document.getElementById("dot").style.background = "#6fcf97";
+    document.getElementById("status-txt").textContent = "Live";
+  } else { throw 0; }
+}).catch(function() {
+  document.getElementById("dot").style.background = "#e87070";
+  document.getElementById("status-txt").textContent = "Offline";
+});
 
 function showTab(id, el) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.style.display = "none");
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(function(p) { p.style.display = "none"; });
+  document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
   document.getElementById(id).style.display = "block";
   el.classList.add("active");
 }
 
-async function genContent() {
-  const topic = document.getElementById("topic").value.trim();
+function callBackend(endpoint, body) {
+  return fetch(BACKEND + "/generate/" + endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+
+function genContent() {
+  var topic = document.getElementById("topic").value.trim();
   if (!topic) return;
-  const btn = document.getElementById("gen-btn");
+  var btn = document.getElementById("gen-btn");
   btn.textContent = "Generating..."; btn.disabled = true;
-  try {
-    const result = await callClaude(topic, "content", {
-      content_type: document.getElementById("ctype").value,
-      pillar: document.getElementById("pillar").value,
-      tone: document.getElementById("tone").value,
-      cta: document.getElementById("cta").value || null
-    });
-    document.getElementById("content-out").textContent = result;
+  callBackend("content", {
+    content_type: document.getElementById("ctype").value,
+    pillar: document.getElementById("pillar").value,
+    topic: topic,
+    tone: document.getElementById("tone").value,
+    cta_trigger: document.getElementById("cta").value || null
+  }).then(function(data) {
+    document.getElementById("content-out").textContent = data.content || "Error. Try again.";
     document.getElementById("content-out-wrap").style.display = "block";
     document.getElementById("copy-content").style.display = "inline-block";
     document.getElementById("clear-btn").style.display = "inline-block";
-  } catch(e) { document.getElementById("content-out").textContent = "Error. Try again."; document.getElementById("content-out-wrap").style.display = "block"; }
-  btn.textContent = "Generate Content"; btn.disabled = false;
+  }).catch(function() {
+    document.getElementById("content-out").textContent = "Error connecting to backend.";
+    document.getElementById("content-out-wrap").style.display = "block";
+  }).finally(function() {
+    btn.textContent = "Generate Content"; btn.disabled = false;
+  });
 }
 
 function clearContent() {
@@ -387,40 +313,46 @@ function clearContent() {
   document.getElementById("clear-btn").style.display = "none";
 }
 
-async function genDM() {
-  const msg = document.getElementById("dm-in").value.trim();
+function genDM() {
+  var msg = document.getElementById("dm-in").value.trim();
   if (!msg) return;
-  const btn = document.getElementById("dm-btn");
-  btn.textContent = "Writing response..."; btn.disabled = true;
-  try {
-    const result = await callClaude("", "dm", {
-      message: msg,
-      lead_temperature: document.getElementById("lead-temp").value
-    });
-    document.getElementById("dm-out").textContent = result;
+  var btn = document.getElementById("dm-btn");
+  btn.textContent = "Writing..."; btn.disabled = true;
+  callBackend("dm-response", {
+    message: msg,
+    lead_temperature: document.getElementById("lead-temp").value
+  }).then(function(data) {
+    document.getElementById("dm-out").textContent = data.response || "Error. Try again.";
     document.getElementById("dm-out-wrap").style.display = "block";
     document.getElementById("copy-dm").style.display = "inline-block";
-  } catch(e) { document.getElementById("dm-out").textContent = "Error. Try again."; document.getElementById("dm-out-wrap").style.display = "block"; }
-  btn.textContent = "Generate DM Response"; btn.disabled = false;
+  }).catch(function() {
+    document.getElementById("dm-out").textContent = "Error connecting to backend.";
+    document.getElementById("dm-out-wrap").style.display = "block";
+  }).finally(function() {
+    btn.textContent = "Generate DM Response"; btn.disabled = false;
+  });
 }
 
-async function genFlow(keyword, offer, color, btn) {
-  document.querySelectorAll(".trig-btn").forEach(b => { b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0"; });
+function genFlow(keyword, offer, color, btn) {
+  document.querySelectorAll(".trig-btn").forEach(function(b) {
+    b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0";
+  });
   btn.style.background = color; btn.style.color = "#3B2145";
   document.getElementById("flow-out-wrap").style.display = "block";
-  document.getElementById("flow-label").textContent = keyword + " — " + offer;
+  document.getElementById("flow-label").textContent = keyword + " - " + offer;
   document.getElementById("flow-out").textContent = "Writing " + keyword + " flow...";
-  try {
-    const result = await callClaude("", "flow", { keyword: keyword, offer: offer });
-    document.getElementById("flow-out").textContent = result;
-  } catch(e) { document.getElementById("flow-out").textContent = "Error. Try again."; }
+  callBackend("manychat-flow", { keyword: keyword, offer: offer }).then(function(data) {
+    document.getElementById("flow-out").textContent = data.flow || "Error. Try again.";
+  }).catch(function() {
+    document.getElementById("flow-out").textContent = "Error connecting to backend.";
+  });
 }
 
 function copyIt(outId, btnId, origText) {
   navigator.clipboard.writeText(document.getElementById(outId).textContent);
-  const btn = document.getElementById(btnId);
+  var btn = document.getElementById(btnId);
   btn.textContent = "Copied!";
-  setTimeout(() => btn.textContent = origText, 2200);
+  setTimeout(function() { btn.textContent = origText; }, 2200);
 }
 </script>
 </body>
