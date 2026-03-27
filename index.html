@@ -363,15 +363,18 @@ async function genContent() {
   if (!topic) return;
   const btn = document.getElementById("gen-btn");
   btn.textContent = "Generating..."; btn.disabled = true;
-  const cta = document.getElementById("cta").value;
-  const ctaStr = cta ? `\n\nEnd with a ManyChat CTA: "Comment ${cta} and I'll send it to you." Make it feel natural.` : "";
   try {
-    const result = await callClaude(`Generate a ${document.getElementById("ctype").value} for Angela Schellenberg.\nPillar: ${document.getElementById("pillar").value}\nTone: ${document.getElementById("tone").value}\nTopic: ${topic}${ctaStr}\nNo em dashes. Short punchy lines. Trust the reader.`);
+    const result = await callClaude(topic, "content", {
+      content_type: document.getElementById("ctype").value,
+      pillar: document.getElementById("pillar").value,
+      tone: document.getElementById("tone").value,
+      cta: document.getElementById("cta").value || null
+    });
     document.getElementById("content-out").textContent = result;
     document.getElementById("content-out-wrap").style.display = "block";
     document.getElementById("copy-content").style.display = "inline-block";
     document.getElementById("clear-btn").style.display = "inline-block";
-  } catch(e) { document.getElementById("content-out").textContent = "Error generating. Try again."; document.getElementById("content-out-wrap").style.display = "block"; }
+  } catch(e) { document.getElementById("content-out").textContent = "Error. Try again."; document.getElementById("content-out-wrap").style.display = "block"; }
   btn.textContent = "Generate Content"; btn.disabled = false;
 }
 
@@ -388,7 +391,10 @@ async function genDM() {
   const btn = document.getElementById("dm-btn");
   btn.textContent = "Writing response..."; btn.disabled = true;
   try {
-    const result = await callClaude(`Someone just sent Angela Schellenberg this Instagram DM:\n\n"${msg}"\n\nLead temperature: ${document.getElementById("lead-temp").value}\n\nWrite a response AS Angela. Human, warm, direct. Not salesy. Not robotic.\n\nAfter the response, add:\n\n---\nSUGGESTED TRIGGER: [keyword or "None — respond manually"]\nREASONING: [one sentence]\nNEXT STEP: [what to do if they don't respond in 24 hours]`);
+    const result = await callClaude("", "dm", {
+      message: msg,
+      lead_temperature: document.getElementById("lead-temp").value
+    });
     document.getElementById("dm-out").textContent = result;
     document.getElementById("dm-out-wrap").style.display = "block";
     document.getElementById("copy-dm").style.display = "inline-block";
@@ -399,12 +405,11 @@ async function genDM() {
 async function genFlow(keyword, offer, color, btn) {
   document.querySelectorAll(".trig-btn").forEach(b => { b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0"; });
   btn.style.background = color; btn.style.color = "#3B2145";
-  const wrap = document.getElementById("flow-out-wrap");
-  wrap.style.display = "block";
+  document.getElementById("flow-out-wrap").style.display = "block";
   document.getElementById("flow-label").textContent = keyword + " — " + offer;
   document.getElementById("flow-out").textContent = "Writing " + keyword + " flow...";
   try {
-    const result = await callClaude(`Write a complete 3-message ManyChat automation flow for Angela Schellenberg's trigger keyword: ${keyword}\nOffer this trigger delivers: ${offer}\n\nMESSAGE 1 — Instant reply (sent immediately after they comment or DM the keyword)\n[warm, personal, delivers what was promised, short, includes link or next step]\n\nMESSAGE 2 — Follow-up (sent 2 hours later if no conversion)\n[check in, one soft question or observation, no pressure]\n\nMESSAGE 3 — Last touch (sent 24 hours later)\n[gentle close, leave door open, no guilt, no pressure]\n\nAngela's voice throughout. No em dashes. Sound human. Short sentences.`);
+    const result = await callClaude("", "flow", { keyword: keyword, offer: offer });
     document.getElementById("flow-out").textContent = result;
   } catch(e) { document.getElementById("flow-out").textContent = "Error. Try again."; }
 }
