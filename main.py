@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import anthropic
+import httpx
 import os
 import json
 
@@ -16,6 +17,8 @@ app.add_middleware(
 )
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+
+PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 
 ANGELA_SYSTEM = """You are Angela Schellenberg's AI content assistant. Write exactly as Angela would.
 VOICE: Direct. Clinical-but-accessible. No hedging. Short punchy lines. Rhythm over grammar.
@@ -87,60 +90,34 @@ async def generate_manychat_flow(req: Request):
 
 DEMO_POSTS = [
     {"src":"reddit","sub":"r/GriefSupport","title":"Does anyone else feel guilty for laughing after losing a parent?","stats":"2,847 upvotes · 412 comments","excerpt":"My mom died 6 months ago and I caught myself genuinely laughing yesterday and immediately felt like the worst person alive.","tag":"naming unnamed grief"},
-    {"src":"reddit","sub":"r/MotherlessDaughters","title":"My wedding is in 3 months and I can't stop crying about my mom not being there","stats":"1,923 upvotes · 287 comments","excerpt":"Everyone keeps saying she'll be there in spirit and I want to scream. I don't want her in spirit.","tag":"milestone grief"},
+    {"src":"reddit","sub":"r/MotherlessDaughters","title":"My wedding is in 3 months and I can't stop crying about my mom not being there","stats":"1,923 upvotes · 287 comments","excerpt":"Everyone keeps saying she'll be there in spirit and I want to scream.","tag":"milestone grief"},
     {"src":"reddit","sub":"r/CPTSD","title":"Does anyone else grieve a mother who is technically still alive?","stats":"3,102 upvotes · 518 comments","excerpt":"She's alive but she was never really there. I mourn the mother I deserved but never had.","tag":"living loss"},
-    {"src":"reddit","sub":"r/GriefSupport","title":"I hate when people say 'stay strong' at funerals","stats":"4,211 upvotes · 673 comments","excerpt":"Why is falling apart not an option? Why do I have to perform composure for YOUR comfort?","tag":"challenging platitudes"},
-    {"src":"reddit","sub":"r/raisedbynarcissists","title":"I just realized I've been parenting my parent since I was 8","stats":"2,456 upvotes · 389 comments","excerpt":"I was the one checking if she was okay. I was the one managing her emotions. I was 8.","tag":"parentification"},
-    {"src":"reddit","sub":"r/MotherlessDaughters","title":"Things nobody tells you about losing your mom young","stats":"1,678 upvotes · 234 comments","excerpt":"You become everyone else's therapist. You learn to swallow your feelings. Mother's Day becomes a minefield.","tag":"community identification"},
 ]
 
 
 @app.get("/api/viral")
 async def get_viral():
-    """Return cached viral posts, or demo data if no cache."""
     try:
         from scraper import load_cache
         cache = load_cache()
         if cache and cache.get("posts"):
-            return JSONResponse({
-                "success": True,
-                "posts": cache["posts"],
-                "scraped_at": cache.get("scraped_at", "unknown"),
-                "topic": cache.get("topic", ""),
-                "source": "live"
-            })
+            return JSONResponse({"success": True, "posts": cache["posts"], "scraped_at": cache.get("scraped_at", ""), "topic": cache.get("topic", ""), "source": "live"})
     except Exception as e:
         print(f"Cache error: {e}")
-
-    return JSONResponse({
-        "success": True,
-        "posts": DEMO_POSTS,
-        "scraped_at": "demo data",
-        "topic": "",
-        "source": "demo"
-    })
+    return JSONResponse({"success": True, "posts": DEMO_POSTS, "scraped_at": "demo", "topic": "", "source": "demo"})
 
 
 @app.post("/api/scrape")
 async def trigger_scrape(req: Request):
-    """Scrape Reddit + Instagram based on a topic."""
     try:
         data = await req.json()
         topic = data.get("topic", "grief mother loss")
     except:
         topic = "grief mother loss"
-
     try:
         from scraper import run_scraper
         result = run_scraper(topic)
-        return JSONResponse({
-            "success": True,
-            "total": result.get("total_found", 0),
-            "saved": len(result.get("posts", [])),
-            "posts": result.get("posts", []),
-            "scraped_at": result.get("scraped_at", ""),
-            "topic": topic
-        })
+        return JSONResponse({"success": True, "total": result.get("total_found", 0), "saved": len(result.get("posts", [])), "posts": result.get("posts", []), "scraped_at": result.get("scraped_at", ""), "topic": topic})
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -171,44 +148,120 @@ Return ONLY valid JSON, no markdown backticks:
         return JSONResponse({"success": True, "data": response.content[0].text})
 
 
+# ─── PERPLEXITY RESEARCH ENDPOINT ───
+
+@app.post("/api/research")
+async def research_topic(req: Request):
+    """Call Perplexity to find clinical research and studies on a topic."""
+    data = await req.json()
+    topic = data.get("topic", "grief")
+
+    if not PERPLEXITY_KEY:
+        return JSONResponse({"success": False, "error": "No PERPLEXITY_API_KEY set"})
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.perplexity.ai/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {PERPLEXITY_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "sonar",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a clinical research assistant. Return 3-5 key research findings, studies, or statistics about the topic. Include the researcher/study name and year when available. Be specific and cite real research. Focus on findings that would resonate with women aged 25-55 processing grief, trauma, or attachment wounds. Keep each finding to 1-2 sentences."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Find recent clinical research, studies, and statistics about: {topic}\n\nFocus on: psychology, neuroscience, attachment theory, grief research, trauma studies, EMDR research, somatic therapy research.\n\nReturn ONLY valid JSON, no backticks:\n{{\"findings\": [\"Finding 1 with researcher name and year\", \"Finding 2\", \"Finding 3\"]}}"
+                        }
+                    ],
+                },
+                timeout=30,
+            )
+
+        if resp.status_code == 200:
+            result = resp.json()
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            # Try to parse as JSON
+            try:
+                clean = content.strip()
+                if clean.startswith("```"): clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+                parsed = json.loads(clean)
+                return JSONResponse({"success": True, "data": parsed})
+            except:
+                return JSONResponse({"success": True, "data": {"findings": [content]}})
+        else:
+            return JSONResponse({"success": False, "error": f"Perplexity returned {resp.status_code}"})
+
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)})
+
+
+# ─── CAROUSEL ENDPOINT (with research + slide count) ───
+
 @app.post("/api/carousel")
 async def generate_carousel(req: Request):
     data = await req.json()
     topic = data.get("topic", "grief and attachment trauma")
     viral_context = data.get("viral_context", "")
     analysis_context = data.get("analysis_context", "")
+    research_context = data.get("research_context", "")
     pillar = data.get("pillar", "Grief Education")
     tone = data.get("tone", "clinical-but-warm")
+    slide_count = data.get("slide_count", 10)
 
     context_block = ""
     if viral_context:
-        context_block += f"\n\nVIRAL POSTS THAT ARE PERFORMING RIGHT NOW (base your carousel on these):\n{viral_context}"
+        context_block += f"\n\nVIRAL POSTS (base your carousel on these real conversations):\n{viral_context}"
     if analysis_context:
-        context_block += f"\n\nANALYSIS OF WHAT'S WORKING:\n{analysis_context}"
+        context_block += f"\n\nANALYSIS:\n{analysis_context}"
+    if research_context:
+        context_block += f"\n\nCLINICAL RESEARCH (weave 1-2 of these into your slides for credibility):\n{research_context}"
+
+    # Build slide structure based on count
+    if slide_count <= 5:
+        structure = 'Slide 1: hook. Slides 2-{}: body. Slide {}: cta.'.format(slide_count - 1, slide_count)
+    elif slide_count <= 7:
+        structure = 'Slide 1: hook. Slides 2-{}: body (name experiences, deepen, validate). Slide {}: cta.'.format(slide_count - 1, slide_count)
+    else:
+        structure = 'Slide 1: hook. Slides 2-{}: body (name, contextualize, deepen, validate, bridge). Slide {}: cta.'.format(slide_count - 1, slide_count)
+
+    # Build example slides JSON matching count
+    example_slides = [{"type": "hook", "upper": "BOLD HOOK", "italic": "italic subtitle."}]
+    for i in range(slide_count - 2):
+        example_slides.append({"type": "body", "html": "Sentence with <em>emphasis</em> words."})
+    example_slides.append({"type": "cta", "top": "This is what I work with.", "bottom": "Comment <strong>WORTHY</strong> for my free resource."})
 
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=2000,
+        max_tokens=2500,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f"""Generate a 10-slide Instagram carousel.
+        messages=[{"role": "user", "content": f"""Generate a {slide_count}-slide Instagram carousel.
 
 TOPIC: {topic}
 PILLAR: {pillar}
 TONE: {tone}
+SLIDE COUNT: {slide_count}
+STRUCTURE: {structure}
 {context_block}
 
-YOUR JOB: Write a carousel that captures the exact emotional nerve these viral posts are hitting, but through Angela's clinical lens and voice. Use the language and framing people are already responding to. Name what they're feeling. Don't just write about the topic generically. Write about the SPECIFIC experience these viral posts describe.
+YOUR JOB: Write a carousel that captures the exact emotional nerve from the viral posts, through Angela's clinical lens. If research is provided, weave 1-2 findings naturally into body slides (don't cite like a paper, say it like Angela would: "Research shows..." or "Studies found..."). Name what people are feeling. Be SPECIFIC, not generic.
 
-Return ONLY valid JSON, no markdown backticks:
+Return ONLY valid JSON, no backticks:
 
-{{"slides": [{{"type":"hook","upper":"BOLD UPPERCASE HOOK","italic":"italic subtitle."}},{{"type":"body","html":"Sentence case with <em>italic emphasis</em> on emotional words."}},{{"type":"body","html":"Next point."}},{{"type":"body","html":"Continue."}},{{"type":"body","html":"Deepen."}},{{"type":"body","html":"More."}},{{"type":"body","html":"Almost."}},{{"type":"body","html":"Validate."}},{{"type":"body","html":"Bridge."}},{{"type":"cta","top":"This is what I work with.","bottom":"Comment <strong>WORTHY</strong> for my free resource."}}],"caption":"Full caption with hashtags","trigger":"WORTHY"}}
+{{"slides": {json.dumps(example_slides)}, "caption": "Full caption with hashtags", "trigger": "WORTHY"}}
 
-SLIDE RULES:
-- Slide 1: type "hook" with uppercase title and italic subtitle. Echo the language from viral posts.
-- Slides 2-9: type "body" with sentence case. Use <em> on emotional gut-punch words ONLY. Name SPECIFIC experiences from the viral posts.
-- Slide 10: type "cta"
+RULES:
+- Slide 1: type "hook" uppercase title + italic subtitle. Echo viral language.
+- Body slides: sentence case. Use <em> on emotional gut-punch words ONLY.
+- Last slide: type "cta"
 - MAX 25 words per slide.
-- Angela's voice. No em dashes. No fluff."""}]
+- Angela's voice. No em dashes.
+- If research provided, work it into 1-2 body slides naturally."""}]
     )
     try:
         clean = response.content[0].text.strip()
@@ -220,4 +273,4 @@ SLIDE RULES:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v4-topic-scraper"}
+    return {"status": "ok", "version": "v5-research"}
