@@ -82,7 +82,7 @@ def search_reddit(query, limit=20):
     try:
         url = f"https://www.reddit.com/search.json?q={query}&sort=top&t=week&limit={limit}"
         resp = httpx.get(url, headers=HEADERS, timeout=15, follow_redirects=True)
-        if resp.status_code == 200:
+        if resp.status_code in [200, 201]:
             data = resp.json()
             for child in data.get("data", {}).get("children", []):
                 p = child.get("data", {})
@@ -114,7 +114,7 @@ def search_reddit(query, limit=20):
         try:
             url = f"https://www.reddit.com/r/{sub}/search.json?q={query}&restrict_sr=on&sort=top&t=month&limit=5"
             resp = httpx.get(url, headers=HEADERS, timeout=15, follow_redirects=True)
-            if resp.status_code == 200:
+            if resp.status_code in [200, 201]:
                 for child in resp.json().get("data", {}).get("children", []):
                     p = child.get("data", {})
                     if p.get("stickied"):
@@ -193,9 +193,9 @@ def scrape_instagram_hashtags(hashtags):
             "resultsLimit": 5,
         }
         resp = httpx.post(url, json=body, timeout=120)
-        print(f"  Apify hashtag response: {resp.status_code}, items: {len(resp.json()) if resp.status_code == 200 else 'N/A'}")
+        print(f"  Apify hashtag response: {resp.status_code}, items: {len(resp.json()) if resp.status_code in [200, 201] else 'N/A'}")
 
-        if resp.status_code == 200:
+        if resp.status_code in [200, 201]:
             items = resp.json()
             if isinstance(items, list):
                 for item in items:
@@ -224,9 +224,9 @@ def scrape_instagram_accounts(usernames):
             "resultsLimit": 3,
         }
         resp = httpx.post(url, json=body, timeout=120)
-        print(f"  Apify post response: {resp.status_code}, items: {len(resp.json()) if resp.status_code == 200 else 'N/A'}")
+        print(f"  Apify post response: {resp.status_code}, items: {len(resp.json()) if resp.status_code in [200, 201] else 'N/A'}")
 
-        if resp.status_code == 200:
+        if resp.status_code in [200, 201]:
             items = resp.json()
             if isinstance(items, list):
                 for item in items:
