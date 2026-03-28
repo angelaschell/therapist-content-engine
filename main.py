@@ -83,7 +83,7 @@ async def generate_manychat_flow(req: Request):
     return {"flow": response.content[0].text}
 
 
-# ─── SCRAPER + VIRAL ENDPOINTS ───
+# ─── SCRAPER ENDPOINTS ───
 
 DEMO_POSTS = [
     {"src":"reddit","sub":"r/GriefSupport","title":"Does anyone else feel guilty for laughing after losing a parent?","stats":"2,847 upvotes · 412 comments","excerpt":"My mom died 6 months ago and I caught myself genuinely laughing yesterday and immediately felt like the worst person alive.","tag":"naming unnamed grief"},
@@ -92,13 +92,12 @@ DEMO_POSTS = [
     {"src":"reddit","sub":"r/GriefSupport","title":"I hate when people say 'stay strong' at funerals","stats":"4,211 upvotes · 673 comments","excerpt":"Why is falling apart not an option? Why do I have to perform composure for YOUR comfort?","tag":"challenging platitudes"},
     {"src":"reddit","sub":"r/raisedbynarcissists","title":"I just realized I've been parenting my parent since I was 8","stats":"2,456 upvotes · 389 comments","excerpt":"I was the one checking if she was okay. I was the one managing her emotions. I was 8.","tag":"parentification"},
     {"src":"reddit","sub":"r/MotherlessDaughters","title":"Things nobody tells you about losing your mom young","stats":"1,678 upvotes · 234 comments","excerpt":"You become everyone else's therapist. You learn to swallow your feelings. Mother's Day becomes a minefield.","tag":"community identification"},
-    {"src":"reddit","sub":"r/CPTSD","title":"My body flinches before my brain even registers the threat","stats":"2,891 upvotes · 445 comments","excerpt":"Someone raises their voice and my whole nervous system goes offline. I didn't choose this response.","tag":"somatic awareness"},
-    {"src":"reddit","sub":"r/GriefSupport","title":"It's been 5 years and a song just made me ugly cry in the grocery store","stats":"3,567 upvotes · 521 comments","excerpt":"People think grief has a timeline. It doesn't. It just hides and then ambushes you in aisle 7.","tag":"grief has no timeline"},
 ]
 
 
 @app.get("/api/viral")
 async def get_viral():
+    """Return cached viral posts, or demo data if no cache."""
     try:
         from scraper import load_cache
         cache = load_cache()
@@ -107,31 +106,44 @@ async def get_viral():
                 "success": True,
                 "posts": cache["posts"],
                 "scraped_at": cache.get("scraped_at", "unknown"),
+                "topic": cache.get("topic", ""),
                 "source": "live"
             })
     except Exception as e:
-        print(f"Scraper cache error: {e}")
+        print(f"Cache error: {e}")
 
     return JSONResponse({
         "success": True,
         "posts": DEMO_POSTS,
         "scraped_at": "demo data",
+        "topic": "",
         "source": "demo"
     })
 
 
 @app.post("/api/scrape")
-async def trigger_scrape():
+async def trigger_scrape(req: Request):
+    """Scrape Reddit + Instagram based on a topic."""
+    try:
+        data = await req.json()
+        topic = data.get("topic", "grief mother loss")
+    except:
+        topic = "grief mother loss"
+
     try:
         from scraper import run_scraper
-        result = run_scraper()
+        result = run_scraper(topic)
         return JSONResponse({
             "success": True,
             "total": result.get("total_found", 0),
             "saved": len(result.get("posts", [])),
-            "scraped_at": result.get("scraped_at", "")
+            "posts": result.get("posts", []),
+            "scraped_at": result.get("scraped_at", ""),
+            "topic": topic
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
@@ -168,7 +180,6 @@ async def generate_carousel(req: Request):
     pillar = data.get("pillar", "Grief Education")
     tone = data.get("tone", "clinical-but-warm")
 
-    # Build a rich prompt that connects viral content to the carousel
     context_block = ""
     if viral_context:
         context_block += f"\n\nVIRAL POSTS THAT ARE PERFORMING RIGHT NOW (base your carousel on these):\n{viral_context}"
@@ -193,12 +204,11 @@ Return ONLY valid JSON, no markdown backticks:
 {{"slides": [{{"type":"hook","upper":"BOLD UPPERCASE HOOK","italic":"italic subtitle."}},{{"type":"body","html":"Sentence case with <em>italic emphasis</em> on emotional words."}},{{"type":"body","html":"Next point."}},{{"type":"body","html":"Continue."}},{{"type":"body","html":"Deepen."}},{{"type":"body","html":"More."}},{{"type":"body","html":"Almost."}},{{"type":"body","html":"Validate."}},{{"type":"body","html":"Bridge."}},{{"type":"cta","top":"This is what I work with.","bottom":"Comment <strong>WORTHY</strong> for my free resource."}}],"caption":"Full caption with hashtags","trigger":"WORTHY"}}
 
 SLIDE RULES:
-- Slide 1: type "hook" with uppercase title and italic subtitle. This should echo the exact language from the viral posts.
-- Slides 2-9: type "body" with sentence case. Use <em> on emotional gut-punch words ONLY. Each slide should name a SPECIFIC experience from the viral posts, not generic grief content.
+- Slide 1: type "hook" with uppercase title and italic subtitle. Echo the language from viral posts.
+- Slides 2-9: type "body" with sentence case. Use <em> on emotional gut-punch words ONLY. Name SPECIFIC experiences from the viral posts.
 - Slide 10: type "cta"
 - MAX 25 words per slide.
-- Angela's voice. No em dashes. No fluff.
-- The more specific and recognizable, the better. People share content that makes them feel SEEN."""}]
+- Angela's voice. No em dashes. No fluff."""}]
     )
     try:
         clean = response.content[0].text.strip()
@@ -210,4 +220,4 @@ SLIDE RULES:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v3-context"}
+    return {"status": "ok", "version": "v4-topic-scraper"}
