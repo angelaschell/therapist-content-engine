@@ -360,11 +360,39 @@ function analyzeStyle(){var u=document.getElementById("insta-urls").value.trim()
 function copyIt(outId,btnId,orig){navigator.clipboard.writeText(document.getElementById(outId).textContent);var b=document.getElementById(btnId);b.textContent="Copied!";setTimeout(function(){b.textContent=orig},2200)}
 
 // ═══ CAROUSEL BUILDER ═══
-function goStep(n){for(var i=1;i<=5;i++){document.getElementById("step"+i).classList.toggle("active",i===n);var p=document.getElementById("sp"+i);p.className="step-pill";if(i<n)p.classList.add("done");if(i===n)p.classList.add("current")}window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});if(n===5)loadCaption()}
+function goStep(n){for(var i=1;i<=5;i++){document.getElementById("step"+i).classList.toggle("active",i===n);var p=document.getElementById("sp"+i);p.className="step-pill";if(i<n)p.classList.add("done");if(i===n)p.classList.add("current")}window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});if(n===2)searchByTopic();if(n===5)loadCaption()}
 function skipToGen(){var t=document.getElementById("b-topic").value.trim();if(!t){alert("Enter a topic first.");return}savedViralContext="";savedAnalysisContext="";goStep(3);genSlidesCopy(t)}
-function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success){viralPosts=d.posts;renderFG();var status=d.source==="live"?"Last scraped: "+d.scraped_at:"Using demo data (hit Refresh Scraper for live posts)";document.getElementById("scrapeStatus").textContent=status}}).catch(function(){document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not load feed.</div>'})}
-function refreshScraper(){var b=document.getElementById("refreshBtn");b.textContent="Scraping...";b.disabled=true;document.getElementById("scrapeStatus").textContent="Scraping Reddit (20-30 sec)...";fetch(BACKEND+"/api/scrape",{method:"POST"}).then(function(r){return r.json()}).then(function(d){if(d.success){b.textContent="Done!";document.getElementById("scrapeStatus").textContent="Scraped "+d.saved+" posts at "+d.scraped_at;viralSelected=[];document.getElementById("selCount").textContent="0 selected";document.getElementById("analyzeBtn").disabled=true;loadViralFeed()}else{b.textContent="Error";document.getElementById("scrapeStatus").textContent="Scrape failed: "+(d.error||"unknown")}}).catch(function(e){b.textContent="Error";document.getElementById("scrapeStatus").textContent="Scrape failed: "+e.message}).finally(function(){setTimeout(function(){b.textContent="Refresh Scraper";b.disabled=false},3000)})}
-function renderFG(){var g=document.getElementById("feedGrid");g.innerHTML="";viralPosts.forEach(function(p,i){var c=document.createElement("div");c.className="fc";c.onclick=function(){c.classList.toggle("sel");var x=viralSelected.indexOf(i);if(x>-1)viralSelected.splice(x,1);else viralSelected.push(i);document.getElementById("selCount").textContent=viralSelected.length+" selected";document.getElementById("analyzeBtn").disabled=viralSelected.length===0};c.innerHTML='<div class="fc-dot"></div><span class="fc-src">'+(p.sub||p.src)+'</span><h3>'+p.title+'</h3><div class="fc-stats">'+p.stats+'</div><p class="fc-ex">'+p.excerpt+'</p><span class="fc-tag">'+p.tag+'</span>';g.appendChild(c)})}
+
+function searchByTopic(){
+  var topic=document.getElementById("b-topic").value.trim()||"grief mother loss attachment";
+  viralSelected=[];
+  document.getElementById("selCount").textContent="0 selected";
+  document.getElementById("analyzeBtn").disabled=true;
+  document.getElementById("scrapeStatus").textContent="Searching for: "+topic+"...";
+  document.getElementById("feedGrid").innerHTML='<div class="v-loader"><p>Searching Reddit + Instagram...</p></div>';
+  fetch(BACKEND+"/api/scrape",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){
+    if(d.success&&d.posts&&d.posts.length>0){
+      viralPosts=d.posts;
+      renderFG();
+      var reddit=d.posts.filter(function(p){return p.src==="reddit"}).length;
+      var ig=d.posts.filter(function(p){return p.src==="instagram"}).length;
+      document.getElementById("scrapeStatus").textContent="Found "+d.posts.length+" posts ("+reddit+" Reddit, "+ig+" Instagram) · "+d.scraped_at;
+    }else if(d.success){
+      document.getElementById("scrapeStatus").textContent="No results. Try a different topic.";
+      document.getElementById("feedGrid").innerHTML='<div class="v-err">No posts found for "'+topic+'". Try broader keywords like "grief" or "mother loss".</div>';
+    }else{
+      document.getElementById("scrapeStatus").textContent="Error: "+(d.error||"unknown");
+      document.getElementById("feedGrid").innerHTML='<div class="v-err">'+(d.error||"Scrape failed")+'</div>';
+    }
+  }).catch(function(e){
+    document.getElementById("scrapeStatus").textContent="Error: "+e.message;
+    document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not reach scraper. Backend may be starting up.</div>';
+  })
+}
+
+function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;renderFG();var status=d.source==="live"?"Last scraped: "+d.scraped_at+" · Topic: "+(d.topic||"general"):"Ready to search";document.getElementById("scrapeStatus").textContent=status}}).catch(function(){})}
+function refreshScraper(){searchByTopic()}
+function renderFG(){var g=document.getElementById("feedGrid");g.innerHTML="";viralPosts.forEach(function(p,i){var c=document.createElement("div");c.className="fc";c.onclick=function(){c.classList.toggle("sel");var x=viralSelected.indexOf(i);if(x>-1)viralSelected.splice(x,1);else viralSelected.push(i);document.getElementById("selCount").textContent=viralSelected.length+" selected";document.getElementById("analyzeBtn").disabled=viralSelected.length===0};var srcClass=p.src==="instagram"?"fc-src-ig":"fc-src-rd";var srcStyle=p.src==="instagram"?'background:rgba(210,199,255,.12);color:#D2C7FF':'background:rgba(255,107,53,.12);color:#ff8a5c';c.innerHTML='<div class="fc-dot"></div><span class="fc-src" style="'+srcStyle+'">'+(p.sub||p.src)+'</span><h3>'+p.title+'</h3><div class="fc-stats">'+p.stats+'</div><p class="fc-ex">'+p.excerpt+'</p><span class="fc-tag">'+p.tag+'</span>';g.appendChild(c)})}
 var savedViralContext="";var savedAnalysisContext="";
 function runAnalysis(){var b=document.getElementById("analyzeBtn");b.textContent="Analyzing...";b.disabled=true;goStep(3);var sp=viralSelected.map(function(i){return viralPosts[i]});var ut=document.getElementById("b-topic").value.trim();savedViralContext=sp.map(function(p){return"Title: "+p.title+"\nExcerpt: "+p.excerpt+"\nEngagement: "+p.stats+"\nPattern: "+p.tag}).join("\n\n");fetch(BACKEND+"/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({posts:sp})}).then(function(r){return r.json()}).then(function(d){var topic=ut;if(d.success&&typeof d.data==="object"){savedAnalysisContext="";if(d.data.patterns)savedAnalysisContext+="Patterns: "+d.data.patterns.join("; ")+"\n";if(d.data.hooks)savedAnalysisContext+="Hooks: "+d.data.hooks.join("; ")+"\n";if(d.data.angle)savedAnalysisContext+="Angle: "+d.data.angle+"\n";if(!topic&&d.data.suggested_topic)topic=d.data.suggested_topic}if(!topic)topic="grief and attachment trauma nobody talks about";genSlidesCopy(topic)}).catch(function(){genSlidesCopy(ut||"grief and attachment trauma nobody talks about")}).finally(function(){b.textContent="Analyze + Write Slides";b.disabled=false})}
 function genSlidesCopy(topic){document.getElementById("editLoader").style.display="block";document.getElementById("slideEditors").innerHTML="";document.getElementById("editActions").style.display="none";fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic,viral_context:savedViralContext,analysis_context:savedAnalysisContext,pillar:document.getElementById("b-pillar").value,tone:document.getElementById("b-tone").value})}).then(function(r){return r.json()}).then(function(d){document.getElementById("editLoader").style.display="none";if(d.success&&!d.raw&&d.data&&d.data.slides){carouselSlides=d.data.slides;captionText=d.data.caption||"";buildEditors()}else{document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not parse. Try again.</div><div class="btns"><button class="btn" onclick="genSlidesCopy(\''+topic.replace(/'/g,"\\'")+'\')">Retry</button></div>'}}).catch(function(e){document.getElementById("editLoader").style.display="none";document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+"</div>"})}
