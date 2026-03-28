@@ -4,110 +4,131 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Angela Schellenberg — Content Engine</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#3B2145;font-family:'Jost',sans-serif;color:#F7EBE0;min-height:100vh}
-.header{background:linear-gradient(135deg,#1e1128,#2a1733);border-bottom:1px solid rgba(144,169,236,0.2);padding:18px 28px;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600}
-.sub{font-size:10px;letter-spacing:.3em;color:#90A9EC;text-transform:uppercase;margin-bottom:5px;font-weight:500}
-.handle{font-size:12px;color:#D2C7FF;margin-bottom:3px;text-align:right}
-.status{display:flex;gap:6px;align-items:center;justify-content:flex-end}
-.dot{width:7px;height:7px;border-radius:50%;background:#e87070}
-.status-txt{font-size:11px;color:rgba(210,199,255,.45)}
-.tabs{background:#2a1733;border-bottom:1px solid rgba(144,169,236,.12);display:flex;padding:0 24px;overflow-x:auto}
-.tab{background:none;border:none;color:rgba(247,235,224,.4);padding:14px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap}
-.tab.active{color:#90A9EC;border-bottom-color:#90A9EC;font-weight:500}
-.main{max-width:800px;margin:0 auto;padding:28px 20px}
-.desc{color:rgba(210,199,255,.65);font-size:14px;margin-bottom:22px;line-height:1.6}
-.card{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.15);border-radius:14px;padding:22px;margin-bottom:14px}
-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;display:block;margin-bottom:6px;font-weight:500}
-select,textarea,input[type=text]{background:rgba(247,235,224,.07);border:1px solid rgba(144,169,236,.25);border-radius:8px;color:#F7EBE0;padding:10px 13px;font-size:14px;width:100%;font-family:'Jost',sans-serif;outline:none;-webkit-appearance:none}
-textarea{resize:vertical;line-height:1.5;min-height:88px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:100vh}
+
+/* ═══ HEADER - matches angelaschellenberg.com ═══ */
+.hero{background:#F7EBE0;padding:40px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
+.hero-inner{max-width:700px;margin:0 auto}
+.hero-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:16px;box-shadow:0 4px 20px rgba(59,33,69,.08)}
+.hero-greeting{font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:6px;font-weight:500}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:#3B2145;margin-bottom:6px;line-height:1.2}
+.hero-handle{font-size:13px;color:rgba(59,33,69,.35);margin-bottom:4px}
+.hero-status{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:18px}
+.hero-dot{width:7px;height:7px;border-radius:50%;background:#e87070}
+.hero-status-txt{font-size:11px;color:rgba(59,33,69,.3)}
+
+/* ═══ TABS ═══ */
+.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 24px;overflow-x:auto;justify-content:center;gap:4px}
+.tab{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 18px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
+.tab:hover{color:rgba(59,33,69,.6)}
+.tab.active{color:#3B2145;border-bottom-color:#90A9EC}
+
+/* ═══ MAIN ═══ */
+.main{max-width:760px;margin:0 auto;padding:32px 20px 60px}
+.desc{color:rgba(59,33,69,.5);font-size:14px;margin-bottom:22px;line-height:1.7;font-family:'Cormorant Garamond',serif;font-size:17px}
+
+/* ═══ CARDS ═══ */
+.card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.3);border-radius:14px;padding:24px;margin-bottom:16px;backdrop-filter:blur(8px)}
+label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;display:block;margin-bottom:6px;font-weight:500}
+select,textarea,input[type=text]{background:rgba(255,255,255,.7);border:1px solid rgba(210,199,255,.4);border-radius:8px;color:#3B2145;padding:11px 14px;font-size:14px;width:100%;font-family:'Jost',sans-serif;outline:none;-webkit-appearance:none;transition:border-color .25s}
+select:focus,textarea:focus{border-color:#90A9EC}
+textarea{resize:vertical;line-height:1.6;min-height:88px}
+option{background:#F7EBE0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:560px){.grid2{grid-template-columns:1fr}}
-.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center}
-.btn{background:#90A9EC;color:#3B2145;border:none;border-radius:8px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif}
-.btn:disabled{opacity:.5;cursor:default}
-.ghost{background:rgba(144,169,236,.13);color:#F7EBE0;border:none;border-radius:8px;padding:9px 15px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif}
-.out-wrap{margin-top:16px}
-.out-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;margin-bottom:7px;font-weight:500}
-.out{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.15);border-radius:10px;padding:20px;color:#F7EBE0;font-size:15px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;min-height:80px}
-.warn{background:rgba(255,198,150,.08);border:1px solid rgba(255,198,150,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:rgba(255,198,150,.8);margin-bottom:20px;line-height:1.55}
-.trig-section{margin-bottom:18px}
-.trig-group-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(210,199,255,.4);margin-bottom:9px;font-weight:500}
-.trig-btns{display:flex;flex-wrap:wrap;gap:7px}
-.trig-btn{border-radius:8px;padding:9px 15px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:500;font-size:13px;background:rgba(255,255,255,.05);color:#F7EBE0;border:1px solid rgba(144,169,236,.3)}
+
+/* ═══ BUTTONS ═══ */
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;align-items:center}
+.btn{background:#90A9EC;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;letter-spacing:.03em;transition:all .25s;box-shadow:0 2px 8px rgba(144,169,236,.2)}
+.btn:hover{background:#7d99e0;box-shadow:0 4px 14px rgba(144,169,236,.3)}
+.btn:disabled{opacity:.45;cursor:default;box-shadow:none}
+.ghost{background:rgba(210,199,255,.15);color:#3B2145;border:none;border-radius:8px;padding:10px 16px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
+.ghost:hover{background:rgba(210,199,255,.3)}
+
+/* ═══ OUTPUT ═══ */
+.out-wrap{margin-top:18px}
+.out-label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;margin-bottom:7px;font-weight:500}
+.out{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.25);border-radius:12px;padding:22px;color:#3B2145;font-size:16px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;min-height:80px}
+.warn{background:rgba(255,198,150,.1);border:1px solid rgba(255,198,150,.25);border-radius:8px;padding:12px 16px;font-size:13px;color:rgba(180,100,40,.7);margin-bottom:20px;line-height:1.55}
+
+/* ═══ TRIGGERS ═══ */
+.trig-section{margin-bottom:20px}
+.trig-group-label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:rgba(59,33,69,.3);margin-bottom:10px;font-weight:500}
+.trig-btns{display:flex;flex-wrap:wrap;gap:8px}
+.trig-btn{border-radius:8px;padding:10px 16px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:500;font-size:13px;background:rgba(210,199,255,.12);color:#3B2145;border:1px solid rgba(210,199,255,.3);transition:all .25s}
+.trig-btn:hover{background:rgba(210,199,255,.25);border-color:rgba(210,199,255,.5)}
 .flow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
-.vault-rule{font-size:15px;color:#F7EBE0;margin-bottom:9px;padding-left:13px;border-left:2px solid #90A9EC;line-height:1.5;font-family:'Cormorant Garamond',serif}
+
+/* ═══ BRAND VAULT ═══ */
+.vault-rule{font-size:16px;color:#3B2145;margin-bottom:10px;padding-left:14px;border-left:2px solid #90A9EC;line-height:1.6;font-family:'Cormorant Garamond',serif}
 .vault-bad{border-left-color:#e8796e}
-.vault-head{font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:500;margin-bottom:14px}
-.swatch-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.vault-head{font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-weight:500;margin-bottom:14px}
+.swatch-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
 .swatch{text-align:center}
-.swatch-box{width:100%;height:38px;border-radius:7px;border:1px solid rgba(255,255,255,.1);margin-bottom:5px}
-.swatch-name{font-size:10px;color:#D2C7FF}
-.swatch-hex{font-size:9px;color:rgba(247,235,224,.3)}
-.retired{margin-top:12px;padding:9px 13px;background:rgba(232,121,110,.09);border-radius:6px;border:1px solid rgba(232,121,110,.18)}
-.retired strong{font-size:10px;color:#e8796e;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
-.retired span{font-size:11px;color:rgba(247,235,224,.4)}
+.swatch-box{width:100%;height:42px;border-radius:8px;border:1px solid rgba(59,33,69,.08);margin-bottom:5px}
+.swatch-name{font-size:10px;color:#3B2145;opacity:.6}
+.swatch-hex{font-size:9px;color:rgba(59,33,69,.3)}
+.retired{margin-top:14px;padding:10px 14px;background:rgba(232,121,110,.06);border-radius:8px;border:1px solid rgba(232,121,110,.15)}
+.retired strong{font-size:10px;color:#e8796e;letter-spacing:.15em;text-transform:uppercase;display:block;margin-bottom:4px}
+.retired span{font-size:11px;color:rgba(59,33,69,.35)}
 .trig-map{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.trig-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.trig-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(59,33,69,.04)}
 .trig-kw{font-size:12px;font-weight:600;min-width:130px}
-.trig-offer{font-size:12px;color:rgba(247,235,224,.5);line-height:1.4}
-.upload-zone{border:2px dashed rgba(144,169,236,.3);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:16px}
-.upload-zone:hover{border-color:rgba(144,169,236,.6)}
-.upload-zone.drag-over{border-color:#90A9EC;background:rgba(144,169,236,.05)}
-.upload-zone-text{font-size:14px;color:rgba(210,199,255,.6);line-height:1.6}
+.trig-offer{font-size:12px;color:rgba(59,33,69,.4);line-height:1.4}
+.upload-zone{border:2px dashed rgba(210,199,255,.4);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color .25s;margin-bottom:16px;background:rgba(255,255,255,.3)}
+.upload-zone:hover{border-color:#90A9EC}
+.upload-zone-text{font-size:14px;color:rgba(59,33,69,.4);line-height:1.6}
 .upload-zone-text strong{color:#90A9EC;display:block;font-size:16px;margin-bottom:6px}
 .asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
-.asset-item{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.15);border-radius:10px;overflow:hidden}
+.asset-item{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:10px;overflow:hidden}
 .asset-img{width:100%;height:120px;object-fit:cover}
-.asset-name{font-size:11px;color:rgba(210,199,255,.5);padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.style-guide-out{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.15);border-radius:10px;padding:20px;color:#F7EBE0;font-size:14px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;margin-top:14px}
-option{background:#2a1733}
+.asset-name{font-size:11px;color:rgba(59,33,69,.4);padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.style-guide-out{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.25);border-radius:12px;padding:22px;color:#3B2145;font-size:15px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;margin-top:14px}
 
 /* ═══ CAROUSEL BUILDER STEPS ═══ */
 .step{display:none;animation:fadeUp .4s ease}
 .step.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.step-bar{display:flex;align-items:center;gap:6px;margin-bottom:28px;padding:16px 0;border-bottom:1px solid rgba(59,33,69,.06);flex-wrap:wrap}
+.step-pill{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:20px;border:1px solid rgba(210,199,255,.25);color:rgba(59,33,69,.25);transition:all .3s;font-family:'Jost',sans-serif;font-weight:500}
+.step-pill.done{background:rgba(144,169,236,.1);border-color:rgba(144,169,236,.3);color:#90A9EC}
+.step-pill.current{background:#90A9EC;border-color:#90A9EC;color:#fff}
+.step-arrow{color:rgba(59,33,69,.12);font-size:11px}
+.step-title{font-family:'Cormorant Garamond',serif;font-size:24px;color:#3B2145;margin-bottom:6px;font-weight:600}
+.step-sub{font-size:14px;color:rgba(59,33,69,.4);margin-bottom:20px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-size:16px}
 
-.step-bar{display:flex;align-items:center;gap:6px;margin-bottom:24px;padding:14px 0;border-bottom:1px solid rgba(144,169,236,.1)}
-.step-pill{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 14px;border-radius:20px;border:1px solid rgba(144,169,236,.12);color:rgba(210,199,255,.3);transition:all .3s;font-family:'Jost',sans-serif;font-weight:500}
-.step-pill.done{background:rgba(144,169,236,.1);border-color:rgba(144,169,236,.25);color:#90A9EC}
-.step-pill.current{background:#90A9EC;border-color:#90A9EC;color:#3B2145}
-.step-arrow{color:rgba(210,199,255,.15);font-size:11px}
-.step-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:#D2C7FF;margin-bottom:6px}
-.step-sub{font-size:13px;color:rgba(210,199,255,.45);margin-bottom:18px;line-height:1.5}
-
-/* Viral feed cards */
+/* Viral cards */
 .feed-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 @media(max-width:560px){.feed-grid{grid-template-columns:1fr}}
-.fc{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.12);border-radius:10px;padding:18px;cursor:pointer;transition:all .25s;position:relative}
-.fc:hover{border-color:rgba(144,169,236,.25);background:rgba(255,255,255,.06)}
+.fc{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:10px;padding:18px;cursor:pointer;transition:all .25s;position:relative}
+.fc:hover{border-color:rgba(144,169,236,.4);background:rgba(255,255,255,.7)}
 .fc.sel{border-color:#90A9EC;background:rgba(144,169,236,.08)}
-.fc .fc-dot{position:absolute;top:12px;right:12px;width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(144,169,236,.2);transition:all .25s}
+.fc .fc-dot{position:absolute;top:12px;right:12px;width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(210,199,255,.3);transition:all .25s}
 .fc.sel .fc-dot{background:#90A9EC;border-color:#90A9EC}
-.fc .fc-src{display:inline-block;font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-bottom:8px;background:rgba(255,107,53,.12);color:#ff8a5c}
-.fc h3{font-family:'Cormorant Garamond',serif;font-size:15px;color:#F7EBE0;line-height:1.3;margin-bottom:5px}
-.fc .fc-stats{font-size:11px;color:#D2C7FF;opacity:.4;margin-bottom:6px}
-.fc .fc-ex{font-size:13px;color:#F7EBE0;opacity:.4;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.fc .fc-tag{display:inline-block;margin-top:7px;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(210,199,255,.06);color:#D2C7FF;opacity:.5}
-.sel-count{font-size:12px;color:#D2C7FF;opacity:.4}
+.fc .fc-src{display:inline-block;font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:8px;background:rgba(144,169,236,.1);color:#90A9EC}
+.fc h3{font-family:'Cormorant Garamond',serif;font-size:16px;color:#3B2145;line-height:1.3;margin-bottom:5px;font-weight:600}
+.fc .fc-stats{font-size:11px;color:#90A9EC;opacity:.6;margin-bottom:6px}
+.fc .fc-ex{font-size:13px;color:rgba(59,33,69,.45);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc .fc-tag{display:inline-block;margin-top:7px;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(210,199,255,.12);color:rgba(59,33,69,.35)}
+.sel-count{font-size:12px;color:rgba(59,33,69,.35)}
 
-/* Slide editor textareas */
-.slide-editor{margin-bottom:12px}
+/* Slide editors */
+.slide-editor{margin-bottom:14px}
 .slide-editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.slide-editor-num{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#D2C7FF;opacity:.4}
-.slide-editor-type{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(144,169,236,.1);color:#90A9EC}
-.slide-editor textarea{min-height:55px;font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.5}
+.slide-editor-num{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(59,33,69,.3)}
+.slide-editor-type{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:4px;background:rgba(144,169,236,.1);color:#90A9EC;font-weight:500}
+.slide-editor textarea{min-height:55px;font-family:'Cormorant Garamond',serif;font-size:17px;line-height:1.5}
 
 /* Rendered carousel slides */
-.cr-scroll{display:flex;gap:20px;overflow-x:auto;padding:8px 0 28px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.cr-scroll{display:flex;gap:22px;overflow-x:auto;padding:8px 0 28px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
 .cr-scroll::-webkit-scrollbar{height:3px}
-.cr-scroll::-webkit-scrollbar-thumb{background:rgba(144,169,236,.2);border-radius:3px}
+.cr-scroll::-webkit-scrollbar-thumb{background:rgba(210,199,255,.3);border-radius:3px}
 .sl-wrap{flex-shrink:0;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:6px}
-.sl-num{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#D2C7FF;opacity:.3}
-.slide{width:360px;height:360px;background:#F7EBE0;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:2px;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.sl-num{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(59,33,69,.2)}
+.slide{width:360px;height:360px;background:#F7EBE0;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:2px;box-shadow:0 6px 24px rgba(59,33,69,.1)}
 @media(max-width:560px){.slide{width:300px;height:300px}}
 .slide.hook-s .sl-text{padding:0 44px}
 .slide.hook-s .sl-upper{font-family:'Playfair Display',serif;font-weight:700;font-size:34px;color:#B8ADE0;text-transform:uppercase;line-height:1.05;letter-spacing:1px;margin-bottom:6px}
@@ -120,29 +141,43 @@ option{background:#2a1733}
 .slide.cta-s .sl-cta-bot strong{font-weight:700;text-transform:uppercase}
 .slide .sl-wm{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:7.5px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:#3B2145;opacity:.5}
 
-.caption-box{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.12);border-radius:10px;padding:20px;margin-top:20px}
-.caption-box h4{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;opacity:.4;margin-bottom:10px;font-weight:500}
-.caption-box pre{font-family:'Jost',sans-serif;font-size:13px;color:#F7EBE0;opacity:.6;line-height:1.7;white-space:pre-wrap;word-wrap:break-word}
-.trig-badge{display:inline-block;padding:4px 13px;background:rgba(144,169,236,.1);border:1px solid rgba(144,169,236,.2);border-radius:5px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#90A9EC;font-weight:500}
-.cost-bar{display:flex;gap:18px;flex-wrap:wrap;padding:12px 18px;background:rgba(255,255,255,.02);border:1px solid rgba(144,169,236,.06);border-radius:8px;margin-top:20px}
-.cost-item{font-size:11px;color:#D2C7FF;opacity:.35}
-.cost-item strong{color:#F7EBE0;opacity:1;font-weight:500}
+.caption-box{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.25);border-radius:12px;padding:22px;margin-top:22px}
+.caption-box h4{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;margin-bottom:10px;font-weight:500}
+.trig-badge{display:inline-block;padding:5px 14px;background:rgba(144,169,236,.1);border:1px solid rgba(144,169,236,.25);border-radius:6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#90A9EC;font-weight:500}
+.cost-bar{display:flex;gap:18px;flex-wrap:wrap;padding:14px 20px;background:rgba(255,255,255,.3);border:1px solid rgba(210,199,255,.15);border-radius:8px;margin-top:22px}
+.cost-item{font-size:11px;color:rgba(59,33,69,.3)}
+.cost-item strong{color:#3B2145;font-weight:500}
 .v-loader{text-align:center;padding:40px 0}
-.v-loader p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:#D2C7FF;opacity:.4;animation:vb 2.5s ease-in-out infinite}
-@keyframes vb{0%,100%{opacity:.2}50%{opacity:.55}}
-.v-err{color:#ff8a5c;font-size:13px;padding:14px;background:rgba(255,107,53,.08);border-radius:8px;margin-bottom:14px}
-.analysis-card{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.12);border-radius:10px;padding:20px;margin-bottom:14px}
-.analysis-card h3{font-family:'Cormorant Garamond',serif;font-size:17px;color:#D2C7FF;margin-bottom:10px}
-.analysis-card p{font-size:14px;color:#F7EBE0;opacity:.55;line-height:1.7;margin-bottom:6px}
+.v-loader p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:#90A9EC;opacity:.5;animation:vb 2.5s ease-in-out infinite}
+@keyframes vb{0%,100%{opacity:.25}50%{opacity:.6}}
+.v-err{color:#c45a4a;font-size:13px;padding:14px;background:rgba(232,121,110,.06);border:1px solid rgba(232,121,110,.15);border-radius:8px;margin-bottom:14px}
+.analysis-card{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:12px;padding:22px;margin-bottom:14px}
+.analysis-card h3{font-family:'Cormorant Garamond',serif;font-size:18px;color:#3B2145;margin-bottom:10px;font-weight:600}
+.analysis-card p{font-size:15px;color:rgba(59,33,69,.55);line-height:1.7;margin-bottom:6px;font-family:'Cormorant Garamond',serif}
 .analysis-card ul{list-style:none;margin-top:6px}
-.analysis-card li{font-size:13px;color:#F7EBE0;opacity:.5;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.5}
+.analysis-card li{font-size:14px;color:rgba(59,33,69,.5);padding:6px 0;border-bottom:1px solid rgba(59,33,69,.04);line-height:1.6;font-family:'Cormorant Garamond',serif}
+
+/* ═══ FOOTER ═══ */
+.footer{text-align:center;padding:30px 20px;border-top:1px solid rgba(59,33,69,.05);margin-top:40px}
+.footer p{font-size:11px;color:rgba(59,33,69,.2);letter-spacing:.1em}
 </style>
 </head>
 <body>
-<div class="header">
-  <div><div class="sub">Angela Schellenberg</div><h1>Content Engine</h1></div>
-  <div><div class="handle">@angelaschellenberg</div><div class="status"><div class="dot" id="dot"></div><div class="status-txt" id="status-txt">Checking...</div></div></div>
+
+<!-- ═══ HEADER WITH PHOTO ═══ -->
+<div class="hero">
+  <div class="hero-inner">
+    <img class="hero-photo" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela Schellenberg">
+    <div class="hero-greeting">Content Engine</div>
+    <h1>Angela Schellenberg</h1>
+    <div class="hero-handle">@angelaschellenberg</div>
+    <div class="hero-status">
+      <div class="hero-dot" id="dot"></div>
+      <div class="hero-status-txt" id="status-txt">Checking...</div>
+    </div>
+  </div>
 </div>
+
 <div class="tabs">
   <button class="tab" onclick="showTab('content',this)">Content Studio</button>
   <button class="tab" onclick="showTab('dm',this)">DM Engine</button>
@@ -152,7 +187,7 @@ option{background:#2a1733}
 </div>
 <div class="main">
 
-<!-- CONTENT STUDIO (unchanged) -->
+<!-- CONTENT STUDIO -->
 <div id="content" class="tab-panel" style="display:none">
   <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
   <div class="card">
@@ -162,27 +197,29 @@ option{background:#2a1733}
     </div>
     <div class="grid2">
       <div><label>Tone</label><select id="tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div>
-      <div><label>ManyChat CTA (optional)</label><select id="cta"><option value="">No CTA</option><option value="HEAL">HEAL - 1:1 Session</option><option value="UNTANGLE">UNTANGLE - 1:1 Session</option><option value="STEADY">STEADY - 1:1 Session</option><option value="MALIBURETREAT">MALIBURETREAT - Retreat</option><option value="UNLEARN">UNLEARN - Mother Hunger Course</option><option value="GRIEFRELIEF">GRIEFRELIEF - Grief Series</option><option value="TOOLS">TOOLS - 101 Tools</option><option value="WORTHY">WORTHY - Starter Kit</option><option value="EQUINE">EQUINE - Equine Product</option><option value="MOM">MOM - Community</option><option value="EMDR">EMDR - EMDR Therapy</option></select></div>
+      <div><label>ManyChat CTA</label><select id="cta"><option value="">No CTA</option><option value="HEAL">HEAL</option><option value="UNTANGLE">UNTANGLE</option><option value="STEADY">STEADY</option><option value="MALIBURETREAT">MALIBURETREAT</option><option value="UNLEARN">UNLEARN</option><option value="GRIEFRELIEF">GRIEFRELIEF</option><option value="TOOLS">TOOLS</option><option value="WORTHY">WORTHY</option><option value="EQUINE">EQUINE</option><option value="MOM">MOM</option><option value="EMDR">EMDR</option></select></div>
     </div>
-    <div style="margin-bottom:4px"><label>Topic / Angle / Hook Idea</label><textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea></div>
+    <label>Topic / Angle / Hook Idea</label>
+    <textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea>
     <div class="btns"><button class="btn" id="gen-btn" onclick="genContent()">Generate Content</button><button class="ghost" id="copy-content" style="display:none" onclick="copyIt('content-out','copy-content','Copy')">Copy</button><button class="ghost" id="clear-btn" style="display:none" onclick="clearContent()">Clear</button></div>
   </div>
   <div id="content-out-wrap" style="display:none" class="out-wrap"><div class="out-label">Output</div><div class="out" id="content-out"></div></div>
 </div>
 
-<!-- DM ENGINE (unchanged) -->
+<!-- DM ENGINE -->
 <div id="dm" class="tab-panel" style="display:none">
   <p class="desc">Paste an incoming DM. Get a human Angela-voiced response plus the right trigger.</p>
   <div class="warn">Copy responses here and paste into ManyChat flows or send manually.</div>
   <div class="card">
     <div style="margin-bottom:12px"><label>Incoming DM</label><textarea id="dm-in" style="min-height:100px" placeholder="Paste the DM exactly as it came in..."></textarea></div>
-    <div style="margin-bottom:4px"><label>Lead Temperature</label><select id="lead-temp"><option>Cold follower - first contact</option><option>Warm - mentioned a pain point</option><option>Hot - asking about a specific offer</option><option>Returning or past client</option><option>Peer or collaborator</option></select></div>
+    <label>Lead Temperature</label>
+    <select id="lead-temp"><option>Cold follower - first contact</option><option>Warm - mentioned a pain point</option><option>Hot - asking about a specific offer</option><option>Returning or past client</option><option>Peer or collaborator</option></select>
     <div class="btns"><button class="btn" id="dm-btn" onclick="genDM()">Generate DM Response</button><button class="ghost" id="copy-dm" style="display:none" onclick="copyIt('dm-out','copy-dm','Copy')">Copy</button></div>
   </div>
   <div id="dm-out-wrap" style="display:none" class="out-wrap"><div class="out-label">Response + Trigger Suggestion</div><div class="out" id="dm-out"></div></div>
 </div>
 
-<!-- MANYCHAT FLOWS (unchanged) -->
+<!-- MANYCHAT FLOWS -->
 <div id="flows" class="tab-panel" style="display:none">
   <p class="desc">Click any trigger to generate a complete 3-message ManyChat sequence.</p>
   <div class="trig-section"><div class="trig-group-label">1:1 Therapy</div><div class="trig-btns"><button class="trig-btn" onclick="genFlow('HEAL','1:1 Therapy Session','#90A9EC',this)">HEAL</button><button class="trig-btn" onclick="genFlow('UNTANGLE','1:1 Therapy Session','#90A9EC',this)">UNTANGLE</button><button class="trig-btn" onclick="genFlow('STEADY','1:1 Therapy Session','#90A9EC',this)">STEADY</button><button class="trig-btn" onclick="genFlow('EMDR','EMDR Therapy','#90A9EC',this)">EMDR</button></div></div>
@@ -193,398 +230,106 @@ option{background:#2a1733}
   <div id="flow-out-wrap" style="display:none" class="out-wrap"><div class="flow-header"><div class="out-label" id="flow-label"></div><button class="ghost" id="copy-flow" onclick="copyIt('flow-out','copy-flow','Copy All 3 Messages')">Copy All 3 Messages</button></div><div class="out" id="flow-out"></div></div>
 </div>
 
-<!-- BRAND VAULT (unchanged) -->
+<!-- BRAND VAULT -->
 <div id="vault" class="tab-panel" style="display:none">
-  <p class="desc">Your brand reference and style library. Upload carousel examples, paste Instagram accounts you love, and let Claude analyze your style.</p>
-  <div class="card"><div class="vault-head" style="color:#FFC696">Style Library</div><label>Upload Carousel Examples</label><div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"><div class="upload-zone-text"><strong>Drop images here or click to browse</strong>JPG, PNG</div></div><input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)"><div id="asset-grid" class="asset-grid"></div><div style="margin-top:16px"><label>Instagram Accounts You Love</label><textarea id="insta-urls" style="min-height:70px" placeholder="e.g. @lori.gottlieb @nedratawwab"></textarea></div><div style="margin-top:12px"><label>Style Notes (optional)</label><textarea id="style-notes" style="min-height:60px" placeholder="e.g. I like clean layouts, bold hooks."></textarea></div><div class="btns" style="margin-top:16px"><button class="btn" id="analyze-btn" onclick="analyzeStyle()">Analyze My Style</button><button class="ghost" id="copy-style" style="display:none" onclick="copyIt('style-guide-out','copy-style','Copy Style Guide')">Copy Style Guide</button></div><div id="style-guide-out" class="style-guide-out" style="display:none"></div></div>
+  <p class="desc">Your brand reference and style library.</p>
+  <div class="card"><div class="vault-head" style="color:#FFC696">Style Library</div><label>Upload Carousel Examples</label><div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"><div class="upload-zone-text"><strong>Drop images here or click to browse</strong>JPG, PNG</div></div><input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)"><div id="asset-grid" class="asset-grid"></div><div style="margin-top:16px"><label>Instagram Accounts You Love</label><textarea id="insta-urls" style="min-height:70px" placeholder="e.g. @lori.gottlieb @nedratawwab"></textarea></div><div style="margin-top:12px"><label>Style Notes</label><textarea id="style-notes" style="min-height:60px" placeholder="e.g. Clean layouts, bold hooks."></textarea></div><div class="btns" style="margin-top:16px"><button class="btn" id="analyze-btn" onclick="analyzeStyle()">Analyze My Style</button><button class="ghost" id="copy-style" style="display:none" onclick="copyIt('style-guide-out','copy-style','Copy Style Guide')">Copy Style Guide</button></div><div id="style-guide-out" class="style-guide-out" style="display:none"></div></div>
   <div class="card"><div class="vault-head" style="color:#90A9EC">Voice Rules</div><div class="vault-rule">Direct. Clinical-but-accessible. No hedging. No fluff.</div><div class="vault-rule">Short punchy lines. Rhythm over grammar.</div><div class="vault-rule">Humor-forward when appropriate, especially equine content.</div><div class="vault-rule">Names experiences people feel but cannot articulate.</div><div class="vault-rule">Says it once, says it plainly. Never over-explains.</div></div>
   <div class="card"><div class="vault-head" style="color:#e8796e">Never Use</div><div class="vault-rule vault-bad">Em dashes (—)</div><div class="vault-rule vault-bad">"You are not broken" / "Healing era" / "Holding space"</div><div class="vault-rule vault-bad">"Trauma dump" / "Do the work"</div><div class="vault-rule vault-bad">Soft landing phrases / Generic AI language</div></div>
-  <div class="card"><div class="vault-head" style="color:#D2C7FF">2026 Brand Colors</div><div style="font-size:10px;color:rgba(210,199,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Parent Brand</div><div class="swatch-grid"><div class="swatch"><div class="swatch-box" style="background:#3B2145"></div><div class="swatch-name">Deep Fig</div><div class="swatch-hex">#3B2145</div></div><div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div><div class="swatch"><div class="swatch-box" style="background:#D3E0F1"></div><div class="swatch-name">Soft Blue</div><div class="swatch-hex">#D3E0F1</div></div><div class="swatch"><div class="swatch-box" style="background:#D2C7FF"></div><div class="swatch-name">Lavender</div><div class="swatch-hex">#D2C7FF</div></div><div class="swatch"><div class="swatch-box" style="background:#F7EBE0"></div><div class="swatch-name">Warm Cream</div><div class="swatch-hex">#F7EBE0</div></div></div><div class="retired"><strong>Retired — never use</strong><span>Teal #AADCDB · Sage #91CBB7 · Hot Pink #FB8CF0 · Navy #0d0d55 · Burnt Orange #E17F15</span></div></div>
+  <div class="card"><div class="vault-head" style="color:#D2C7FF">2026 Brand Colors</div><div style="font-size:10px;color:rgba(59,33,69,.3);letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px">Parent Brand</div><div class="swatch-grid"><div class="swatch"><div class="swatch-box" style="background:#3B2145"></div><div class="swatch-name">Deep Fig</div><div class="swatch-hex">#3B2145</div></div><div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div><div class="swatch"><div class="swatch-box" style="background:#D3E0F1"></div><div class="swatch-name">Soft Blue</div><div class="swatch-hex">#D3E0F1</div></div><div class="swatch"><div class="swatch-box" style="background:#D2C7FF"></div><div class="swatch-name">Lavender</div><div class="swatch-hex">#D2C7FF</div></div><div class="swatch"><div class="swatch-box" style="background:#F7EBE0"></div><div class="swatch-name">Warm Cream</div><div class="swatch-hex">#F7EBE0</div></div></div><div class="retired"><strong>Retired — never use</strong><span>Teal #AADCDB · Sage #91CBB7 · Hot Pink #FB8CF0 · Navy #0d0d55 · Burnt Orange #E17F15</span></div></div>
   <div class="card"><div class="vault-head" style="color:#F3DA8B">ManyChat Trigger Map</div><div class="trig-map"><div class="trig-row"><span class="trig-kw" style="color:#90A9EC">HEAL / UNTANGLE / STEADY</span><span class="trig-offer">1:1 Therapy</span></div><div class="trig-row"><span class="trig-kw" style="color:#90A9EC">EMDR</span><span class="trig-offer">EMDR Therapy</span></div><div class="trig-row"><span class="trig-kw" style="color:#FFC696">MALIBURETREAT</span><span class="trig-offer">Healing with Horses Retreat</span></div><div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">UNLEARN</span><span class="trig-offer">Mother Hunger Course</span></div><div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">GRIEFRELIEF / GRIEFTOOLS</span><span class="trig-offer">Grief Relief Series</span></div><div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TOOLS</span><span class="trig-offer">101 Tools</span></div><div class="trig-row"><span class="trig-kw" style="color:#D3E0F1">WORTHY</span><span class="trig-offer">Emotional Starter Kit</span></div><div class="trig-row"><span class="trig-kw" style="color:#FFC696">EQUINE / HORSEHEALING</span><span class="trig-offer">Equine Digital Product</span></div><div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">MOM</span><span class="trig-offer">Community Circle</span></div><div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">COMMUNITYCALL</span><span class="trig-offer">Motherless Daughters Group</span></div><div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TAPPERS</span><span class="trig-offer">Dharma Dr.</span></div></div></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════ -->
-<!-- CAROUSEL BUILDER - STEP BY STEP PIPELINE               -->
-<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ═══ CAROUSEL BUILDER - STEP BY STEP ═══ -->
 <div id="builder" class="tab-panel">
-
-  <!-- Step indicator bar -->
   <div class="step-bar" id="stepBar">
-    <span class="step-pill current" id="sp1">1. Topic</span>
-    <span class="step-arrow">&#8594;</span>
-    <span class="step-pill" id="sp2">2. Scraper</span>
-    <span class="step-arrow">&#8594;</span>
-    <span class="step-pill" id="sp3">3. Edit Slides</span>
-    <span class="step-arrow">&#8594;</span>
-    <span class="step-pill" id="sp4">4. Preview</span>
-    <span class="step-arrow">&#8594;</span>
-    <span class="step-pill" id="sp5">5. Caption + CTA</span>
+    <span class="step-pill current" id="sp1">1. Topic</span><span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp2">2. Scraper</span><span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp3">3. Edit</span><span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp4">4. Preview</span><span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp5">5. Caption</span>
   </div>
 
-  <!-- STEP 1: TOPIC PICKER -->
   <div class="step active" id="step1">
     <div class="step-title">Pick your topic</div>
-    <div class="step-sub">Choose a pillar and tone, then type your hook idea or leave it blank to let the scraper inspire you.</div>
+    <div class="step-sub">Choose a pillar and tone. Type a hook or leave blank and let the scraper inspire you.</div>
     <div class="card">
       <div class="grid2">
         <div><label>Pillar</label><select id="b-pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option></select></div>
         <div><label>Tone</label><select id="b-tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div>
       </div>
       <label>Topic / Hook Idea (optional)</label>
-      <textarea id="b-topic" style="min-height:70px" placeholder="e.g. The grief and trauma nobody talks about. Leave blank to pick from the scraper."></textarea>
-      <div class="btns">
-        <button class="btn" onclick="goStep(2)">Next: See What's Viral</button>
-        <button class="ghost" onclick="skipToGenerate()">Skip to Generate (I have a topic)</button>
-      </div>
+      <textarea id="b-topic" style="min-height:70px" placeholder="e.g. The grief and trauma nobody talks about"></textarea>
+      <div class="btns"><button class="btn" onclick="goStep(2)">Next: See What's Viral</button><button class="ghost" onclick="skipToGen()">Skip to Generate</button></div>
     </div>
   </div>
 
-  <!-- STEP 2: VIRAL SCRAPER -->
   <div class="step" id="step2">
-    <div class="step-title">What's going viral in your niche</div>
-    <div class="step-sub">Select posts that resonate. Claude will analyze patterns and suggest your carousel angle.</div>
+    <div class="step-title">What's going viral</div>
+    <div class="step-sub">Select the posts that resonate. Claude will analyze and write your slides.</div>
     <div class="feed-grid" id="feedGrid"></div>
-    <div class="btns">
-      <button class="btn" id="analyzeBtn" onclick="runAnalysis()" disabled>Analyze Selected + Write Slides</button>
-      <button class="ghost" onclick="goStep(1)">Back</button>
-      <span class="sel-count" id="selCount">0 selected</span>
-    </div>
+    <div class="btns"><button class="btn" id="analyzeBtn" onclick="runAnalysis()" disabled>Analyze + Write Slides</button><button class="ghost" onclick="goStep(1)">Back</button><span class="sel-count" id="selCount">0 selected</span></div>
   </div>
 
-  <!-- STEP 3: EDIT SLIDES -->
   <div class="step" id="step3">
     <div class="step-title">Edit your slides</div>
-    <div class="step-sub">Claude wrote these based on your topic + viral patterns. Edit any slide before rendering.</div>
+    <div class="step-sub">Claude wrote these. Edit any slide. Use *word* for italic emphasis.</div>
     <div class="v-loader" id="editLoader"><p>Writing in your voice...</p></div>
     <div id="slideEditors"></div>
-    <div id="editActions" style="display:none" class="btns">
-      <button class="btn" onclick="renderSlides()">Generate Carousel</button>
-      <button class="ghost" onclick="goStep(2)">Back to Scraper</button>
-    </div>
+    <div id="editActions" style="display:none" class="btns"><button class="btn" onclick="renderSlides()">Generate Carousel</button><button class="ghost" onclick="goStep(2)">Back</button></div>
   </div>
 
-  <!-- STEP 4: PREVIEW RENDERED SLIDES -->
   <div class="step" id="step4">
     <div class="step-title">Your carousel</div>
-    <div class="step-sub">Scroll through. These match your exact brand template.</div>
+    <div class="step-sub">Scroll through. These match your brand template.</div>
     <div id="renderedSlides"></div>
-    <div class="btns">
-      <button class="btn" onclick="goStep(5)">Next: Caption + CTA</button>
-      <button class="ghost" onclick="goStep(3)">Back to Edit</button>
-    </div>
+    <div class="btns"><button class="btn" onclick="goStep(5)">Next: Caption + CTA</button><button class="ghost" onclick="goStep(3)">Back to Edit</button></div>
   </div>
 
-  <!-- STEP 5: CAPTION + MANYCHAT TRIGGER -->
   <div class="step" id="step5">
     <div class="step-title">Caption + ManyChat Trigger</div>
-    <div class="step-sub">Your caption and CTA trigger. Copy and post.</div>
+    <div class="step-sub">Edit your caption, pick the trigger, copy and post.</div>
     <div class="v-loader" id="captionLoader"><p>Writing caption...</p></div>
     <div id="captionArea" style="display:none">
-      <div class="card">
-        <label>Caption</label>
-        <textarea id="captionEdit" style="min-height:200px;font-family:'Cormorant Garamond',serif;font-size:15px;line-height:1.7"></textarea>
-      </div>
-      <div class="card">
-        <label>ManyChat CTA Trigger</label>
-        <select id="b-cta-trigger">
-          <option value="WORTHY">WORTHY - Emotional Starter Kit</option>
-          <option value="HEAL">HEAL - 1:1 Session</option>
-          <option value="UNTANGLE">UNTANGLE - 1:1 Session</option>
-          <option value="MALIBURETREAT">MALIBURETREAT - Retreat</option>
-          <option value="UNLEARN">UNLEARN - Mother Hunger Course</option>
-          <option value="GRIEFRELIEF">GRIEFRELIEF - Grief Relief Series</option>
-          <option value="TOOLS">TOOLS - 101 Tools</option>
-          <option value="EQUINE">EQUINE - Equine Product</option>
-          <option value="MOM">MOM - Community Circle</option>
-          <option value="COMMUNITYCALL">COMMUNITYCALL - Motherless Daughters</option>
-          <option value="EMDR">EMDR - EMDR Therapy</option>
-          <option value="TAPPERS">TAPPERS - Dharma Dr.</option>
-        </select>
-        <div style="margin-top:12px"><span class="trig-badge" id="triggerDisplay">WORTHY</span></div>
-      </div>
+      <div class="card"><label>Caption</label><textarea id="captionEdit" style="min-height:200px;font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.7"></textarea></div>
+      <div class="card"><label>ManyChat CTA Trigger</label><select id="b-cta-trigger"><option value="WORTHY">WORTHY - Emotional Starter Kit</option><option value="HEAL">HEAL - 1:1 Session</option><option value="UNTANGLE">UNTANGLE - 1:1 Session</option><option value="MALIBURETREAT">MALIBURETREAT - Retreat</option><option value="UNLEARN">UNLEARN - Mother Hunger Course</option><option value="GRIEFRELIEF">GRIEFRELIEF - Grief Relief Series</option><option value="TOOLS">TOOLS - 101 Tools</option><option value="EQUINE">EQUINE - Equine Product</option><option value="MOM">MOM - Community Circle</option><option value="COMMUNITYCALL">COMMUNITYCALL - Motherless Daughters</option><option value="EMDR">EMDR - EMDR Therapy</option><option value="TAPPERS">TAPPERS - Dharma Dr.</option></select><div style="margin-top:12px"><span class="trig-badge" id="triggerDisplay">WORTHY</span></div></div>
       <div class="cost-bar"><div class="cost-item">Analysis: <strong>~$0.005</strong></div><div class="cost-item">Carousel: <strong>~$0.005</strong></div><div class="cost-item">Caption: <strong>~$0.003</strong></div><div class="cost-item">Rendering: <strong>free</strong></div><div class="cost-item">Total: <strong>~$0.01</strong></div></div>
-      <div class="btns">
-        <button class="btn" onclick="copyCaption()">Copy Caption</button>
-        <button class="ghost" onclick="goStep(4)">Back to Preview</button>
-        <button class="ghost" onclick="goStep(1)">Start Over</button>
-      </div>
+      <div class="btns"><button class="btn" onclick="copyCaption()">Copy Caption</button><button class="ghost" onclick="goStep(4)">Back to Preview</button><button class="ghost" onclick="goStep(1)">Start Over</button></div>
     </div>
   </div>
+</div>
 
-</div><!-- end builder -->
-
-</div><!-- end .main -->
+<div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved.</p></div>
+</div>
 
 <script>
-var BACKEND = "";
-var uploadedAssets = [];
-var viralPosts = [];
-var viralSelected = [];
-var carouselSlides = [];
-var captionText = "";
+var BACKEND="";var uploadedAssets=[];var viralPosts=[];var viralSelected=[];var carouselSlides=[];var captionText="";
 
-// ─── Status ───
-fetch(BACKEND + "/health").then(function(r) {
-  if (r.ok) { document.getElementById("dot").style.background = "#6fcf97"; document.getElementById("status-txt").textContent = "Live"; }
-  else throw 0;
-}).catch(function() { document.getElementById("dot").style.background = "#e87070"; document.getElementById("status-txt").textContent = "Offline"; });
+fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
 
-// ─── Tab switching ───
-function showTab(id, el) {
-  document.querySelectorAll(".tab-panel").forEach(function(p) { p.style.display = "none"; });
-  document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
-  document.getElementById(id).style.display = "block";
-  if (el) el.classList.add("active");
-}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active")}
+function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 
-function callBackend(endpoint, body) {
-  return fetch(BACKEND + "/generate/" + endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function(r) { return r.json(); });
-}
+function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
+function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
+function genDM(){var m=document.getElementById("dm-in").value.trim();if(!m)return;var b=document.getElementById("dm-btn");b.textContent="Writing...";b.disabled=true;callBackend("dm-response",{message:m,lead_temperature:document.getElementById("lead-temp").value}).then(function(d){document.getElementById("dm-out").textContent=d.response||"Error.";document.getElementById("dm-out-wrap").style.display="block";document.getElementById("copy-dm").style.display="inline-block"}).catch(function(){document.getElementById("dm-out").textContent="Error.";document.getElementById("dm-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate DM Response";b.disabled=false})}
+function genFlow(kw,offer,color,btn){document.querySelectorAll(".trig-btn").forEach(function(b){b.style.background="rgba(210,199,255,.12)";b.style.color="#3B2145"});btn.style.background=color;btn.style.color="#fff";document.getElementById("flow-out-wrap").style.display="block";document.getElementById("flow-label").textContent=kw+" - "+offer;document.getElementById("flow-out").textContent="Writing "+kw+" flow...";callBackend("manychat-flow",{keyword:kw,offer:offer}).then(function(d){document.getElementById("flow-out").textContent=d.flow||"Error."}).catch(function(){document.getElementById("flow-out").textContent="Error."})}
+function handleDragOver(e){e.preventDefault();document.getElementById("upload-zone").classList.add("drag-over")}function handleDragLeave(e){document.getElementById("upload-zone").classList.remove("drag-over")}function handleDrop(e){e.preventDefault();document.getElementById("upload-zone").classList.remove("drag-over");processFiles(e.dataTransfer.files)}function handleFileSelect(e){processFiles(e.target.files)}function processFiles(f){Array.from(f).forEach(function(file){if(!file.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(e){uploadedAssets.push({name:file.name,url:e.target.result});renderAssetGrid()};r.readAsDataURL(file)})}function renderAssetGrid(){document.getElementById("asset-grid").innerHTML=uploadedAssets.map(function(a){return'<div class="asset-item"><img class="asset-img" src="'+a.url+'"><div class="asset-name">'+a.name+"</div></div>"}).join("")}
+function analyzeStyle(){var u=document.getElementById("insta-urls").value.trim(),n=document.getElementById("style-notes").value.trim();if(!u&&!n&&!uploadedAssets.length){alert("Add something first.");return}var b=document.getElementById("analyze-btn");b.textContent="Analyzing...";b.disabled=true;var p="Analyze and create a style guide for Angela Schellenberg's carousels.";if(uploadedAssets.length)p+="\n\n"+uploadedAssets.length+" examples uploaded.";if(u)p+="\n\nAccounts:\n"+u;if(n)p+="\n\nNotes:\n"+n;p+="\n\nWrite a detailed style guide for Rosa.";fetch(BACKEND+"/generate/content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_type:"Style Guide",pillar:"Brand",topic:p,tone:"educational / expert"})}).then(function(r){return r.json()}).then(function(d){document.getElementById("style-guide-out").textContent=d.content||"Error.";document.getElementById("style-guide-out").style.display="block";document.getElementById("copy-style").style.display="inline-block"}).catch(function(){document.getElementById("style-guide-out").textContent="Error.";document.getElementById("style-guide-out").style.display="block"}).finally(function(){b.textContent="Analyze My Style";b.disabled=false})}
+function copyIt(outId,btnId,orig){navigator.clipboard.writeText(document.getElementById(outId).textContent);var b=document.getElementById(btnId);b.textContent="Copied!";setTimeout(function(){b.textContent=orig},2200)}
 
-// ═══ EXISTING TABS (all unchanged) ═══
-function genContent() {
-  var t = document.getElementById("topic").value.trim(); if (!t) return;
-  var btn = document.getElementById("gen-btn"); btn.textContent = "Generating..."; btn.disabled = true;
-  callBackend("content", { content_type: document.getElementById("ctype").value, pillar: document.getElementById("pillar").value, topic: t, tone: document.getElementById("tone").value, cta_trigger: document.getElementById("cta").value || null }).then(function(d) {
-    document.getElementById("content-out").textContent = d.content || "Error."; document.getElementById("content-out-wrap").style.display = "block"; document.getElementById("copy-content").style.display = "inline-block"; document.getElementById("clear-btn").style.display = "inline-block";
-  }).catch(function() { document.getElementById("content-out").textContent = "Error."; document.getElementById("content-out-wrap").style.display = "block"; }).finally(function() { btn.textContent = "Generate Content"; btn.disabled = false; });
-}
-function clearContent() { document.getElementById("topic").value = ""; document.getElementById("content-out-wrap").style.display = "none"; document.getElementById("copy-content").style.display = "none"; document.getElementById("clear-btn").style.display = "none"; }
-function genDM() {
-  var m = document.getElementById("dm-in").value.trim(); if (!m) return;
-  var btn = document.getElementById("dm-btn"); btn.textContent = "Writing..."; btn.disabled = true;
-  callBackend("dm-response", { message: m, lead_temperature: document.getElementById("lead-temp").value }).then(function(d) {
-    document.getElementById("dm-out").textContent = d.response || "Error."; document.getElementById("dm-out-wrap").style.display = "block"; document.getElementById("copy-dm").style.display = "inline-block";
-  }).catch(function() { document.getElementById("dm-out").textContent = "Error."; document.getElementById("dm-out-wrap").style.display = "block"; }).finally(function() { btn.textContent = "Generate DM Response"; btn.disabled = false; });
-}
-function genFlow(kw, offer, color, btn) {
-  document.querySelectorAll(".trig-btn").forEach(function(b) { b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0"; });
-  btn.style.background = color; btn.style.color = "#3B2145";
-  document.getElementById("flow-out-wrap").style.display = "block"; document.getElementById("flow-label").textContent = kw + " - " + offer; document.getElementById("flow-out").textContent = "Writing " + kw + " flow...";
-  callBackend("manychat-flow", { keyword: kw, offer: offer }).then(function(d) { document.getElementById("flow-out").textContent = d.flow || "Error."; }).catch(function() { document.getElementById("flow-out").textContent = "Error."; });
-}
-function handleDragOver(e) { e.preventDefault(); document.getElementById("upload-zone").classList.add("drag-over"); }
-function handleDragLeave(e) { document.getElementById("upload-zone").classList.remove("drag-over"); }
-function handleDrop(e) { e.preventDefault(); document.getElementById("upload-zone").classList.remove("drag-over"); processFiles(e.dataTransfer.files); }
-function handleFileSelect(e) { processFiles(e.target.files); }
-function processFiles(files) { Array.from(files).forEach(function(f) { if (!f.type.startsWith("image/")) return; var r = new FileReader(); r.onload = function(e) { uploadedAssets.push({ name: f.name, url: e.target.result }); renderAssetGrid(); }; r.readAsDataURL(f); }); }
-function renderAssetGrid() { document.getElementById("asset-grid").innerHTML = uploadedAssets.map(function(a) { return '<div class="asset-item"><img class="asset-img" src="' + a.url + '"><div class="asset-name">' + a.name + '</div></div>'; }).join(""); }
-function analyzeStyle() {
-  var u = document.getElementById("insta-urls").value.trim(), n = document.getElementById("style-notes").value.trim();
-  if (!u && !n && !uploadedAssets.length) { alert("Add something first."); return; }
-  var btn = document.getElementById("analyze-btn"); btn.textContent = "Analyzing..."; btn.disabled = true;
-  var p = "Analyze and create a style guide for Angela Schellenberg's carousels."; if (uploadedAssets.length) p += "\n\n" + uploadedAssets.length + " carousel examples uploaded."; if (u) p += "\n\nAccounts she loves:\n" + u; if (n) p += "\n\nNotes:\n" + n;
-  p += "\n\nWrite a detailed style guide: Visual style, Slide structure, Hook patterns, Text density, Typography, What stops the scroll. Make it specific for Rosa.";
-  fetch(BACKEND + "/generate/content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content_type: "Style Guide", pillar: "Brand", topic: p, tone: "educational / expert" }) }).then(function(r) { return r.json(); }).then(function(d) { document.getElementById("style-guide-out").textContent = d.content || "Error."; document.getElementById("style-guide-out").style.display = "block"; document.getElementById("copy-style").style.display = "inline-block"; }).catch(function() { document.getElementById("style-guide-out").textContent = "Error."; document.getElementById("style-guide-out").style.display = "block"; }).finally(function() { btn.textContent = "Analyze My Style"; btn.disabled = false; });
-}
-function copyIt(outId, btnId, orig) { navigator.clipboard.writeText(document.getElementById(outId).textContent); var b = document.getElementById(btnId); b.textContent = "Copied!"; setTimeout(function() { b.textContent = orig; }, 2200); }
-
-
-// ═══════════════════════════════════════════════════
-// CAROUSEL BUILDER - STEP BY STEP
-// ═══════════════════════════════════════════════════
-
-function goStep(n) {
-  for (var i = 1; i <= 5; i++) {
-    document.getElementById("step" + i).classList.toggle("active", i === n);
-    var pill = document.getElementById("sp" + i);
-    pill.className = "step-pill";
-    if (i < n) pill.classList.add("done");
-    if (i === n) pill.classList.add("current");
-  }
-  window.scrollTo({ top: document.getElementById("stepBar").offsetTop - 80, behavior: "smooth" });
-}
-
-// STEP 1 → Skip to generate (user already has topic)
-function skipToGenerate() {
-  var topic = document.getElementById("b-topic").value.trim();
-  if (!topic) { alert("Enter a topic first."); return; }
-  goStep(3);
-  generateSlidesCopy(topic);
-}
-
-// STEP 2: Load viral feed
-function loadViralFeed() {
-  fetch(BACKEND + "/api/viral").then(function(r) { return r.json(); }).then(function(d) {
-    if (d.success) { viralPosts = d.posts; renderFeedGrid(); }
-  }).catch(function() { document.getElementById("feedGrid").innerHTML = '<div class="v-err">Could not load feed. Backend may be starting.</div>'; });
-}
-
-function renderFeedGrid() {
-  var g = document.getElementById("feedGrid"); g.innerHTML = "";
-  viralPosts.forEach(function(p, i) {
-    var c = document.createElement("div"); c.className = "fc";
-    c.onclick = function() {
-      c.classList.toggle("sel");
-      var idx = viralSelected.indexOf(i);
-      if (idx > -1) viralSelected.splice(idx, 1); else viralSelected.push(i);
-      document.getElementById("selCount").textContent = viralSelected.length + " selected";
-      document.getElementById("analyzeBtn").disabled = viralSelected.length === 0;
-    };
-    c.innerHTML = '<div class="fc-dot"></div><span class="fc-src">' + (p.sub || p.src) + '</span><h3>' + p.title + '</h3><div class="fc-stats">' + p.stats + '</div><p class="fc-ex">' + p.excerpt + '</p><span class="fc-tag">' + p.tag + '</span>';
-    g.appendChild(c);
-  });
-}
-
-// STEP 2 → 3: Analyze + generate slides
-function runAnalysis() {
-  var btn = document.getElementById("analyzeBtn");
-  btn.textContent = "Analyzing..."; btn.disabled = true;
-  goStep(3);
-
-  var selPosts = viralSelected.map(function(i) { return viralPosts[i]; });
-  var userTopic = document.getElementById("b-topic").value.trim();
-  var pillar = document.getElementById("b-pillar").value;
-  var tone = document.getElementById("b-tone").value;
-
-  // First analyze, then generate carousel
-  fetch(BACKEND + "/api/analyze", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ posts: selPosts })
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    var topic = userTopic;
-    if (!topic && d.success && typeof d.data === "object" && d.data.suggested_topic) {
-      topic = d.data.suggested_topic;
-    }
-    if (!topic) topic = "grief and attachment trauma nobody talks about";
-    generateSlidesCopy(topic);
-  }).catch(function() {
-    generateSlidesCopy(userTopic || "grief and attachment trauma nobody talks about");
-  }).finally(function() { btn.textContent = "Analyze Selected + Write Slides"; btn.disabled = false; });
-}
-
-// Generate slide copy from Claude
-function generateSlidesCopy(topic) {
-  document.getElementById("editLoader").style.display = "block";
-  document.getElementById("slideEditors").innerHTML = "";
-  document.getElementById("editActions").style.display = "none";
-
-  fetch(BACKEND + "/api/carousel", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic: topic })
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    document.getElementById("editLoader").style.display = "none";
-
-    if (d.success && !d.raw && d.data && d.data.slides) {
-      carouselSlides = d.data.slides;
-      captionText = d.data.caption || "";
-      buildSlideEditors();
-    } else {
-      document.getElementById("slideEditors").innerHTML = '<div class="v-err">Could not parse slides. Try again.</div><div class="btns"><button class="btn" onclick="generateSlidesCopy(\'' + topic.replace(/'/g, "\\'") + '\')">Retry</button></div>';
-    }
-  }).catch(function(e) {
-    document.getElementById("editLoader").style.display = "none";
-    document.getElementById("slideEditors").innerHTML = '<div class="v-err">Error: ' + e.message + '</div>';
-  });
-}
-
-// STEP 3: Build editable text boxes for each slide
-function buildSlideEditors() {
-  var html = "";
-  carouselSlides.forEach(function(s, i) {
-    var typeLabel = s.type === "hook" ? "Hook" : s.type === "cta" ? "CTA" : "Body";
-    var content = "";
-    if (s.type === "hook") content = (s.upper || "") + "\n" + (s.italic || "");
-    else if (s.type === "cta") content = (s.top || "") + "\n" + (s.bottom || "");
-    else content = (s.html || s.text || "").replace(/<em>/g, "*").replace(/<\/em>/g, "*").replace(/<strong>/g, "**").replace(/<\/strong>/g, "**");
-
-    html += '<div class="slide-editor"><div class="slide-editor-header"><span class="slide-editor-num">Slide ' + (i + 1) + '</span><span class="slide-editor-type">' + typeLabel + '</span></div>';
-    html += '<textarea id="se-' + i + '" class="slide-edit-ta">' + content + '</textarea></div>';
-  });
-  document.getElementById("slideEditors").innerHTML = html;
-  document.getElementById("editActions").style.display = "flex";
-}
-
-// STEP 3 → 4: Render visual slides from edited text
-function renderSlides() {
-  goStep(4);
-
-  // Read edited values back into carouselSlides
-  carouselSlides.forEach(function(s, i) {
-    var val = document.getElementById("se-" + i).value;
-    if (s.type === "hook") {
-      var lines = val.split("\n");
-      s.upper = lines[0] || "";
-      s.italic = lines.slice(1).join("\n") || "";
-    } else if (s.type === "cta") {
-      var lines = val.split("\n");
-      s.top = lines[0] || "";
-      s.bottom = lines.slice(1).join("\n") || "";
-    } else {
-      s.html = val.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
-    }
-  });
-
-  // Render the visual slides
-  var html = '<div class="cr-scroll">';
-  carouselSlides.forEach(function(s, i) {
-    html += '<div class="sl-wrap"><div class="sl-num">Slide ' + (i + 1) + ' of ' + carouselSlides.length + '</div>';
-    if (s.type === "hook") {
-      html += '<div class="slide hook-s"><div class="sl-text"><div class="sl-upper">' + s.upper + '</div><div class="sl-italic">' + s.italic + '</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
-    } else if (s.type === "cta") {
-      html += '<div class="slide cta-s"><div class="sl-text"><div class="sl-cta-top">' + s.top + '</div><div class="sl-cta-bot">' + s.bottom + '</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
-    } else {
-      html += '<div class="slide body-s"><div class="sl-text">' + s.html + '</div><div class="sl-wm">@angelaschellenberg</div></div>';
-    }
-    html += '</div>';
-  });
-  html += '</div>';
-  document.getElementById("renderedSlides").innerHTML = html;
-}
-
-// STEP 5: Caption + trigger
-function goStepFive() { goStep(5); }
-
-// Override goStep to handle step 5 caption generation
-var _goStep = goStep;
-goStep = function(n) {
-  _goStep(n);
-  if (n === 5) {
-    if (captionText) {
-      document.getElementById("captionLoader").style.display = "none";
-      document.getElementById("captionArea").style.display = "block";
-      document.getElementById("captionEdit").value = captionText;
-    } else {
-      document.getElementById("captionLoader").style.display = "block";
-      document.getElementById("captionArea").style.display = "none";
-      // Generate caption from slides
-      var slideTexts = carouselSlides.map(function(s, i) {
-        if (s.type === "hook") return "Slide " + (i+1) + " (hook): " + s.upper + " / " + s.italic;
-        if (s.type === "cta") return "Slide " + (i+1) + " (cta): " + s.top + " / " + s.bottom;
-        return "Slide " + (i+1) + ": " + (s.html || "").replace(/<[^>]+>/g, "");
-      }).join("\n");
-
-      callBackend("content", {
-        content_type: "Instagram Caption",
-        pillar: document.getElementById("b-pillar").value,
-        topic: "Write a caption for this carousel:\n\n" + slideTexts + "\n\nInclude hashtags. End with: Comment " + document.getElementById("b-cta-trigger").value + " and I'll send it to you.",
-        tone: document.getElementById("b-tone").value
-      }).then(function(d) {
-        captionText = d.content || "";
-        document.getElementById("captionEdit").value = captionText;
-        document.getElementById("captionLoader").style.display = "none";
-        document.getElementById("captionArea").style.display = "block";
-      }).catch(function() {
-        document.getElementById("captionLoader").style.display = "none";
-        document.getElementById("captionArea").style.display = "block";
-        document.getElementById("captionEdit").value = "Error generating caption. Write it manually.";
-      });
-    }
-  }
-};
-
-// Update trigger badge display
-document.getElementById("b-cta-trigger").addEventListener("change", function() {
-  document.getElementById("triggerDisplay").textContent = this.value;
-});
-
-function copyCaption() {
-  navigator.clipboard.writeText(document.getElementById("captionEdit").value);
-  event.target.textContent = "Copied!";
-  setTimeout(function() { event.target.textContent = "Copy Caption"; }, 2200);
-}
-
-// ─── INIT ───
+// ═══ CAROUSEL BUILDER ═══
+function goStep(n){for(var i=1;i<=5;i++){document.getElementById("step"+i).classList.toggle("active",i===n);var p=document.getElementById("sp"+i);p.className="step-pill";if(i<n)p.classList.add("done");if(i===n)p.classList.add("current")}window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});if(n===5)loadCaption()}
+function skipToGen(){var t=document.getElementById("b-topic").value.trim();if(!t){alert("Enter a topic first.");return}goStep(3);genSlidesCopy(t)}
+function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success){viralPosts=d.posts;renderFG()}}).catch(function(){document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not load feed.</div>'})}
+function renderFG(){var g=document.getElementById("feedGrid");g.innerHTML="";viralPosts.forEach(function(p,i){var c=document.createElement("div");c.className="fc";c.onclick=function(){c.classList.toggle("sel");var x=viralSelected.indexOf(i);if(x>-1)viralSelected.splice(x,1);else viralSelected.push(i);document.getElementById("selCount").textContent=viralSelected.length+" selected";document.getElementById("analyzeBtn").disabled=viralSelected.length===0};c.innerHTML='<div class="fc-dot"></div><span class="fc-src">'+(p.sub||p.src)+'</span><h3>'+p.title+'</h3><div class="fc-stats">'+p.stats+'</div><p class="fc-ex">'+p.excerpt+'</p><span class="fc-tag">'+p.tag+'</span>';g.appendChild(c)})}
+function runAnalysis(){var b=document.getElementById("analyzeBtn");b.textContent="Analyzing...";b.disabled=true;goStep(3);var sp=viralSelected.map(function(i){return viralPosts[i]});var ut=document.getElementById("b-topic").value.trim();fetch(BACKEND+"/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({posts:sp})}).then(function(r){return r.json()}).then(function(d){var topic=ut;if(!topic&&d.success&&typeof d.data==="object"&&d.data.suggested_topic)topic=d.data.suggested_topic;if(!topic)topic="grief and attachment trauma nobody talks about";genSlidesCopy(topic)}).catch(function(){genSlidesCopy(ut||"grief and attachment trauma nobody talks about")}).finally(function(){b.textContent="Analyze + Write Slides";b.disabled=false})}
+function genSlidesCopy(topic){document.getElementById("editLoader").style.display="block";document.getElementById("slideEditors").innerHTML="";document.getElementById("editActions").style.display="none";fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){document.getElementById("editLoader").style.display="none";if(d.success&&!d.raw&&d.data&&d.data.slides){carouselSlides=d.data.slides;captionText=d.data.caption||"";buildEditors()}else{document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not parse. Try again.</div><div class="btns"><button class="btn" onclick="genSlidesCopy(\''+topic.replace(/'/g,"\\'")+'\')">Retry</button></div>'}}).catch(function(e){document.getElementById("editLoader").style.display="none";document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+"</div>"})}
+function buildEditors(){var h="";carouselSlides.forEach(function(s,i){var tl=s.type==="hook"?"Hook":s.type==="cta"?"CTA":"Body";var c="";if(s.type==="hook")c=(s.upper||"")+"\n"+(s.italic||"");else if(s.type==="cta")c=(s.top||"")+"\n"+(s.bottom||"");else c=(s.html||s.text||"").replace(/<em>/g,"*").replace(/<\/em>/g,"*").replace(/<strong>/g,"**").replace(/<\/strong>/g,"**");h+='<div class="slide-editor"><div class="slide-editor-header"><span class="slide-editor-num">Slide '+(i+1)+'</span><span class="slide-editor-type">'+tl+'</span></div><textarea id="se-'+i+'" class="slide-edit-ta">'+c+'</textarea></div>'});document.getElementById("slideEditors").innerHTML=h;document.getElementById("editActions").style.display="flex"}
+function renderSlides(){goStep(4);carouselSlides.forEach(function(s,i){var v=document.getElementById("se-"+i).value;if(s.type==="hook"){var l=v.split("\n");s.upper=l[0]||"";s.italic=l.slice(1).join("\n")||""}else if(s.type==="cta"){var l=v.split("\n");s.top=l[0]||"";s.bottom=l.slice(1).join("\n")||""}else{s.html=v.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>")}});var h='<div class="cr-scroll">';carouselSlides.forEach(function(s,i){h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+" of "+carouselSlides.length+"</div>";if(s.type==="hook")h+='<div class="slide hook-s"><div class="sl-text"><div class="sl-upper">'+s.upper+'</div><div class="sl-italic">'+s.italic+'</div></div><div class="sl-wm">@angelaschellenberg</div></div>';else if(s.type==="cta")h+='<div class="slide cta-s"><div class="sl-text"><div class="sl-cta-top">'+s.top+'</div><div class="sl-cta-bot">'+s.bottom+'</div></div><div class="sl-wm">@angelaschellenberg</div></div>';else h+='<div class="slide body-s"><div class="sl-text">'+s.html+'</div><div class="sl-wm">@angelaschellenberg</div></div>';h+="</div>"});h+="</div>";document.getElementById("renderedSlides").innerHTML=h}
+function loadCaption(){if(captionText){document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block";document.getElementById("captionEdit").value=captionText}else{document.getElementById("captionLoader").style.display="block";document.getElementById("captionArea").style.display="none";var st=carouselSlides.map(function(s,i){if(s.type==="hook")return"Slide "+(i+1)+": "+s.upper+" / "+s.italic;if(s.type==="cta")return"Slide "+(i+1)+": "+s.top+" / "+s.bottom;return"Slide "+(i+1)+": "+(s.html||"").replace(/<[^>]+>/g,"")}).join("\n");callBackend("content",{content_type:"Instagram Caption",pillar:document.getElementById("b-pillar").value,topic:"Write a caption for this carousel:\n\n"+st+"\n\nInclude hashtags. End with: Comment "+document.getElementById("b-cta-trigger").value+" and I'll send it to you.",tone:document.getElementById("b-tone").value}).then(function(d){captionText=d.content||"";document.getElementById("captionEdit").value=captionText;document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block"}).catch(function(){document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block";document.getElementById("captionEdit").value="Error. Write manually."})}}
+document.getElementById("b-cta-trigger").addEventListener("change",function(){document.getElementById("triggerDisplay").textContent=this.value});
+function copyCaption(){navigator.clipboard.writeText(document.getElementById("captionEdit").value);event.target.textContent="Copied!";setTimeout(function(){event.target.textContent="Copy Caption"},2200)}
 loadViralFeed();
 </script>
 </body>
