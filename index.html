@@ -66,7 +66,20 @@ textarea{resize:vertical;line-height:1.5;min-height:88px}
 .style-guide-out{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.15);border-radius:10px;padding:20px;color:#F7EBE0;font-size:14px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;margin-top:14px}
 option{background:#2a1733}
 
-/* ═══ NEW: VIRAL FEED + CAROUSEL STYLES ═══ */
+/* ═══ CAROUSEL BUILDER STEPS ═══ */
+.step{display:none;animation:fadeUp .4s ease}
+.step.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+.step-bar{display:flex;align-items:center;gap:6px;margin-bottom:24px;padding:14px 0;border-bottom:1px solid rgba(144,169,236,.1)}
+.step-pill{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 14px;border-radius:20px;border:1px solid rgba(144,169,236,.12);color:rgba(210,199,255,.3);transition:all .3s;font-family:'Jost',sans-serif;font-weight:500}
+.step-pill.done{background:rgba(144,169,236,.1);border-color:rgba(144,169,236,.25);color:#90A9EC}
+.step-pill.current{background:#90A9EC;border-color:#90A9EC;color:#3B2145}
+.step-arrow{color:rgba(210,199,255,.15);font-size:11px}
+.step-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:#D2C7FF;margin-bottom:6px}
+.step-sub{font-size:13px;color:rgba(210,199,255,.45);margin-bottom:18px;line-height:1.5}
+
+/* Viral feed cards */
 .feed-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 @media(max-width:560px){.feed-grid{grid-template-columns:1fr}}
 .fc{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.12);border-radius:10px;padding:18px;cursor:pointer;transition:all .25s;position:relative}
@@ -80,11 +93,15 @@ option{background:#2a1733}
 .fc .fc-ex{font-size:13px;color:#F7EBE0;opacity:.4;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .fc .fc-tag{display:inline-block;margin-top:7px;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(210,199,255,.06);color:#D2C7FF;opacity:.5}
 .sel-count{font-size:12px;color:#D2C7FF;opacity:.4}
-.v-loader{text-align:center;padding:40px 0}
-.v-loader p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:#D2C7FF;opacity:.4;animation:vbreathe 2.5s ease-in-out infinite}
-@keyframes vbreathe{0%,100%{opacity:.2}50%{opacity:.55}}
 
-/* Carousel slides */
+/* Slide editor textareas */
+.slide-editor{margin-bottom:12px}
+.slide-editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.slide-editor-num{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#D2C7FF;opacity:.4}
+.slide-editor-type{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(144,169,236,.1);color:#90A9EC}
+.slide-editor textarea{min-height:55px;font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.5}
+
+/* Rendered carousel slides */
 .cr-scroll{display:flex;gap:20px;overflow-x:auto;padding:8px 0 28px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
 .cr-scroll::-webkit-scrollbar{height:3px}
 .cr-scroll::-webkit-scrollbar-thumb{background:rgba(144,169,236,.2);border-radius:3px}
@@ -102,6 +119,7 @@ option{background:#2a1733}
 .slide.cta-s .sl-cta-bot{font-family:'Playfair Display',serif;font-weight:400;font-style:italic;font-size:19px;color:#B8ADE0;line-height:1.3}
 .slide.cta-s .sl-cta-bot strong{font-weight:700;text-transform:uppercase}
 .slide .sl-wm{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:7.5px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:#3B2145;opacity:.5}
+
 .caption-box{background:rgba(247,235,224,.05);border:1px solid rgba(144,169,236,.12);border-radius:10px;padding:20px;margin-top:20px}
 .caption-box h4{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#D2C7FF;opacity:.4;margin-bottom:10px;font-weight:500}
 .caption-box pre{font-family:'Jost',sans-serif;font-size:13px;color:#F7EBE0;opacity:.6;line-height:1.7;white-space:pre-wrap;word-wrap:break-word}
@@ -109,108 +127,47 @@ option{background:#2a1733}
 .cost-bar{display:flex;gap:18px;flex-wrap:wrap;padding:12px 18px;background:rgba(255,255,255,.02);border:1px solid rgba(144,169,236,.06);border-radius:8px;margin-top:20px}
 .cost-item{font-size:11px;color:#D2C7FF;opacity:.35}
 .cost-item strong{color:#F7EBE0;opacity:1;font-weight:500}
+.v-loader{text-align:center;padding:40px 0}
+.v-loader p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:#D2C7FF;opacity:.4;animation:vb 2.5s ease-in-out infinite}
+@keyframes vb{0%,100%{opacity:.2}50%{opacity:.55}}
 .v-err{color:#ff8a5c;font-size:13px;padding:14px;background:rgba(255,107,53,.08);border-radius:8px;margin-bottom:14px}
 .analysis-card{background:rgba(255,255,255,.04);border:1px solid rgba(144,169,236,.12);border-radius:10px;padding:20px;margin-bottom:14px}
 .analysis-card h3{font-family:'Cormorant Garamond',serif;font-size:17px;color:#D2C7FF;margin-bottom:10px}
 .analysis-card p{font-size:14px;color:#F7EBE0;opacity:.55;line-height:1.7;margin-bottom:6px}
 .analysis-card ul{list-style:none;margin-top:6px}
 .analysis-card li{font-size:13px;color:#F7EBE0;opacity:.5;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.5}
-.analysis-card li strong,.analysis-card li b{color:#D2C7FF;opacity:1}
 </style>
 </head>
 <body>
 <div class="header">
-  <div>
-    <div class="sub">Angela Schellenberg</div>
-    <h1>Content Engine</h1>
-  </div>
-  <div>
-    <div class="handle">@angelaschellenberg</div>
-    <div class="status">
-      <div class="dot" id="dot"></div>
-      <div class="status-txt" id="status-txt">Checking...</div>
-    </div>
-  </div>
+  <div><div class="sub">Angela Schellenberg</div><h1>Content Engine</h1></div>
+  <div><div class="handle">@angelaschellenberg</div><div class="status"><div class="dot" id="dot"></div><div class="status-txt" id="status-txt">Checking...</div></div></div>
 </div>
 <div class="tabs">
-  <button class="tab active" onclick="showTab('content',this)">Content Studio</button>
+  <button class="tab" onclick="showTab('content',this)">Content Studio</button>
   <button class="tab" onclick="showTab('dm',this)">DM Engine</button>
   <button class="tab" onclick="showTab('flows',this)">ManyChat Flows</button>
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
-  <button class="tab" onclick="showTab('viral',this)">Viral Feed</button>
-  <button class="tab" onclick="showTab('carousel',this)">Carousel</button>
+  <button class="tab active" onclick="showTab('builder',this)">Carousel Builder</button>
 </div>
 <div class="main">
 
 <!-- CONTENT STUDIO (unchanged) -->
-<div id="content" class="tab-panel">
+<div id="content" class="tab-panel" style="display:none">
   <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
   <div class="card">
     <div class="grid2">
-      <div><label>Content Type</label>
-        <select id="ctype">
-          <option>Instagram Reel Script</option>
-          <option>Carousel Slide Copy (6 slides)</option>
-          <option>Email Newsletter</option>
-          <option>Instagram Caption</option>
-          <option>Blog Post Outline</option>
-          <option>Podcast Intro / Hook</option>
-          <option>TikTok Script</option>
-          <option>Story Sequence (5 frames)</option>
-        </select>
-      </div>
-      <div><label>Pillar</label>
-        <select id="pillar">
-          <option>Grief Education</option>
-          <option>Mother Hunger (Kelly McDaniel)</option>
-          <option>EMDR and Bilateral Stimulation</option>
-          <option>Equine Therapy</option>
-          <option>Somatic Healing</option>
-          <option>Attachment and Childhood Wounds</option>
-        </select>
-      </div>
+      <div><label>Content Type</label><select id="ctype"><option>Instagram Reel Script</option><option>Carousel Slide Copy (6 slides)</option><option>Email Newsletter</option><option>Instagram Caption</option><option>Blog Post Outline</option><option>Podcast Intro / Hook</option><option>TikTok Script</option><option>Story Sequence (5 frames)</option></select></div>
+      <div><label>Pillar</label><select id="pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option></select></div>
     </div>
     <div class="grid2">
-      <div><label>Tone</label>
-        <select id="tone">
-          <option>clinical-but-warm</option>
-          <option>humor-forward</option>
-          <option>tender / emotional</option>
-          <option>direct / confrontational</option>
-          <option>educational / expert</option>
-        </select>
-      </div>
-      <div><label>ManyChat CTA (optional)</label>
-        <select id="cta">
-          <option value="">No CTA</option>
-          <option value="HEAL">HEAL - 1:1 Session</option>
-          <option value="UNTANGLE">UNTANGLE - 1:1 Session</option>
-          <option value="STEADY">STEADY - 1:1 Session</option>
-          <option value="MALIBURETREAT">MALIBURETREAT - Retreat</option>
-          <option value="UNLEARN">UNLEARN - Mother Hunger Course</option>
-          <option value="GRIEFRELIEF">GRIEFRELIEF - Grief Series</option>
-          <option value="TOOLS">TOOLS - 101 Tools</option>
-          <option value="WORTHY">WORTHY - Starter Kit</option>
-          <option value="EQUINE">EQUINE - Equine Product</option>
-          <option value="MOM">MOM - Community</option>
-          <option value="EMDR">EMDR - EMDR Therapy</option>
-        </select>
-      </div>
+      <div><label>Tone</label><select id="tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div>
+      <div><label>ManyChat CTA (optional)</label><select id="cta"><option value="">No CTA</option><option value="HEAL">HEAL - 1:1 Session</option><option value="UNTANGLE">UNTANGLE - 1:1 Session</option><option value="STEADY">STEADY - 1:1 Session</option><option value="MALIBURETREAT">MALIBURETREAT - Retreat</option><option value="UNLEARN">UNLEARN - Mother Hunger Course</option><option value="GRIEFRELIEF">GRIEFRELIEF - Grief Series</option><option value="TOOLS">TOOLS - 101 Tools</option><option value="WORTHY">WORTHY - Starter Kit</option><option value="EQUINE">EQUINE - Equine Product</option><option value="MOM">MOM - Community</option><option value="EMDR">EMDR - EMDR Therapy</option></select></div>
     </div>
-    <div style="margin-bottom:4px">
-      <label>Topic / Angle / Hook Idea</label>
-      <textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea>
-    </div>
-    <div class="btns">
-      <button class="btn" id="gen-btn" onclick="genContent()">Generate Content</button>
-      <button class="ghost" id="copy-content" style="display:none" onclick="copyIt('content-out','copy-content','Copy')">Copy</button>
-      <button class="ghost" id="clear-btn" style="display:none" onclick="clearContent()">Clear</button>
-    </div>
+    <div style="margin-bottom:4px"><label>Topic / Angle / Hook Idea</label><textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea></div>
+    <div class="btns"><button class="btn" id="gen-btn" onclick="genContent()">Generate Content</button><button class="ghost" id="copy-content" style="display:none" onclick="copyIt('content-out','copy-content','Copy')">Copy</button><button class="ghost" id="clear-btn" style="display:none" onclick="clearContent()">Clear</button></div>
   </div>
-  <div id="content-out-wrap" style="display:none" class="out-wrap">
-    <div class="out-label">Output</div>
-    <div class="out" id="content-out"></div>
-  </div>
+  <div id="content-out-wrap" style="display:none" class="out-wrap"><div class="out-label">Output</div><div class="out" id="content-out"></div></div>
 </div>
 
 <!-- DM ENGINE (unchanged) -->
@@ -218,181 +175,143 @@ option{background:#2a1733}
   <p class="desc">Paste an incoming DM. Get a human Angela-voiced response plus the right trigger.</p>
   <div class="warn">Copy responses here and paste into ManyChat flows or send manually.</div>
   <div class="card">
-    <div style="margin-bottom:12px"><label>Incoming DM</label>
-      <textarea id="dm-in" style="min-height:100px" placeholder="Paste the DM exactly as it came in..."></textarea>
-    </div>
-    <div style="margin-bottom:4px"><label>Lead Temperature</label>
-      <select id="lead-temp">
-        <option>Cold follower - first contact</option>
-        <option>Warm - mentioned a pain point</option>
-        <option>Hot - asking about a specific offer</option>
-        <option>Returning or past client</option>
-        <option>Peer or collaborator</option>
-      </select>
-    </div>
-    <div class="btns">
-      <button class="btn" id="dm-btn" onclick="genDM()">Generate DM Response</button>
-      <button class="ghost" id="copy-dm" style="display:none" onclick="copyIt('dm-out','copy-dm','Copy')">Copy</button>
-    </div>
+    <div style="margin-bottom:12px"><label>Incoming DM</label><textarea id="dm-in" style="min-height:100px" placeholder="Paste the DM exactly as it came in..."></textarea></div>
+    <div style="margin-bottom:4px"><label>Lead Temperature</label><select id="lead-temp"><option>Cold follower - first contact</option><option>Warm - mentioned a pain point</option><option>Hot - asking about a specific offer</option><option>Returning or past client</option><option>Peer or collaborator</option></select></div>
+    <div class="btns"><button class="btn" id="dm-btn" onclick="genDM()">Generate DM Response</button><button class="ghost" id="copy-dm" style="display:none" onclick="copyIt('dm-out','copy-dm','Copy')">Copy</button></div>
   </div>
-  <div id="dm-out-wrap" style="display:none" class="out-wrap">
-    <div class="out-label">Response + Trigger Suggestion</div>
-    <div class="out" id="dm-out"></div>
-  </div>
+  <div id="dm-out-wrap" style="display:none" class="out-wrap"><div class="out-label">Response + Trigger Suggestion</div><div class="out" id="dm-out"></div></div>
 </div>
 
 <!-- MANYCHAT FLOWS (unchanged) -->
 <div id="flows" class="tab-panel" style="display:none">
   <p class="desc">Click any trigger to generate a complete 3-message ManyChat sequence.</p>
-  <div class="trig-section">
-    <div class="trig-group-label">1:1 Therapy</div>
-    <div class="trig-btns">
-      <button class="trig-btn" onclick="genFlow('HEAL','1:1 Therapy Session','#90A9EC',this)">HEAL</button>
-      <button class="trig-btn" onclick="genFlow('UNTANGLE','1:1 Therapy Session','#90A9EC',this)">UNTANGLE</button>
-      <button class="trig-btn" onclick="genFlow('STEADY','1:1 Therapy Session','#90A9EC',this)">STEADY</button>
-      <button class="trig-btn" onclick="genFlow('EMDR','EMDR Therapy','#90A9EC',this)">EMDR</button>
-    </div>
-  </div>
-  <div class="trig-section">
-    <div class="trig-group-label">Retreat - April 29 to May 3 2026</div>
-    <div class="trig-btns">
-      <button class="trig-btn" onclick="genFlow('MALIBURETREAT','Healing with Horses Somatic Grief Retreat','#FFC696',this)">MALIBURETREAT</button>
-    </div>
-  </div>
-  <div class="trig-section">
-    <div class="trig-group-label">Courses and Digital Products</div>
-    <div class="trig-btns">
-      <button class="trig-btn" onclick="genFlow('UNLEARN','Mother Hunger Course','#D2C7FF',this)">UNLEARN</button>
-      <button class="trig-btn" onclick="genFlow('GRIEFRELIEF','Grief Relief Video Series','#E5ACD7',this)">GRIEFRELIEF</button>
-      <button class="trig-btn" onclick="genFlow('TOOLS','101 Tools','#F3DA8B',this)">TOOLS</button>
-      <button class="trig-btn" onclick="genFlow('WORTHY','Emotional Starter Kit','#D3E0F1',this)">WORTHY</button>
-      <button class="trig-btn" onclick="genFlow('TAPPERS','Dharma Dr','#F3DA8B',this)">TAPPERS</button>
-    </div>
-  </div>
-  <div class="trig-section">
-    <div class="trig-group-label">Equine</div>
-    <div class="trig-btns">
-      <button class="trig-btn" onclick="genFlow('EQUINE','Equine Digital Product','#FFC696',this)">EQUINE</button>
-      <button class="trig-btn" onclick="genFlow('HORSEHEALING','Equine Digital Product','#FFC696',this)">HORSEHEALING</button>
-    </div>
-  </div>
-  <div class="trig-section">
-    <div class="trig-group-label">Community</div>
-    <div class="trig-btns">
-      <button class="trig-btn" onclick="genFlow('MOM','Community Circle','#E5ACD7',this)">MOM</button>
-      <button class="trig-btn" onclick="genFlow('COMMUNITYCALL','Motherless Daughters Thursday Group','#D2C7FF',this)">COMMUNITYCALL</button>
-    </div>
-  </div>
-  <div id="flow-out-wrap" style="display:none" class="out-wrap">
-    <div class="flow-header">
-      <div class="out-label" id="flow-label"></div>
-      <button class="ghost" id="copy-flow" onclick="copyIt('flow-out','copy-flow','Copy All 3 Messages')">Copy All 3 Messages</button>
-    </div>
-    <div class="out" id="flow-out"></div>
-  </div>
+  <div class="trig-section"><div class="trig-group-label">1:1 Therapy</div><div class="trig-btns"><button class="trig-btn" onclick="genFlow('HEAL','1:1 Therapy Session','#90A9EC',this)">HEAL</button><button class="trig-btn" onclick="genFlow('UNTANGLE','1:1 Therapy Session','#90A9EC',this)">UNTANGLE</button><button class="trig-btn" onclick="genFlow('STEADY','1:1 Therapy Session','#90A9EC',this)">STEADY</button><button class="trig-btn" onclick="genFlow('EMDR','EMDR Therapy','#90A9EC',this)">EMDR</button></div></div>
+  <div class="trig-section"><div class="trig-group-label">Retreat - April 29 to May 3 2026</div><div class="trig-btns"><button class="trig-btn" onclick="genFlow('MALIBURETREAT','Healing with Horses Somatic Grief Retreat','#FFC696',this)">MALIBURETREAT</button></div></div>
+  <div class="trig-section"><div class="trig-group-label">Courses and Digital Products</div><div class="trig-btns"><button class="trig-btn" onclick="genFlow('UNLEARN','Mother Hunger Course','#D2C7FF',this)">UNLEARN</button><button class="trig-btn" onclick="genFlow('GRIEFRELIEF','Grief Relief Video Series','#E5ACD7',this)">GRIEFRELIEF</button><button class="trig-btn" onclick="genFlow('TOOLS','101 Tools','#F3DA8B',this)">TOOLS</button><button class="trig-btn" onclick="genFlow('WORTHY','Emotional Starter Kit','#D3E0F1',this)">WORTHY</button><button class="trig-btn" onclick="genFlow('TAPPERS','Dharma Dr','#F3DA8B',this)">TAPPERS</button></div></div>
+  <div class="trig-section"><div class="trig-group-label">Equine</div><div class="trig-btns"><button class="trig-btn" onclick="genFlow('EQUINE','Equine Digital Product','#FFC696',this)">EQUINE</button><button class="trig-btn" onclick="genFlow('HORSEHEALING','Equine Digital Product','#FFC696',this)">HORSEHEALING</button></div></div>
+  <div class="trig-section"><div class="trig-group-label">Community</div><div class="trig-btns"><button class="trig-btn" onclick="genFlow('MOM','Community Circle','#E5ACD7',this)">MOM</button><button class="trig-btn" onclick="genFlow('COMMUNITYCALL','Motherless Daughters Thursday Group','#D2C7FF',this)">COMMUNITYCALL</button></div></div>
+  <div id="flow-out-wrap" style="display:none" class="out-wrap"><div class="flow-header"><div class="out-label" id="flow-label"></div><button class="ghost" id="copy-flow" onclick="copyIt('flow-out','copy-flow','Copy All 3 Messages')">Copy All 3 Messages</button></div><div class="out" id="flow-out"></div></div>
 </div>
 
 <!-- BRAND VAULT (unchanged) -->
 <div id="vault" class="tab-panel" style="display:none">
   <p class="desc">Your brand reference and style library. Upload carousel examples, paste Instagram accounts you love, and let Claude analyze your style.</p>
-  <div class="card">
-    <div class="vault-head" style="color:#FFC696">Style Library</div>
-    <label>Upload Carousel Examples</label>
-    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
-      <div class="upload-zone-text">
-        <strong>Drop images here or click to browse</strong>
-        JPG, PNG — your carousels, screenshots, style references
+  <div class="card"><div class="vault-head" style="color:#FFC696">Style Library</div><label>Upload Carousel Examples</label><div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"><div class="upload-zone-text"><strong>Drop images here or click to browse</strong>JPG, PNG</div></div><input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)"><div id="asset-grid" class="asset-grid"></div><div style="margin-top:16px"><label>Instagram Accounts You Love</label><textarea id="insta-urls" style="min-height:70px" placeholder="e.g. @lori.gottlieb @nedratawwab"></textarea></div><div style="margin-top:12px"><label>Style Notes (optional)</label><textarea id="style-notes" style="min-height:60px" placeholder="e.g. I like clean layouts, bold hooks."></textarea></div><div class="btns" style="margin-top:16px"><button class="btn" id="analyze-btn" onclick="analyzeStyle()">Analyze My Style</button><button class="ghost" id="copy-style" style="display:none" onclick="copyIt('style-guide-out','copy-style','Copy Style Guide')">Copy Style Guide</button></div><div id="style-guide-out" class="style-guide-out" style="display:none"></div></div>
+  <div class="card"><div class="vault-head" style="color:#90A9EC">Voice Rules</div><div class="vault-rule">Direct. Clinical-but-accessible. No hedging. No fluff.</div><div class="vault-rule">Short punchy lines. Rhythm over grammar.</div><div class="vault-rule">Humor-forward when appropriate, especially equine content.</div><div class="vault-rule">Names experiences people feel but cannot articulate.</div><div class="vault-rule">Says it once, says it plainly. Never over-explains.</div></div>
+  <div class="card"><div class="vault-head" style="color:#e8796e">Never Use</div><div class="vault-rule vault-bad">Em dashes (—)</div><div class="vault-rule vault-bad">"You are not broken" / "Healing era" / "Holding space"</div><div class="vault-rule vault-bad">"Trauma dump" / "Do the work"</div><div class="vault-rule vault-bad">Soft landing phrases / Generic AI language</div></div>
+  <div class="card"><div class="vault-head" style="color:#D2C7FF">2026 Brand Colors</div><div style="font-size:10px;color:rgba(210,199,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Parent Brand</div><div class="swatch-grid"><div class="swatch"><div class="swatch-box" style="background:#3B2145"></div><div class="swatch-name">Deep Fig</div><div class="swatch-hex">#3B2145</div></div><div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div><div class="swatch"><div class="swatch-box" style="background:#D3E0F1"></div><div class="swatch-name">Soft Blue</div><div class="swatch-hex">#D3E0F1</div></div><div class="swatch"><div class="swatch-box" style="background:#D2C7FF"></div><div class="swatch-name">Lavender</div><div class="swatch-hex">#D2C7FF</div></div><div class="swatch"><div class="swatch-box" style="background:#F7EBE0"></div><div class="swatch-name">Warm Cream</div><div class="swatch-hex">#F7EBE0</div></div></div><div class="retired"><strong>Retired — never use</strong><span>Teal #AADCDB · Sage #91CBB7 · Hot Pink #FB8CF0 · Navy #0d0d55 · Burnt Orange #E17F15</span></div></div>
+  <div class="card"><div class="vault-head" style="color:#F3DA8B">ManyChat Trigger Map</div><div class="trig-map"><div class="trig-row"><span class="trig-kw" style="color:#90A9EC">HEAL / UNTANGLE / STEADY</span><span class="trig-offer">1:1 Therapy</span></div><div class="trig-row"><span class="trig-kw" style="color:#90A9EC">EMDR</span><span class="trig-offer">EMDR Therapy</span></div><div class="trig-row"><span class="trig-kw" style="color:#FFC696">MALIBURETREAT</span><span class="trig-offer">Healing with Horses Retreat</span></div><div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">UNLEARN</span><span class="trig-offer">Mother Hunger Course</span></div><div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">GRIEFRELIEF / GRIEFTOOLS</span><span class="trig-offer">Grief Relief Series</span></div><div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TOOLS</span><span class="trig-offer">101 Tools</span></div><div class="trig-row"><span class="trig-kw" style="color:#D3E0F1">WORTHY</span><span class="trig-offer">Emotional Starter Kit</span></div><div class="trig-row"><span class="trig-kw" style="color:#FFC696">EQUINE / HORSEHEALING</span><span class="trig-offer">Equine Digital Product</span></div><div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">MOM</span><span class="trig-offer">Community Circle</span></div><div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">COMMUNITYCALL</span><span class="trig-offer">Motherless Daughters Group</span></div><div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TAPPERS</span><span class="trig-offer">Dharma Dr.</span></div></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- CAROUSEL BUILDER - STEP BY STEP PIPELINE               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="builder" class="tab-panel">
+
+  <!-- Step indicator bar -->
+  <div class="step-bar" id="stepBar">
+    <span class="step-pill current" id="sp1">1. Topic</span>
+    <span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp2">2. Scraper</span>
+    <span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp3">3. Edit Slides</span>
+    <span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp4">4. Preview</span>
+    <span class="step-arrow">&#8594;</span>
+    <span class="step-pill" id="sp5">5. Caption + CTA</span>
+  </div>
+
+  <!-- STEP 1: TOPIC PICKER -->
+  <div class="step active" id="step1">
+    <div class="step-title">Pick your topic</div>
+    <div class="step-sub">Choose a pillar and tone, then type your hook idea or leave it blank to let the scraper inspire you.</div>
+    <div class="card">
+      <div class="grid2">
+        <div><label>Pillar</label><select id="b-pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option></select></div>
+        <div><label>Tone</label><select id="b-tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div>
+      </div>
+      <label>Topic / Hook Idea (optional)</label>
+      <textarea id="b-topic" style="min-height:70px" placeholder="e.g. The grief and trauma nobody talks about. Leave blank to pick from the scraper."></textarea>
+      <div class="btns">
+        <button class="btn" onclick="goStep(2)">Next: See What's Viral</button>
+        <button class="ghost" onclick="skipToGenerate()">Skip to Generate (I have a topic)</button>
       </div>
     </div>
-    <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="handleFileSelect(event)">
-    <div id="asset-grid" class="asset-grid"></div>
-    <div style="margin-top:16px">
-      <label>Instagram Accounts You Love (for style reference)</label>
-      <textarea id="insta-urls" style="min-height:70px" placeholder="e.g. @lori.gottlieb @nedratawwab @the.holistic.psychologist"></textarea>
-    </div>
-    <div style="margin-top:12px">
-      <label>Style Notes (optional)</label>
-      <textarea id="style-notes" style="min-height:60px" placeholder="e.g. I like clean layouts, bold hooks, dark backgrounds."></textarea>
-    </div>
-    <div class="btns" style="margin-top:16px">
-      <button class="btn" id="analyze-btn" onclick="analyzeStyle()">Analyze My Style</button>
-      <button class="ghost" id="copy-style" style="display:none" onclick="copyIt('style-guide-out','copy-style','Copy Style Guide')">Copy Style Guide</button>
-    </div>
-    <div id="style-guide-out" class="style-guide-out" style="display:none"></div>
   </div>
-  <div class="card">
-    <div class="vault-head" style="color:#90A9EC">Voice Rules</div>
-    <div class="vault-rule">Direct. Clinical-but-accessible. No hedging. No fluff.</div>
-    <div class="vault-rule">Short punchy lines. Rhythm over grammar.</div>
-    <div class="vault-rule">Humor-forward when appropriate, especially equine content.</div>
-    <div class="vault-rule">Names experiences people feel but cannot articulate.</div>
-    <div class="vault-rule">Says it once, says it plainly. Never over-explains.</div>
-  </div>
-  <div class="card">
-    <div class="vault-head" style="color:#e8796e">Never Use</div>
-    <div class="vault-rule vault-bad">Em dashes (—)</div>
-    <div class="vault-rule vault-bad">"You are not broken" / "Healing era" / "Holding space"</div>
-    <div class="vault-rule vault-bad">"Trauma dump" / "Do the work"</div>
-    <div class="vault-rule vault-bad">Soft landing phrases / Generic AI language</div>
-  </div>
-  <div class="card">
-    <div class="vault-head" style="color:#D2C7FF">2026 Brand Colors</div>
-    <div style="font-size:10px;color:rgba(210,199,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Parent Brand</div>
-    <div class="swatch-grid">
-      <div class="swatch"><div class="swatch-box" style="background:#3B2145"></div><div class="swatch-name">Deep Fig</div><div class="swatch-hex">#3B2145</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#90A9EC"></div><div class="swatch-name">Bridge Blue</div><div class="swatch-hex">#90A9EC</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#D3E0F1"></div><div class="swatch-name">Soft Blue</div><div class="swatch-hex">#D3E0F1</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#D2C7FF"></div><div class="swatch-name">Lavender</div><div class="swatch-hex">#D2C7FF</div></div>
-      <div class="swatch"><div class="swatch-box" style="background:#F7EBE0"></div><div class="swatch-name">Warm Cream</div><div class="swatch-hex">#F7EBE0</div></div>
-    </div>
-    <div class="retired"><strong>Retired — never use</strong><span>Teal #AADCDB · Sage #91CBB7 · Hot Pink #FB8CF0 · Navy #0d0d55 · Burnt Orange #E17F15</span></div>
-  </div>
-  <div class="card">
-    <div class="vault-head" style="color:#F3DA8B">ManyChat Trigger Map</div>
-    <div class="trig-map">
-      <div class="trig-row"><span class="trig-kw" style="color:#90A9EC">HEAL / UNTANGLE / STEADY</span><span class="trig-offer">1:1 Therapy</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#90A9EC">EMDR</span><span class="trig-offer">EMDR Therapy</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#FFC696">MALIBURETREAT</span><span class="trig-offer">Healing with Horses Retreat</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">UNLEARN</span><span class="trig-offer">Mother Hunger Course</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">GRIEFRELIEF / GRIEFTOOLS</span><span class="trig-offer">Grief Relief Series</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TOOLS</span><span class="trig-offer">101 Tools</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#D3E0F1">WORTHY</span><span class="trig-offer">Emotional Starter Kit</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#FFC696">EQUINE / HORSEHEALING</span><span class="trig-offer">Equine Digital Product</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">MOM</span><span class="trig-offer">Community Circle</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">COMMUNITYCALL</span><span class="trig-offer">Motherless Daughters Group</span></div>
-      <div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TAPPERS</span><span class="trig-offer">Dharma Dr.</span></div>
-    </div>
-  </div>
-</div>
 
-<!-- ═══════════════════════════════════════════════ -->
-<!-- NEW TAB: VIRAL FEED                            -->
-<!-- ═══════════════════════════════════════════════ -->
-<div id="viral" class="tab-panel" style="display:none">
-  <p class="desc">What's going viral in your niche right now. Select posts and let Claude analyze patterns, then generate a carousel based on what's landing.</p>
-  <div class="feed-grid" id="feedGrid"></div>
-  <div class="btns">
-    <button class="btn" id="analyzeViralBtn" onclick="analyzeViral()" disabled>Analyze Selected</button>
-    <span class="sel-count" id="selCount">0 selected</span>
-  </div>
-  <div id="viral-analysis" style="display:none;margin-top:20px"></div>
-</div>
-
-<!-- ═══════════════════════════════════════════════ -->
-<!-- NEW TAB: CAROUSEL GENERATOR                    -->
-<!-- ═══════════════════════════════════════════════ -->
-<div id="carousel" class="tab-panel" style="display:none">
-  <p class="desc">Generate a full 10-slide carousel in your exact brand style. Enter a topic or use the suggested topic from Viral Feed analysis.</p>
-  <div class="card">
-    <label>Carousel Topic</label>
-    <textarea id="carousel-topic" style="min-height:70px" placeholder="e.g. The grief and trauma nobody talks about"></textarea>
+  <!-- STEP 2: VIRAL SCRAPER -->
+  <div class="step" id="step2">
+    <div class="step-title">What's going viral in your niche</div>
+    <div class="step-sub">Select posts that resonate. Claude will analyze patterns and suggest your carousel angle.</div>
+    <div class="feed-grid" id="feedGrid"></div>
     <div class="btns">
-      <button class="btn" id="carousel-btn" onclick="genCarousel()">Generate Carousel</button>
+      <button class="btn" id="analyzeBtn" onclick="runAnalysis()" disabled>Analyze Selected + Write Slides</button>
+      <button class="ghost" onclick="goStep(1)">Back</button>
+      <span class="sel-count" id="selCount">0 selected</span>
     </div>
   </div>
-  <div class="v-loader" id="carouselLoader" style="display:none"><p>Writing in your voice...</p></div>
-  <div id="carouselOutput" style="display:none"></div>
-</div>
+
+  <!-- STEP 3: EDIT SLIDES -->
+  <div class="step" id="step3">
+    <div class="step-title">Edit your slides</div>
+    <div class="step-sub">Claude wrote these based on your topic + viral patterns. Edit any slide before rendering.</div>
+    <div class="v-loader" id="editLoader"><p>Writing in your voice...</p></div>
+    <div id="slideEditors"></div>
+    <div id="editActions" style="display:none" class="btns">
+      <button class="btn" onclick="renderSlides()">Generate Carousel</button>
+      <button class="ghost" onclick="goStep(2)">Back to Scraper</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: PREVIEW RENDERED SLIDES -->
+  <div class="step" id="step4">
+    <div class="step-title">Your carousel</div>
+    <div class="step-sub">Scroll through. These match your exact brand template.</div>
+    <div id="renderedSlides"></div>
+    <div class="btns">
+      <button class="btn" onclick="goStep(5)">Next: Caption + CTA</button>
+      <button class="ghost" onclick="goStep(3)">Back to Edit</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: CAPTION + MANYCHAT TRIGGER -->
+  <div class="step" id="step5">
+    <div class="step-title">Caption + ManyChat Trigger</div>
+    <div class="step-sub">Your caption and CTA trigger. Copy and post.</div>
+    <div class="v-loader" id="captionLoader"><p>Writing caption...</p></div>
+    <div id="captionArea" style="display:none">
+      <div class="card">
+        <label>Caption</label>
+        <textarea id="captionEdit" style="min-height:200px;font-family:'Cormorant Garamond',serif;font-size:15px;line-height:1.7"></textarea>
+      </div>
+      <div class="card">
+        <label>ManyChat CTA Trigger</label>
+        <select id="b-cta-trigger">
+          <option value="WORTHY">WORTHY - Emotional Starter Kit</option>
+          <option value="HEAL">HEAL - 1:1 Session</option>
+          <option value="UNTANGLE">UNTANGLE - 1:1 Session</option>
+          <option value="MALIBURETREAT">MALIBURETREAT - Retreat</option>
+          <option value="UNLEARN">UNLEARN - Mother Hunger Course</option>
+          <option value="GRIEFRELIEF">GRIEFRELIEF - Grief Relief Series</option>
+          <option value="TOOLS">TOOLS - 101 Tools</option>
+          <option value="EQUINE">EQUINE - Equine Product</option>
+          <option value="MOM">MOM - Community Circle</option>
+          <option value="COMMUNITYCALL">COMMUNITYCALL - Motherless Daughters</option>
+          <option value="EMDR">EMDR - EMDR Therapy</option>
+          <option value="TAPPERS">TAPPERS - Dharma Dr.</option>
+        </select>
+        <div style="margin-top:12px"><span class="trig-badge" id="triggerDisplay">WORTHY</span></div>
+      </div>
+      <div class="cost-bar"><div class="cost-item">Analysis: <strong>~$0.005</strong></div><div class="cost-item">Carousel: <strong>~$0.005</strong></div><div class="cost-item">Caption: <strong>~$0.003</strong></div><div class="cost-item">Rendering: <strong>free</strong></div><div class="cost-item">Total: <strong>~$0.01</strong></div></div>
+      <div class="btns">
+        <button class="btn" onclick="copyCaption()">Copy Caption</button>
+        <button class="ghost" onclick="goStep(4)">Back to Preview</button>
+        <button class="ghost" onclick="goStep(1)">Start Over</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end builder -->
 
 </div><!-- end .main -->
 
@@ -401,285 +320,271 @@ var BACKEND = "";
 var uploadedAssets = [];
 var viralPosts = [];
 var viralSelected = [];
-var viralAnalysisData = null;
+var carouselSlides = [];
+var captionText = "";
 
-// ─── Status check ───
+// ─── Status ───
 fetch(BACKEND + "/health").then(function(r) {
   if (r.ok) { document.getElementById("dot").style.background = "#6fcf97"; document.getElementById("status-txt").textContent = "Live"; }
   else throw 0;
-}).catch(function() {
-  document.getElementById("dot").style.background = "#e87070";
-  document.getElementById("status-txt").textContent = "Offline";
-});
+}).catch(function() { document.getElementById("dot").style.background = "#e87070"; document.getElementById("status-txt").textContent = "Offline"; });
 
-// ─── Tab switching (unchanged) ───
+// ─── Tab switching ───
 function showTab(id, el) {
   document.querySelectorAll(".tab-panel").forEach(function(p) { p.style.display = "none"; });
   document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
   document.getElementById(id).style.display = "block";
-  if (el) { el.classList.add("active"); }
-  else { document.querySelectorAll(".tab").forEach(function(t) { if (t.textContent.toLowerCase().indexOf(id) > -1) t.classList.add("active"); }); }
+  if (el) el.classList.add("active");
 }
 
-// ─── Existing backend call helper ───
 function callBackend(endpoint, body) {
-  return fetch(BACKEND + "/generate/" + endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  }).then(function(r) { return r.json(); });
+  return fetch(BACKEND + "/generate/" + endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function(r) { return r.json(); });
 }
 
-// ─── CONTENT STUDIO (unchanged) ───
+// ═══ EXISTING TABS (all unchanged) ═══
 function genContent() {
-  var topic = document.getElementById("topic").value.trim();
-  if (!topic) return;
-  var btn = document.getElementById("gen-btn");
-  btn.textContent = "Generating..."; btn.disabled = true;
-  callBackend("content", {
-    content_type: document.getElementById("ctype").value,
-    pillar: document.getElementById("pillar").value,
-    topic: topic,
-    tone: document.getElementById("tone").value,
-    cta_trigger: document.getElementById("cta").value || null
-  }).then(function(data) {
-    document.getElementById("content-out").textContent = data.content || "Error. Try again.";
-    document.getElementById("content-out-wrap").style.display = "block";
-    document.getElementById("copy-content").style.display = "inline-block";
-    document.getElementById("clear-btn").style.display = "inline-block";
-  }).catch(function() {
-    document.getElementById("content-out").textContent = "Error connecting to backend.";
-    document.getElementById("content-out-wrap").style.display = "block";
-  }).finally(function() { btn.textContent = "Generate Content"; btn.disabled = false; });
+  var t = document.getElementById("topic").value.trim(); if (!t) return;
+  var btn = document.getElementById("gen-btn"); btn.textContent = "Generating..."; btn.disabled = true;
+  callBackend("content", { content_type: document.getElementById("ctype").value, pillar: document.getElementById("pillar").value, topic: t, tone: document.getElementById("tone").value, cta_trigger: document.getElementById("cta").value || null }).then(function(d) {
+    document.getElementById("content-out").textContent = d.content || "Error."; document.getElementById("content-out-wrap").style.display = "block"; document.getElementById("copy-content").style.display = "inline-block"; document.getElementById("clear-btn").style.display = "inline-block";
+  }).catch(function() { document.getElementById("content-out").textContent = "Error."; document.getElementById("content-out-wrap").style.display = "block"; }).finally(function() { btn.textContent = "Generate Content"; btn.disabled = false; });
 }
-
-function clearContent() {
-  document.getElementById("topic").value = "";
-  document.getElementById("content-out-wrap").style.display = "none";
-  document.getElementById("copy-content").style.display = "none";
-  document.getElementById("clear-btn").style.display = "none";
-}
-
-// ─── DM ENGINE (unchanged) ───
+function clearContent() { document.getElementById("topic").value = ""; document.getElementById("content-out-wrap").style.display = "none"; document.getElementById("copy-content").style.display = "none"; document.getElementById("clear-btn").style.display = "none"; }
 function genDM() {
-  var msg = document.getElementById("dm-in").value.trim();
-  if (!msg) return;
-  var btn = document.getElementById("dm-btn");
-  btn.textContent = "Writing..."; btn.disabled = true;
-  callBackend("dm-response", {
-    message: msg,
-    lead_temperature: document.getElementById("lead-temp").value
-  }).then(function(data) {
-    document.getElementById("dm-out").textContent = data.response || "Error. Try again.";
-    document.getElementById("dm-out-wrap").style.display = "block";
-    document.getElementById("copy-dm").style.display = "inline-block";
-  }).catch(function() {
-    document.getElementById("dm-out").textContent = "Error connecting to backend.";
-    document.getElementById("dm-out-wrap").style.display = "block";
-  }).finally(function() { btn.textContent = "Generate DM Response"; btn.disabled = false; });
+  var m = document.getElementById("dm-in").value.trim(); if (!m) return;
+  var btn = document.getElementById("dm-btn"); btn.textContent = "Writing..."; btn.disabled = true;
+  callBackend("dm-response", { message: m, lead_temperature: document.getElementById("lead-temp").value }).then(function(d) {
+    document.getElementById("dm-out").textContent = d.response || "Error."; document.getElementById("dm-out-wrap").style.display = "block"; document.getElementById("copy-dm").style.display = "inline-block";
+  }).catch(function() { document.getElementById("dm-out").textContent = "Error."; document.getElementById("dm-out-wrap").style.display = "block"; }).finally(function() { btn.textContent = "Generate DM Response"; btn.disabled = false; });
 }
-
-// ─── MANYCHAT FLOWS (unchanged) ───
-function genFlow(keyword, offer, color, btn) {
+function genFlow(kw, offer, color, btn) {
   document.querySelectorAll(".trig-btn").forEach(function(b) { b.style.background = "rgba(255,255,255,.05)"; b.style.color = "#F7EBE0"; });
   btn.style.background = color; btn.style.color = "#3B2145";
-  document.getElementById("flow-out-wrap").style.display = "block";
-  document.getElementById("flow-label").textContent = keyword + " - " + offer;
-  document.getElementById("flow-out").textContent = "Writing " + keyword + " flow...";
-  callBackend("manychat-flow", { keyword: keyword, offer: offer }).then(function(data) {
-    document.getElementById("flow-out").textContent = data.flow || "Error. Try again.";
-  }).catch(function() { document.getElementById("flow-out").textContent = "Error connecting to backend."; });
+  document.getElementById("flow-out-wrap").style.display = "block"; document.getElementById("flow-label").textContent = kw + " - " + offer; document.getElementById("flow-out").textContent = "Writing " + kw + " flow...";
+  callBackend("manychat-flow", { keyword: kw, offer: offer }).then(function(d) { document.getElementById("flow-out").textContent = d.flow || "Error."; }).catch(function() { document.getElementById("flow-out").textContent = "Error."; });
 }
-
-// ─── BRAND VAULT (unchanged) ───
 function handleDragOver(e) { e.preventDefault(); document.getElementById("upload-zone").classList.add("drag-over"); }
 function handleDragLeave(e) { document.getElementById("upload-zone").classList.remove("drag-over"); }
 function handleDrop(e) { e.preventDefault(); document.getElementById("upload-zone").classList.remove("drag-over"); processFiles(e.dataTransfer.files); }
 function handleFileSelect(e) { processFiles(e.target.files); }
-function processFiles(files) {
-  Array.from(files).forEach(function(file) {
-    if (!file.type.startsWith("image/")) return;
-    var reader = new FileReader();
-    reader.onload = function(e) { uploadedAssets.push({ name: file.name, url: e.target.result, type: "carousel" }); renderAssetGrid(); };
-    reader.readAsDataURL(file);
-  });
-}
-function renderAssetGrid() {
-  var grid = document.getElementById("asset-grid");
-  grid.innerHTML = uploadedAssets.map(function(a) { return '<div class="asset-item"><img class="asset-img" src="' + a.url + '" alt="' + a.name + '"><div class="asset-name">' + a.name + '</div></div>'; }).join("");
-}
+function processFiles(files) { Array.from(files).forEach(function(f) { if (!f.type.startsWith("image/")) return; var r = new FileReader(); r.onload = function(e) { uploadedAssets.push({ name: f.name, url: e.target.result }); renderAssetGrid(); }; r.readAsDataURL(f); }); }
+function renderAssetGrid() { document.getElementById("asset-grid").innerHTML = uploadedAssets.map(function(a) { return '<div class="asset-item"><img class="asset-img" src="' + a.url + '"><div class="asset-name">' + a.name + '</div></div>'; }).join(""); }
 function analyzeStyle() {
-  var urls = document.getElementById("insta-urls").value.trim();
-  var notes = document.getElementById("style-notes").value.trim();
-  if (!urls && !notes && uploadedAssets.length === 0) { alert("Add some Instagram accounts or style notes first."); return; }
-  var btn = document.getElementById("analyze-btn");
-  btn.textContent = "Analyzing..."; btn.disabled = true;
-  var prompt = "Analyze and create a style guide for Angela Schellenberg's carousels.";
-  if (uploadedAssets.length > 0) prompt += "\n\nShe has uploaded " + uploadedAssets.length + " carousel example images.";
-  if (urls) prompt += "\n\nInstagram accounts whose style she loves:\n" + urls;
-  if (notes) prompt += "\n\nHer style notes:\n" + notes;
-  prompt += "\n\nWrite a detailed, practical style guide covering: Visual style, Slide structure, Hook patterns, Text density, Typography, What makes these stop the scroll. Make it specific for Rosa.";
-  fetch(BACKEND + "/generate/content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content_type: "Style Guide", pillar: "Brand", topic: prompt, tone: "educational / expert" }) }).then(function(r) { return r.json(); }).then(function(data) {
-    document.getElementById("style-guide-out").textContent = data.content || "Error.";
-    document.getElementById("style-guide-out").style.display = "block";
-    document.getElementById("copy-style").style.display = "inline-block";
-  }).catch(function() { document.getElementById("style-guide-out").textContent = "Error."; document.getElementById("style-guide-out").style.display = "block"; }).finally(function() { btn.textContent = "Analyze My Style"; btn.disabled = false; });
+  var u = document.getElementById("insta-urls").value.trim(), n = document.getElementById("style-notes").value.trim();
+  if (!u && !n && !uploadedAssets.length) { alert("Add something first."); return; }
+  var btn = document.getElementById("analyze-btn"); btn.textContent = "Analyzing..."; btn.disabled = true;
+  var p = "Analyze and create a style guide for Angela Schellenberg's carousels."; if (uploadedAssets.length) p += "\n\n" + uploadedAssets.length + " carousel examples uploaded."; if (u) p += "\n\nAccounts she loves:\n" + u; if (n) p += "\n\nNotes:\n" + n;
+  p += "\n\nWrite a detailed style guide: Visual style, Slide structure, Hook patterns, Text density, Typography, What stops the scroll. Make it specific for Rosa.";
+  fetch(BACKEND + "/generate/content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content_type: "Style Guide", pillar: "Brand", topic: p, tone: "educational / expert" }) }).then(function(r) { return r.json(); }).then(function(d) { document.getElementById("style-guide-out").textContent = d.content || "Error."; document.getElementById("style-guide-out").style.display = "block"; document.getElementById("copy-style").style.display = "inline-block"; }).catch(function() { document.getElementById("style-guide-out").textContent = "Error."; document.getElementById("style-guide-out").style.display = "block"; }).finally(function() { btn.textContent = "Analyze My Style"; btn.disabled = false; });
 }
+function copyIt(outId, btnId, orig) { navigator.clipboard.writeText(document.getElementById(outId).textContent); var b = document.getElementById(btnId); b.textContent = "Copied!"; setTimeout(function() { b.textContent = orig; }, 2200); }
 
-// ─── Copy helper (unchanged) ───
-function copyIt(outId, btnId, origText) {
-  navigator.clipboard.writeText(document.getElementById(outId).textContent);
-  var btn = document.getElementById(btnId);
-  btn.textContent = "Copied!";
-  setTimeout(function() { btn.textContent = origText; }, 2200);
-}
 
 // ═══════════════════════════════════════════════════
-// NEW: VIRAL FEED
+// CAROUSEL BUILDER - STEP BY STEP
 // ═══════════════════════════════════════════════════
+
+function goStep(n) {
+  for (var i = 1; i <= 5; i++) {
+    document.getElementById("step" + i).classList.toggle("active", i === n);
+    var pill = document.getElementById("sp" + i);
+    pill.className = "step-pill";
+    if (i < n) pill.classList.add("done");
+    if (i === n) pill.classList.add("current");
+  }
+  window.scrollTo({ top: document.getElementById("stepBar").offsetTop - 80, behavior: "smooth" });
+}
+
+// STEP 1 → Skip to generate (user already has topic)
+function skipToGenerate() {
+  var topic = document.getElementById("b-topic").value.trim();
+  if (!topic) { alert("Enter a topic first."); return; }
+  goStep(3);
+  generateSlidesCopy(topic);
+}
+
+// STEP 2: Load viral feed
 function loadViralFeed() {
-  fetch(BACKEND + "/api/viral").then(function(r) { return r.json(); }).then(function(data) {
-    if (data.success) { viralPosts = data.posts; renderFeedGrid(); }
-  }).catch(function() {
-    document.getElementById("feedGrid").innerHTML = '<div class="v-err">Could not load viral feed. Backend may be starting up.</div>';
-  });
+  fetch(BACKEND + "/api/viral").then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) { viralPosts = d.posts; renderFeedGrid(); }
+  }).catch(function() { document.getElementById("feedGrid").innerHTML = '<div class="v-err">Could not load feed. Backend may be starting.</div>'; });
 }
 
 function renderFeedGrid() {
-  var g = document.getElementById("feedGrid");
-  g.innerHTML = "";
+  var g = document.getElementById("feedGrid"); g.innerHTML = "";
   viralPosts.forEach(function(p, i) {
-    var c = document.createElement("div");
-    c.className = "fc";
+    var c = document.createElement("div"); c.className = "fc";
     c.onclick = function() {
       c.classList.toggle("sel");
       var idx = viralSelected.indexOf(i);
       if (idx > -1) viralSelected.splice(idx, 1); else viralSelected.push(i);
       document.getElementById("selCount").textContent = viralSelected.length + " selected";
-      document.getElementById("analyzeViralBtn").disabled = viralSelected.length === 0;
+      document.getElementById("analyzeBtn").disabled = viralSelected.length === 0;
     };
     c.innerHTML = '<div class="fc-dot"></div><span class="fc-src">' + (p.sub || p.src) + '</span><h3>' + p.title + '</h3><div class="fc-stats">' + p.stats + '</div><p class="fc-ex">' + p.excerpt + '</p><span class="fc-tag">' + p.tag + '</span>';
     g.appendChild(c);
   });
 }
 
-function analyzeViral() {
-  var btn = document.getElementById("analyzeViralBtn");
+// STEP 2 → 3: Analyze + generate slides
+function runAnalysis() {
+  var btn = document.getElementById("analyzeBtn");
   btn.textContent = "Analyzing..."; btn.disabled = true;
+  goStep(3);
+
   var selPosts = viralSelected.map(function(i) { return viralPosts[i]; });
-  var out = document.getElementById("viral-analysis");
-  out.style.display = "block";
-  out.innerHTML = '<div class="v-loader"><p>Reading the room...</p></div>';
+  var userTopic = document.getElementById("b-topic").value.trim();
+  var pillar = document.getElementById("b-pillar").value;
+  var tone = document.getElementById("b-tone").value;
 
+  // First analyze, then generate carousel
   fetch(BACKEND + "/api/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ posts: selPosts })
-  }).then(function(r) { return r.json(); }).then(function(data) {
-    if (data.success && typeof data.data === "object") {
-      viralAnalysisData = data.data;
-      var html = "";
-      if (data.data.patterns) {
-        html += '<div class="analysis-card"><h3>Patterns performing right now</h3><ul>';
-        data.data.patterns.forEach(function(p) { html += "<li>" + p + "</li>"; });
-        html += "</ul></div>";
-      }
-      if (data.data.hooks) {
-        html += '<div class="analysis-card"><h3>Hooks to adapt</h3><ul>';
-        data.data.hooks.forEach(function(h) { html += "<li>" + h + "</li>"; });
-        html += "</ul></div>";
-      }
-      if (data.data.angle) {
-        html += '<div class="analysis-card"><h3>Your angle</h3><p>' + data.data.angle + "</p></div>";
-      }
-      if (data.data.suggested_topic) {
-        html += '<div class="analysis-card"><h3>Suggested carousel topic</h3><p><strong>' + data.data.suggested_topic + "</strong></p></div>";
-      }
-      html += '<div class="btns"><button class="btn" onclick="useViralTopic()">Generate Carousel from This</button></div>';
-      out.innerHTML = html;
-    } else {
-      out.innerHTML = '<div class="analysis-card"><h3>Analysis</h3><p>' + (data.data || "No analysis returned") + "</p></div>";
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    var topic = userTopic;
+    if (!topic && d.success && typeof d.data === "object" && d.data.suggested_topic) {
+      topic = d.data.suggested_topic;
     }
-  }).catch(function(e) {
-    out.innerHTML = '<div class="v-err">Error: ' + e.message + "</div>";
-  }).finally(function() { btn.textContent = "Analyze Selected"; btn.disabled = false; });
+    if (!topic) topic = "grief and attachment trauma nobody talks about";
+    generateSlidesCopy(topic);
+  }).catch(function() {
+    generateSlidesCopy(userTopic || "grief and attachment trauma nobody talks about");
+  }).finally(function() { btn.textContent = "Analyze Selected + Write Slides"; btn.disabled = false; });
 }
 
-function useViralTopic() {
-  var topic = viralAnalysisData && viralAnalysisData.suggested_topic ? viralAnalysisData.suggested_topic : "";
-  document.getElementById("carousel-topic").value = topic;
-  showTab("carousel");
-  document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
-  document.querySelectorAll(".tab").forEach(function(t) { if (t.textContent === "Carousel") t.classList.add("active"); });
-}
-
-// ═══════════════════════════════════════════════════
-// NEW: CAROUSEL GENERATOR
-// ═══════════════════════════════════════════════════
-function genCarousel() {
-  var topic = document.getElementById("carousel-topic").value.trim();
-  if (!topic) return;
-  var btn = document.getElementById("carousel-btn");
-  btn.textContent = "Generating..."; btn.disabled = true;
-  document.getElementById("carouselLoader").style.display = "block";
-  document.getElementById("carouselOutput").style.display = "none";
+// Generate slide copy from Claude
+function generateSlidesCopy(topic) {
+  document.getElementById("editLoader").style.display = "block";
+  document.getElementById("slideEditors").innerHTML = "";
+  document.getElementById("editActions").style.display = "none";
 
   fetch(BACKEND + "/api/carousel", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ topic: topic })
-  }).then(function(r) { return r.json(); }).then(function(data) {
-    document.getElementById("carouselLoader").style.display = "none";
-    var out = document.getElementById("carouselOutput");
-    out.style.display = "block";
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    document.getElementById("editLoader").style.display = "none";
 
-    if (data.success && !data.raw && data.data && data.data.slides) {
-      renderCarouselSlides(data.data);
+    if (d.success && !d.raw && d.data && d.data.slides) {
+      carouselSlides = d.data.slides;
+      captionText = d.data.caption || "";
+      buildSlideEditors();
     } else {
-      var txt = typeof data.data === "string" ? data.data : JSON.stringify(data.data, null, 2);
-      out.innerHTML = '<div class="out" style="margin-bottom:14px">' + txt + '</div>';
+      document.getElementById("slideEditors").innerHTML = '<div class="v-err">Could not parse slides. Try again.</div><div class="btns"><button class="btn" onclick="generateSlidesCopy(\'' + topic.replace(/'/g, "\\'") + '\')">Retry</button></div>';
     }
   }).catch(function(e) {
-    document.getElementById("carouselLoader").style.display = "none";
-    document.getElementById("carouselOutput").style.display = "block";
-    document.getElementById("carouselOutput").innerHTML = '<div class="v-err">Error: ' + e.message + "</div>";
-  }).finally(function() { btn.textContent = "Generate Carousel"; btn.disabled = false; });
+    document.getElementById("editLoader").style.display = "none";
+    document.getElementById("slideEditors").innerHTML = '<div class="v-err">Error: ' + e.message + '</div>';
+  });
 }
 
-function renderCarouselSlides(d) {
-  var out = document.getElementById("carouselOutput");
-  var slides = d.slides;
-  var caption = d.caption || "";
-  var trigger = d.trigger || "WORTHY";
+// STEP 3: Build editable text boxes for each slide
+function buildSlideEditors() {
+  var html = "";
+  carouselSlides.forEach(function(s, i) {
+    var typeLabel = s.type === "hook" ? "Hook" : s.type === "cta" ? "CTA" : "Body";
+    var content = "";
+    if (s.type === "hook") content = (s.upper || "") + "\n" + (s.italic || "");
+    else if (s.type === "cta") content = (s.top || "") + "\n" + (s.bottom || "");
+    else content = (s.html || s.text || "").replace(/<em>/g, "*").replace(/<\/em>/g, "*").replace(/<strong>/g, "**").replace(/<\/strong>/g, "**");
 
-  var html = '<div class="cr-scroll">';
-  slides.forEach(function(s, i) {
-    html += '<div class="sl-wrap">';
-    html += '<div class="sl-num">Slide ' + (i+1) + ' of ' + slides.length + '</div>';
+    html += '<div class="slide-editor"><div class="slide-editor-header"><span class="slide-editor-num">Slide ' + (i + 1) + '</span><span class="slide-editor-type">' + typeLabel + '</span></div>';
+    html += '<textarea id="se-' + i + '" class="slide-edit-ta">' + content + '</textarea></div>';
+  });
+  document.getElementById("slideEditors").innerHTML = html;
+  document.getElementById("editActions").style.display = "flex";
+}
 
+// STEP 3 → 4: Render visual slides from edited text
+function renderSlides() {
+  goStep(4);
+
+  // Read edited values back into carouselSlides
+  carouselSlides.forEach(function(s, i) {
+    var val = document.getElementById("se-" + i).value;
     if (s.type === "hook") {
-      html += '<div class="slide hook-s"><div class="sl-text"><div class="sl-upper">' + (s.upper||"") + '</div><div class="sl-italic">' + (s.italic||"") + '</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
+      var lines = val.split("\n");
+      s.upper = lines[0] || "";
+      s.italic = lines.slice(1).join("\n") || "";
     } else if (s.type === "cta") {
-      html += '<div class="slide cta-s"><div class="sl-text"><div class="sl-cta-top">' + (s.top||"") + '</div><div class="sl-cta-bot">' + (s.bottom||"") + '</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
+      var lines = val.split("\n");
+      s.top = lines[0] || "";
+      s.bottom = lines.slice(1).join("\n") || "";
     } else {
-      html += '<div class="slide body-s"><div class="sl-text">' + (s.html||s.text||"") + '</div><div class="sl-wm">@angelaschellenberg</div></div>';
+      s.html = val.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+    }
+  });
+
+  // Render the visual slides
+  var html = '<div class="cr-scroll">';
+  carouselSlides.forEach(function(s, i) {
+    html += '<div class="sl-wrap"><div class="sl-num">Slide ' + (i + 1) + ' of ' + carouselSlides.length + '</div>';
+    if (s.type === "hook") {
+      html += '<div class="slide hook-s"><div class="sl-text"><div class="sl-upper">' + s.upper + '</div><div class="sl-italic">' + s.italic + '</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
+    } else if (s.type === "cta") {
+      html += '<div class="slide cta-s"><div class="sl-text"><div class="sl-cta-top">' + s.top + '</div><div class="sl-cta-bot">' + s.bottom + '</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
+    } else {
+      html += '<div class="slide body-s"><div class="sl-text">' + s.html + '</div><div class="sl-wm">@angelaschellenberg</div></div>';
     }
     html += '</div>';
   });
   html += '</div>';
-
-  html += '<div class="caption-box"><h4>Caption</h4><pre id="carouselCaption">' + caption + '</pre><div class="btns"><button class="ghost" onclick="copyIt(\'carouselCaption\',this.id,\'Copy Caption\')" id="copy-carousel-cap">Copy Caption</button></div></div>';
-
-  html += '<div style="margin-top:14px;display:flex;gap:10px;align-items:center"><span style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#D2C7FF;opacity:.3">ManyChat trigger</span><span class="trig-badge">' + trigger + '</span></div>';
-
-  html += '<div class="cost-bar"><div class="cost-item">Analysis: <strong>~$0.005</strong></div><div class="cost-item">Carousel copy: <strong>~$0.005</strong></div><div class="cost-item">Rendering: <strong>free</strong></div><div class="cost-item">Total: <strong>~$0.01</strong></div></div>';
-
-  html += '<div class="btns" style="margin-top:20px"><button class="btn" onclick="genCarousel()">Regenerate</button></div>';
-
-  out.innerHTML = html;
+  document.getElementById("renderedSlides").innerHTML = html;
 }
 
-// ─── Load viral feed on page load ───
+// STEP 5: Caption + trigger
+function goStepFive() { goStep(5); }
+
+// Override goStep to handle step 5 caption generation
+var _goStep = goStep;
+goStep = function(n) {
+  _goStep(n);
+  if (n === 5) {
+    if (captionText) {
+      document.getElementById("captionLoader").style.display = "none";
+      document.getElementById("captionArea").style.display = "block";
+      document.getElementById("captionEdit").value = captionText;
+    } else {
+      document.getElementById("captionLoader").style.display = "block";
+      document.getElementById("captionArea").style.display = "none";
+      // Generate caption from slides
+      var slideTexts = carouselSlides.map(function(s, i) {
+        if (s.type === "hook") return "Slide " + (i+1) + " (hook): " + s.upper + " / " + s.italic;
+        if (s.type === "cta") return "Slide " + (i+1) + " (cta): " + s.top + " / " + s.bottom;
+        return "Slide " + (i+1) + ": " + (s.html || "").replace(/<[^>]+>/g, "");
+      }).join("\n");
+
+      callBackend("content", {
+        content_type: "Instagram Caption",
+        pillar: document.getElementById("b-pillar").value,
+        topic: "Write a caption for this carousel:\n\n" + slideTexts + "\n\nInclude hashtags. End with: Comment " + document.getElementById("b-cta-trigger").value + " and I'll send it to you.",
+        tone: document.getElementById("b-tone").value
+      }).then(function(d) {
+        captionText = d.content || "";
+        document.getElementById("captionEdit").value = captionText;
+        document.getElementById("captionLoader").style.display = "none";
+        document.getElementById("captionArea").style.display = "block";
+      }).catch(function() {
+        document.getElementById("captionLoader").style.display = "none";
+        document.getElementById("captionArea").style.display = "block";
+        document.getElementById("captionEdit").value = "Error generating caption. Write it manually.";
+      });
+    }
+  }
+};
+
+// Update trigger badge display
+document.getElementById("b-cta-trigger").addEventListener("change", function() {
+  document.getElementById("triggerDisplay").textContent = this.value;
+});
+
+function copyCaption() {
+  navigator.clipboard.writeText(document.getElementById("captionEdit").value);
+  event.target.textContent = "Copied!";
+  setTimeout(function() { event.target.textContent = "Copy Caption"; }, 2200);
+}
+
+// ─── INIT ───
 loadViralFeed();
 </script>
 </body>
