@@ -84,21 +84,59 @@ async def generate_manychat_flow(req: Request):
     return {"flow": response.content[0].text}
 
 
-# ─── NEW ENDPOINTS ───
+# ─── SCRAPER + VIRAL ENDPOINTS ───
+
+DEMO_POSTS = [
+    {"src":"reddit","sub":"r/GriefSupport","title":"Does anyone else feel guilty for laughing after losing a parent?","stats":"2,847 upvotes · 412 comments","excerpt":"My mom died 6 months ago and I caught myself genuinely laughing yesterday and immediately felt like the worst person alive.","tag":"naming unnamed grief"},
+    {"src":"reddit","sub":"r/MotherlessDaughters","title":"My wedding is in 3 months and I can't stop crying about my mom not being there","stats":"1,923 upvotes · 287 comments","excerpt":"Everyone keeps saying she'll be there in spirit and I want to scream. I don't want her in spirit.","tag":"milestone grief"},
+    {"src":"reddit","sub":"r/CPTSD","title":"Does anyone else grieve a mother who is technically still alive?","stats":"3,102 upvotes · 518 comments","excerpt":"She's alive but she was never really there. I mourn the mother I deserved but never had.","tag":"living loss"},
+    {"src":"reddit","sub":"r/GriefSupport","title":"I hate when people say 'stay strong' at funerals","stats":"4,211 upvotes · 673 comments","excerpt":"Why is falling apart not an option? Why do I have to perform composure for YOUR comfort?","tag":"challenging platitudes"},
+    {"src":"reddit","sub":"r/raisedbynarcissists","title":"I just realized I've been parenting my parent since I was 8","stats":"2,456 upvotes · 389 comments","excerpt":"I was the one checking if she was okay. I was the one managing her emotions. I was 8.","tag":"parentification"},
+    {"src":"reddit","sub":"r/MotherlessDaughters","title":"Things nobody tells you about losing your mom young","stats":"1,678 upvotes · 234 comments","excerpt":"You become everyone else's therapist. You learn to swallow your feelings. Mother's Day becomes a minefield.","tag":"community identification"},
+    {"src":"reddit","sub":"r/CPTSD","title":"My body flinches before my brain even registers the threat","stats":"2,891 upvotes · 445 comments","excerpt":"Someone raises their voice and my whole nervous system goes offline. I didn't choose this response.","tag":"somatic awareness"},
+    {"src":"reddit","sub":"r/GriefSupport","title":"It's been 5 years and a song just made me ugly cry in the grocery store","stats":"3,567 upvotes · 521 comments","excerpt":"People think grief has a timeline. It doesn't. It just hides and then ambushes you in aisle 7.","tag":"grief has no timeline"},
+]
+
 
 @app.get("/api/viral")
 async def get_viral():
-    posts = [
-        {"src":"reddit","sub":"r/GriefSupport","title":"Does anyone else feel guilty for laughing after losing a parent?","stats":"2,847 upvotes · 412 comments","excerpt":"My mom died 6 months ago and I caught myself genuinely laughing yesterday and immediately felt like the worst person alive.","tag":"naming unnamed guilt"},
-        {"src":"reddit","sub":"r/MotherlessDaughters","title":"My wedding is in 3 months and I can't stop crying about my mom not being there","stats":"1,923 upvotes · 287 comments","excerpt":"Everyone keeps saying she'll be there in spirit and I want to scream. I don't want her in spirit.","tag":"milestone grief"},
-        {"src":"reddit","sub":"r/CPTSD","title":"Does anyone else grieve a mother who is technically still alive?","stats":"3,102 upvotes · 518 comments","excerpt":"She's alive but she was never really there. I mourn the mother I deserved but never had.","tag":"living loss"},
-        {"src":"reddit","sub":"r/GriefSupport","title":"I hate when people say 'stay strong' at funerals","stats":"4,211 upvotes · 673 comments","excerpt":"Why is falling apart not an option? Why do I have to perform composure for YOUR comfort?","tag":"challenging platitudes"},
-        {"src":"reddit","sub":"r/raisedbynarcissists","title":"I just realized I've been parenting my parent since I was 8","stats":"2,456 upvotes · 389 comments","excerpt":"I was the one checking if she was okay. I was the one managing her emotions. I was 8.","tag":"parentification"},
-        {"src":"reddit","sub":"r/MotherlessDaughters","title":"Things nobody tells you about losing your mom young","stats":"1,678 upvotes · 234 comments","excerpt":"You become everyone else's therapist. You learn to swallow your feelings. Mother's Day becomes a minefield.","tag":"community identification"},
-        {"src":"reddit","sub":"r/CPTSD","title":"My body flinches before my brain even registers the threat","stats":"2,891 upvotes · 445 comments","excerpt":"Someone raises their voice and my whole nervous system goes offline. I didn't choose this response.","tag":"somatic awareness"},
-        {"src":"reddit","sub":"r/GriefSupport","title":"It's been 5 years and a song just made me ugly cry in the grocery store","stats":"3,567 upvotes · 521 comments","excerpt":"People think grief has a timeline. It doesn't. It just hides and then ambushes you in aisle 7.","tag":"grief has no timeline"}
-    ]
-    return JSONResponse({"success": True, "posts": posts})
+    """Return viral posts. Tries scraper cache first, falls back to demo data."""
+    try:
+        from scraper import load_cache
+        cache = load_cache()
+        if cache and cache.get("posts"):
+            return JSONResponse({
+                "success": True,
+                "posts": cache["posts"],
+                "scraped_at": cache.get("scraped_at", "unknown"),
+                "source": "live"
+            })
+    except Exception as e:
+        print(f"Scraper cache error: {e}")
+
+    # Fallback to demo data
+    return JSONResponse({
+        "success": True,
+        "posts": DEMO_POSTS,
+        "scraped_at": "demo data",
+        "source": "demo"
+    })
+
+
+@app.post("/api/scrape")
+async def trigger_scrape():
+    """Manually trigger the scraper. Takes 20-30 seconds."""
+    try:
+        from scraper import run_scraper
+        result = run_scraper()
+        return JSONResponse({
+            "success": True,
+            "total": result.get("total_found", 0),
+            "saved": len(result.get("posts", [])),
+            "scraped_at": result.get("scraped_at", "")
+        })
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
 @app.post("/api/analyze")
@@ -156,4 +194,4 @@ RULES:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v2-carousel"}
+    return {"status": "ok", "version": "v2-scraper"}
