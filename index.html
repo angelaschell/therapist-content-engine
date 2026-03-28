@@ -259,7 +259,37 @@ function clearContent(){document.getElementById("topic").value="";document.getEl
 function genDM(){var m=document.getElementById("dm-in").value.trim();if(!m)return;var b=document.getElementById("dm-btn");b.textContent="Writing...";b.disabled=true;callBackend("dm-response",{message:m,lead_temperature:document.getElementById("lead-temp").value}).then(function(d){document.getElementById("dm-out").textContent=d.response||"Error.";document.getElementById("dm-out-wrap").style.display="block";document.getElementById("copy-dm").style.display="inline-block"}).catch(function(){document.getElementById("dm-out").textContent="Error.";document.getElementById("dm-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate DM Response";b.disabled=false})}
 function genFlow(kw,offer,color,btn){document.querySelectorAll(".trig-btn").forEach(function(b){b.style.background="rgba(210,199,255,.12)";b.style.color="#3B2145"});btn.style.background=color;btn.style.color="#fff";document.getElementById("flow-out-wrap").style.display="block";document.getElementById("flow-label").textContent=kw+" - "+offer;document.getElementById("flow-out").textContent="Writing "+kw+" flow...";callBackend("manychat-flow",{keyword:kw,offer:offer}).then(function(d){document.getElementById("flow-out").textContent=d.flow||"Error."}).catch(function(){document.getElementById("flow-out").textContent="Error."})}
 function processFiles(f){Array.from(f).forEach(function(file){if(!file.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(e){uploadedAssets.push({name:file.name,url:e.target.result});document.getElementById("asset-grid").innerHTML=uploadedAssets.map(function(a){return'<div class="asset-item"><img class="asset-img" src="'+a.url+'"><div class="asset-name">'+a.name+"</div></div>"}).join("")};r.readAsDataURL(file)})}
-function analyzeStyle(){var u=document.getElementById("insta-urls").value.trim(),n=document.getElementById("style-notes").value.trim();if(!u&&!n&&!uploadedAssets.length){alert("Add something first.");return}var b=document.getElementById("analyze-btn");b.textContent="Analyzing...";b.disabled=true;var p="Analyze carousel style.";if(uploadedAssets.length)p+="\n"+uploadedAssets.length+" examples.";if(u)p+="\nAccounts:\n"+u;if(n)p+="\nNotes:\n"+n;p+="\nWrite a style guide for Rosa.";fetch(BACKEND+"/generate/content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_type:"Style Guide",pillar:"Brand",topic:p,tone:"educational / expert"})}).then(function(r){return r.json()}).then(function(d){document.getElementById("style-guide-out").textContent=d.content||"Error.";document.getElementById("style-guide-out").style.display="block";document.getElementById("copy-style").style.display="inline-block"}).catch(function(){document.getElementById("style-guide-out").textContent="Error.";document.getElementById("style-guide-out").style.display="block"}).finally(function(){b.textContent="Analyze My Style";b.disabled=false})}
+function analyzeStyle(){
+  var u=document.getElementById("insta-urls").value.trim(),n=document.getElementById("style-notes").value.trim();
+  if(!u&&!n&&!uploadedAssets.length){alert("Add something first.");return}
+  var b=document.getElementById("analyze-btn");b.textContent="Analyzing...";b.disabled=true;
+
+  // Step 1: Generate text style guide for Rosa (original behavior)
+  var p="Analyze carousel style.";
+  if(uploadedAssets.length)p+="\n"+uploadedAssets.length+" examples.";
+  if(u)p+="\nAccounts:\n"+u;
+  if(n)p+="\nNotes:\n"+n;
+  p+="\nWrite a style guide for Rosa.";
+  fetch(BACKEND+"/generate/content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_type:"Style Guide",pillar:"Brand",topic:p,tone:"educational / expert"})}).then(function(r){return r.json()}).then(function(d){
+    document.getElementById("style-guide-out").textContent=d.content||"Error.";
+    document.getElementById("style-guide-out").style.display="block";
+    document.getElementById("copy-style").style.display="inline-block";
+
+    // Step 2: If images uploaded, also run vision analysis for slide variations
+    if(uploadedAssets.length>0){
+      b.textContent="Reading images...";
+      var images=uploadedAssets.map(function(a){return a.url});
+      fetch(BACKEND+"/api/analyze-style",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({images:images,notes:n})}).then(function(r){return r.json()}).then(function(vd){
+        if(vd.success&&vd.data&&vd.data.styles){
+          localStorage.setItem("ce-style-vars",JSON.stringify(vd.data.styles));
+          var extra="\n\n--- SLIDE STYLE VARIATIONS (auto-applied to carousels) ---\n";
+          vd.data.styles.forEach(function(s,i){extra+=(i+1)+". "+s.name+": "+s.description+"\n"});
+          document.getElementById("style-guide-out").textContent+=extra;
+        }
+      }).catch(function(){}).finally(function(){b.textContent="Analyze My Style";b.disabled=false});
+    }else{b.textContent="Analyze My Style";b.disabled=false}
+  }).catch(function(){document.getElementById("style-guide-out").textContent="Error.";document.getElementById("style-guide-out").style.display="block";b.textContent="Analyze My Style";b.disabled=false})
+}
 function copyIt(outId,btnId,orig){navigator.clipboard.writeText(document.getElementById(outId).textContent);var b=document.getElementById(btnId);b.textContent="Copied!";setTimeout(function(){b.textContent=orig},2200)}
 
 // ═══ CAROUSEL BUILDER ═══
