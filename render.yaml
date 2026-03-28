@@ -1,41 +1,9 @@
 services:
-  # Main API server
   - type: web
-    name: therapist-content-engine
+    name: therapist-content-engine-app
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_KEY
-        sync: false
-      - key: APIFY_TOKEN
-        sync: false
-      - key: REDDIT_CLIENT_ID
-        sync: false
-      - key: REDDIT_CLIENT_SECRET
-        sync: false
-
-  # Daily scraper cron job (runs at 6am UTC = 11pm PT)
-  - type: cron
-    name: viral-content-scraper
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    schedule: "0 6 * * *"
-    startCommand: python scraper.py
-    envVars:
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_KEY
-        sync: false
-      - key: APIFY_TOKEN
-        sync: false
-      - key: REDDIT_CLIENT_ID
-        sync: false
-      - key: REDDIT_CLIENT_SECRET
         sync: false
