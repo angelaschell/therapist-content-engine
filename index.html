@@ -326,8 +326,23 @@ function downloadAllSlides(){var count=carouselSlides.length;var done=0;for(var 
 
 function loadCaption(){if(captionText){document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block";document.getElementById("captionEdit").value=captionText}else{document.getElementById("captionLoader").style.display="block";document.getElementById("captionArea").style.display="none";var st=carouselSlides.map(function(s,i){if(s.type==="hook")return"Slide "+(i+1)+": "+s.upper+" / "+s.italic;if(s.type==="cta")return"Slide "+(i+1)+": "+s.top+" / "+s.bottom;return"Slide "+(i+1)+": "+(s.html||"").replace(/<[^>]+>/g,"")}).join("\n");callBackend("content",{content_type:"Instagram Caption",pillar:document.getElementById("b-pillar").value,topic:"Write a caption for this carousel:\n\n"+st+"\n\nInclude hashtags. End with: Comment "+document.getElementById("b-cta-trigger").value+" and I'll send it to you.",tone:document.getElementById("b-tone").value,research_context:savedResearch}).then(function(d){captionText=d.content||"";document.getElementById("captionEdit").value=captionText;document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block"}).catch(function(){document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block";document.getElementById("captionEdit").value="Error. Write manually."})}}
 
-document.getElementById("b-cta-trigger").addEventListener("change",function(){document.getElementById("triggerDisplay").textContent=this.value});
-function copyCaption(){navigator.clipboard.writeText(document.getElementById("captionEdit").value);event.target.textContent="Copied!";setTimeout(function(){event.target.textContent="Copy Caption"},2200)}
+document.getElementById("b-cta-trigger").addEventListener("change",function(){
+  document.getElementById("triggerDisplay").textContent=this.value;
+  var cap=document.getElementById("captionEdit");
+  if(cap&&cap.value){
+    var triggers=["WORTHY","HEAL","UNTANGLE","STEADY","MALIBURETREAT","UNLEARN","GRIEFRELIEF","TOOLS","EQUINE","MOM","COMMUNITYCALL","EMDR","TAPPERS","HORSEHEALING"];
+    var newVal=this.value;
+    var text=cap.value;
+    triggers.forEach(function(t){
+      text=text.replace(new RegExp("Comment "+t,"gi"),"Comment "+newVal);
+      text=text.replace(new RegExp("comment "+t,"gi"),"comment "+newVal);
+      text=text.replace(new RegExp('"'+t+'"',"g"),'"'+newVal+'"');
+    });
+    cap.value=text;
+    captionText=text;
+  }
+});
+
 
 // ═══ SAVE + RECENT CAROUSELS ═══
 function saveCarousel(){try{var recent=JSON.parse(localStorage.getItem("ce-recent")||"[]");recent.unshift({topic:document.getElementById("b-topic").value||"Untitled",date:new Date().toISOString(),slides:carouselSlides,caption:captionText,trigger:document.getElementById("b-cta-trigger").value,research:savedResearch});if(recent.length>20)recent=recent.slice(0,20);localStorage.setItem("ce-recent",JSON.stringify(recent))}catch(e){}}
