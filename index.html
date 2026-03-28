@@ -12,7 +12,10 @@ body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:1
 /* ═══ HEADER - matches angelaschellenberg.com ═══ */
 .hero{background:#F7EBE0;padding:40px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
 .hero-inner{max-width:700px;margin:0 auto}
-.hero-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:16px;box-shadow:0 4px 20px rgba(59,33,69,.08)}
+.hero-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:16px;box-shadow:0 4px 20px rgba(59,33,69,.08);cursor:pointer;transition:opacity .25s}
+.hero-photo:hover{opacity:.8}
+.photo-hint{font-size:10px;color:rgba(59,33,69,.2);margin-bottom:10px;cursor:pointer}
+.photo-hint:hover{color:#90A9EC}
 .hero-greeting{font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:6px;font-weight:500}
 .hero h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:#3B2145;margin-bottom:6px;line-height:1.2}
 .hero-handle{font-size:13px;color:rgba(59,33,69,.35);margin-bottom:4px}
@@ -167,7 +170,9 @@ option{background:#F7EBE0}
 <!-- ═══ HEADER WITH PHOTO ═══ -->
 <div class="hero">
   <div class="hero-inner">
-    <img class="hero-photo" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela Schellenberg">
+    <img class="hero-photo" id="heroPhoto" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela Schellenberg" onclick="document.getElementById('photo-upload').click()">
+    <input type="file" id="photo-upload" accept="image/*" style="display:none" onchange="changePhoto(event)">
+    <div class="photo-hint" onclick="document.getElementById('photo-upload').click()">click photo to change</div>
     <div class="hero-greeting">Content Engine</div>
     <h1>Angela Schellenberg</h1>
     <div class="hero-handle">@angelaschellenberg</div>
@@ -304,6 +309,20 @@ option{background:#F7EBE0}
 
 <script>
 var BACKEND="";var uploadedAssets=[];var viralPosts=[];var viralSelected=[];var carouselSlides=[];var captionText="";
+
+// ─── Load saved profile photo ───
+var savedPhoto=localStorage.getItem("ce-profile-photo");
+if(savedPhoto){document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto})}
+
+function changePhoto(e){
+  var file=e.target.files[0];if(!file||!file.type.startsWith("image/"))return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    document.getElementById("heroPhoto").src=ev.target.result;
+    try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(err){}
+  };
+  reader.readAsDataURL(file);
+}
 
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
 
