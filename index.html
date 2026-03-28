@@ -5,12 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Angela Schellenberg — Content Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:100vh}
-
-/* ═══ HEADER - matches angelaschellenberg.com ═══ */
 .hero{background:#F7EBE0;padding:40px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
 .hero-inner{max-width:700px;margin:0 auto}
 .hero-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:16px;box-shadow:0 4px 20px rgba(59,33,69,.08);cursor:pointer;transition:opacity .25s}
@@ -23,18 +20,12 @@ body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:1
 .hero-status{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:18px}
 .hero-dot{width:7px;height:7px;border-radius:50%;background:#e87070}
 .hero-status-txt{font-size:11px;color:rgba(59,33,69,.3)}
-
-/* ═══ TABS ═══ */
 .tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 24px;overflow-x:auto;justify-content:center;gap:4px}
 .tab{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 18px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
 .tab:hover{color:rgba(59,33,69,.6)}
 .tab.active{color:#3B2145;border-bottom-color:#90A9EC}
-
-/* ═══ MAIN ═══ */
 .main{max-width:760px;margin:0 auto;padding:32px 20px 60px}
-.desc{color:rgba(59,33,69,.5);font-size:14px;margin-bottom:22px;line-height:1.7;font-family:'Cormorant Garamond',serif;font-size:17px}
-
-/* ═══ CARDS ═══ */
+.desc{color:rgba(59,33,69,.5);font-family:'Cormorant Garamond',serif;font-size:17px;margin-bottom:22px;line-height:1.7}
 .card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.3);border-radius:14px;padding:24px;margin-bottom:16px;backdrop-filter:blur(8px)}
 label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;display:block;margin-bottom:6px;font-weight:500}
 select,textarea,input[type=text]{background:rgba(255,255,255,.7);border:1px solid rgba(210,199,255,.4);border-radius:8px;color:#3B2145;padding:11px 14px;font-size:14px;width:100%;font-family:'Jost',sans-serif;outline:none;-webkit-appearance:none;transition:border-color .25s}
@@ -43,30 +34,22 @@ textarea{resize:vertical;line-height:1.6;min-height:88px}
 option{background:#F7EBE0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:560px){.grid2{grid-template-columns:1fr}}
-
-/* ═══ BUTTONS ═══ */
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;align-items:center}
 .btn{background:#90A9EC;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;letter-spacing:.03em;transition:all .25s;box-shadow:0 2px 8px rgba(144,169,236,.2)}
 .btn:hover{background:#7d99e0;box-shadow:0 4px 14px rgba(144,169,236,.3)}
 .btn:disabled{opacity:.45;cursor:default;box-shadow:none}
 .ghost{background:rgba(210,199,255,.15);color:#3B2145;border:none;border-radius:8px;padding:10px 16px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
 .ghost:hover{background:rgba(210,199,255,.3)}
-
-/* ═══ OUTPUT ═══ */
 .out-wrap{margin-top:18px}
 .out-label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;margin-bottom:7px;font-weight:500}
 .out{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.25);border-radius:12px;padding:22px;color:#3B2145;font-size:16px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;min-height:80px}
 .warn{background:rgba(255,198,150,.1);border:1px solid rgba(255,198,150,.25);border-radius:8px;padding:12px 16px;font-size:13px;color:rgba(180,100,40,.7);margin-bottom:20px;line-height:1.55}
-
-/* ═══ TRIGGERS ═══ */
 .trig-section{margin-bottom:20px}
 .trig-group-label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:rgba(59,33,69,.3);margin-bottom:10px;font-weight:500}
 .trig-btns{display:flex;flex-wrap:wrap;gap:8px}
 .trig-btn{border-radius:8px;padding:10px 16px;cursor:pointer;font-family:'Jost',sans-serif;font-weight:500;font-size:13px;background:rgba(210,199,255,.12);color:#3B2145;border:1px solid rgba(210,199,255,.3);transition:all .25s}
 .trig-btn:hover{background:rgba(210,199,255,.25);border-color:rgba(210,199,255,.5)}
 .flow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
-
-/* ═══ BRAND VAULT ═══ */
 .vault-rule{font-size:16px;color:#3B2145;margin-bottom:10px;padding-left:14px;border-left:2px solid #90A9EC;line-height:1.6;font-family:'Cormorant Garamond',serif}
 .vault-bad{border-left-color:#e8796e}
 .vault-head{font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-weight:500;margin-bottom:14px}
@@ -91,8 +74,6 @@ option{background:#F7EBE0}
 .asset-img{width:100%;height:120px;object-fit:cover}
 .asset-name{font-size:11px;color:rgba(59,33,69,.4);padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .style-guide-out{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.25);border-radius:12px;padding:22px;color:#3B2145;font-size:15px;line-height:1.8;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;margin-top:14px}
-
-/* ═══ CAROUSEL BUILDER STEPS ═══ */
 .step{display:none;animation:fadeUp .4s ease}
 .step.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -102,9 +83,7 @@ option{background:#F7EBE0}
 .step-pill.current{background:#90A9EC;border-color:#90A9EC;color:#fff}
 .step-arrow{color:rgba(59,33,69,.12);font-size:11px}
 .step-title{font-family:'Cormorant Garamond',serif;font-size:24px;color:#3B2145;margin-bottom:6px;font-weight:600}
-.step-sub{font-size:14px;color:rgba(59,33,69,.4);margin-bottom:20px;line-height:1.6;font-family:'Cormorant Garamond',serif;font-size:16px}
-
-/* Viral cards */
+.step-sub{font-size:16px;color:rgba(59,33,69,.4);margin-bottom:20px;line-height:1.6;font-family:'Cormorant Garamond',serif}
 .feed-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 @media(max-width:560px){.feed-grid{grid-template-columns:1fr}}
 .fc{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:10px;padding:18px;cursor:pointer;transition:all .25s;position:relative}
@@ -112,21 +91,17 @@ option{background:#F7EBE0}
 .fc.sel{border-color:#90A9EC;background:rgba(144,169,236,.08)}
 .fc .fc-dot{position:absolute;top:12px;right:12px;width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(210,199,255,.3);transition:all .25s}
 .fc.sel .fc-dot{background:#90A9EC;border-color:#90A9EC}
-.fc .fc-src{display:inline-block;font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:8px;background:rgba(144,169,236,.1);color:#90A9EC}
+.fc .fc-src{display:inline-block;font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:8px}
 .fc h3{font-family:'Cormorant Garamond',serif;font-size:16px;color:#3B2145;line-height:1.3;margin-bottom:5px;font-weight:600}
 .fc .fc-stats{font-size:11px;color:#90A9EC;opacity:.6;margin-bottom:6px}
 .fc .fc-ex{font-size:13px;color:rgba(59,33,69,.45);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .fc .fc-tag{display:inline-block;margin-top:7px;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(210,199,255,.12);color:rgba(59,33,69,.35)}
 .sel-count{font-size:12px;color:rgba(59,33,69,.35)}
-
-/* Slide editors */
 .slide-editor{margin-bottom:14px}
 .slide-editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .slide-editor-num{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(59,33,69,.3)}
 .slide-editor-type{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:4px;background:rgba(144,169,236,.1);color:#90A9EC;font-weight:500}
 .slide-editor textarea{min-height:55px;font-family:'Cormorant Garamond',serif;font-size:17px;line-height:1.5}
-
-/* Rendered carousel slides */
 .cr-scroll{display:flex;gap:22px;overflow-x:auto;padding:8px 0 28px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
 .cr-scroll::-webkit-scrollbar{height:3px}
 .cr-scroll::-webkit-scrollbar-thumb{background:rgba(210,199,255,.3);border-radius:3px}
@@ -144,7 +119,6 @@ option{background:#F7EBE0}
 .slide.cta-s .sl-cta-bot{font-family:'Playfair Display',serif;font-weight:400;font-style:italic;font-size:19px;color:#B8ADE0;line-height:1.3}
 .slide.cta-s .sl-cta-bot strong{font-weight:700;text-transform:uppercase}
 .slide .sl-wm{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:7.5px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:#3B2145;opacity:.5}
-
 .caption-box{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.25);border-radius:12px;padding:22px;margin-top:22px}
 .caption-box h4{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;margin-bottom:10px;font-weight:500}
 .trig-badge{display:inline-block;padding:5px 14px;background:rgba(144,169,236,.1);border:1px solid rgba(144,169,236,.25);border-radius:6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#90A9EC;font-weight:500}
@@ -160,44 +134,24 @@ option{background:#F7EBE0}
 .analysis-card p{font-size:15px;color:rgba(59,33,69,.55);line-height:1.7;margin-bottom:6px;font-family:'Cormorant Garamond',serif}
 .analysis-card ul{list-style:none;margin-top:6px}
 .analysis-card li{font-size:14px;color:rgba(59,33,69,.5);padding:6px 0;border-bottom:1px solid rgba(59,33,69,.04);line-height:1.6;font-family:'Cormorant Garamond',serif}
-
-/* ═══ FOOTER ═══ */
+.research-card{background:rgba(144,169,236,.06);border:1px solid rgba(144,169,236,.2);border-radius:12px;padding:22px;margin-bottom:14px}
+.research-card h3{font-family:'Cormorant Garamond',serif;font-size:18px;color:#90A9EC;margin-bottom:10px;font-weight:600}
+.research-card li{font-size:14px;color:rgba(59,33,69,.6);padding:6px 0;border-bottom:1px solid rgba(144,169,236,.08);line-height:1.6;font-family:'Cormorant Garamond',serif}
 .footer{text-align:center;padding:30px 20px;border-top:1px solid rgba(59,33,69,.05);margin-top:40px}
 .footer p{font-size:11px;color:rgba(59,33,69,.2);letter-spacing:.1em}
-
-/* ═══ 1080x1080 EXPORT SLIDES (hidden, used for download) ═══ */
-.export-container{position:absolute;left:-9999px;top:0}
-.export-slide{width:1080px;height:1080px;background:#F7EBE0;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-.export-slide.hook-x .ex-text{padding:0 130px}
-.export-slide.hook-x .ex-upper{font-family:'Playfair Display',serif;font-weight:700;font-size:102px;color:#B8ADE0;text-transform:uppercase;line-height:1.05;letter-spacing:3px;margin-bottom:18px}
-.export-slide.hook-x .ex-italic{font-family:'Playfair Display',serif;font-weight:400;font-style:italic;font-size:72px;color:#B8ADE0;line-height:1.2}
-.export-slide.body-x .ex-text{padding:0 110px;font-family:'Playfair Display',serif;font-weight:400;font-size:68px;color:#B8ADE0;line-height:1.25;text-align:center}
-.export-slide.body-x .ex-text em{font-style:italic}
-.export-slide.cta-x .ex-text{padding:0 110px}
-.export-slide.cta-x .ex-cta-top{font-family:'Playfair Display',serif;font-weight:400;font-style:italic;font-size:63px;color:#B8ADE0;line-height:1.25;margin-bottom:70px}
-.export-slide.cta-x .ex-cta-bot{font-family:'Playfair Display',serif;font-weight:400;font-style:italic;font-size:57px;color:#B8ADE0;line-height:1.3}
-.export-slide.cta-x .ex-cta-bot strong{font-weight:700;text-transform:uppercase}
-.export-slide .ex-wm{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);font-family:'Jost',sans-serif;font-size:22px;font-weight:500;letter-spacing:9px;text-transform:uppercase;color:#3B2145;opacity:.5}
-.dl-progress{font-size:13px;color:#90A9EC;margin-top:10px}
 </style>
 </head>
 <body>
 
-<!-- ═══ HEADER WITH PHOTO ═══ -->
-<div class="hero">
-  <div class="hero-inner">
-    <img class="hero-photo" id="heroPhoto" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela Schellenberg" onclick="document.getElementById('photo-upload').click()">
-    <input type="file" id="photo-upload" accept="image/*" style="display:none" onchange="changePhoto(event)">
-    <div class="photo-hint" onclick="document.getElementById('photo-upload').click()">click photo to change</div>
-    <div class="hero-greeting">Content Engine</div>
-    <h1>Angela Schellenberg</h1>
-    <div class="hero-handle">@angelaschellenberg</div>
-    <div class="hero-status">
-      <div class="hero-dot" id="dot"></div>
-      <div class="hero-status-txt" id="status-txt">Checking...</div>
-    </div>
-  </div>
-</div>
+<div class="hero"><div class="hero-inner">
+  <img class="hero-photo" id="heroPhoto" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela Schellenberg" onclick="document.getElementById('photo-upload').click()">
+  <input type="file" id="photo-upload" accept="image/*" style="display:none" onchange="changePhoto(event)">
+  <div class="photo-hint" onclick="document.getElementById('photo-upload').click()">click photo to change</div>
+  <div class="hero-greeting">Content Engine</div>
+  <h1>Angela Schellenberg</h1>
+  <div class="hero-handle">@angelaschellenberg</div>
+  <div class="hero-status"><div class="hero-dot" id="dot"></div><div class="hero-status-txt" id="status-txt">Checking...</div></div>
+</div></div>
 
 <div class="tabs">
   <button class="tab" onclick="showTab('content',this)">Content Studio</button>
@@ -261,7 +215,7 @@ option{background:#F7EBE0}
   <div class="card"><div class="vault-head" style="color:#F3DA8B">ManyChat Trigger Map</div><div class="trig-map"><div class="trig-row"><span class="trig-kw" style="color:#90A9EC">HEAL / UNTANGLE / STEADY</span><span class="trig-offer">1:1 Therapy</span></div><div class="trig-row"><span class="trig-kw" style="color:#90A9EC">EMDR</span><span class="trig-offer">EMDR Therapy</span></div><div class="trig-row"><span class="trig-kw" style="color:#FFC696">MALIBURETREAT</span><span class="trig-offer">Healing with Horses Retreat</span></div><div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">UNLEARN</span><span class="trig-offer">Mother Hunger Course</span></div><div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">GRIEFRELIEF / GRIEFTOOLS</span><span class="trig-offer">Grief Relief Series</span></div><div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TOOLS</span><span class="trig-offer">101 Tools</span></div><div class="trig-row"><span class="trig-kw" style="color:#D3E0F1">WORTHY</span><span class="trig-offer">Emotional Starter Kit</span></div><div class="trig-row"><span class="trig-kw" style="color:#FFC696">EQUINE / HORSEHEALING</span><span class="trig-offer">Equine Digital Product</span></div><div class="trig-row"><span class="trig-kw" style="color:#E5ACD7">MOM</span><span class="trig-offer">Community Circle</span></div><div class="trig-row"><span class="trig-kw" style="color:#D2C7FF">COMMUNITYCALL</span><span class="trig-offer">Motherless Daughters Group</span></div><div class="trig-row"><span class="trig-kw" style="color:#F3DA8B">TAPPERS</span><span class="trig-offer">Dharma Dr.</span></div></div></div>
 </div>
 
-<!-- ═══ CAROUSEL BUILDER - STEP BY STEP ═══ -->
+<!-- ═══ CAROUSEL BUILDER ═══ -->
 <div id="builder" class="tab-panel">
   <div class="step-bar" id="stepBar">
     <span class="step-pill current" id="sp1">1. Topic</span><span class="step-arrow">&#8594;</span>
@@ -271,13 +225,18 @@ option{background:#F7EBE0}
     <span class="step-pill" id="sp5">5. Caption</span>
   </div>
 
+  <!-- STEP 1: TOPIC -->
   <div class="step active" id="step1">
     <div class="step-title">Pick your topic</div>
-    <div class="step-sub">Choose a pillar and tone. Type a hook or leave blank and let the scraper inspire you.</div>
+    <div class="step-sub">Choose a pillar, tone, slide count, and whether to include clinical research.</div>
     <div class="card">
       <div class="grid2">
         <div><label>Pillar</label><select id="b-pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option></select></div>
         <div><label>Tone</label><select id="b-tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div>
+      </div>
+      <div class="grid2">
+        <div><label>Slide Count</label><select id="b-slides"><option value="5">5 slides</option><option value="7">7 slides</option><option value="10" selected>10 slides</option></select></div>
+        <div><label>Clinical Research</label><select id="b-research"><option value="yes">Include Perplexity Research</option><option value="no">Skip Research</option></select></div>
       </div>
       <label>Topic / Hook Idea (optional)</label>
       <textarea id="b-topic" style="min-height:70px" placeholder="e.g. The grief and trauma nobody talks about"></textarea>
@@ -285,6 +244,7 @@ option{background:#F7EBE0}
     </div>
   </div>
 
+  <!-- STEP 2: SCRAPER -->
   <div class="step" id="step2">
     <div class="step-title">What's going viral</div>
     <div class="step-sub">Select the posts that resonate. Claude will analyze and write your slides.</div>
@@ -296,23 +256,25 @@ option{background:#F7EBE0}
     <div class="btns"><button class="btn" id="analyzeBtn" onclick="runAnalysis()" disabled>Analyze + Write Slides</button><button class="ghost" onclick="goStep(1)">Back</button><span class="sel-count" id="selCount">0 selected</span></div>
   </div>
 
+  <!-- STEP 3: EDIT -->
   <div class="step" id="step3">
     <div class="step-title">Edit your slides</div>
     <div class="step-sub">Claude wrote these. Edit any slide. Use *word* for italic emphasis.</div>
     <div class="v-loader" id="editLoader"><p>Writing in your voice...</p></div>
+    <div id="researchDisplay"></div>
     <div id="slideEditors"></div>
     <div id="editActions" style="display:none" class="btns"><button class="btn" onclick="renderSlides()">Generate Carousel</button><button class="ghost" onclick="goStep(2)">Back</button></div>
   </div>
 
+  <!-- STEP 4: PREVIEW -->
   <div class="step" id="step4">
     <div class="step-title">Your carousel</div>
-    <div class="step-sub">Scroll through. Download as 1080x1080 PNGs for Instagram.</div>
+    <div class="step-sub">Scroll through. These match your brand template (1080x1350).</div>
     <div id="renderedSlides"></div>
-    <div class="btns"><button class="btn" onclick="downloadAllSlides()">Download All Slides (1080x1080)</button><button class="btn" onclick="goStep(5)">Next: Caption + CTA</button><button class="ghost" onclick="goStep(3)">Back to Edit</button></div>
-    <div class="dl-progress" id="dlProgress"></div>
-    <div class="export-container" id="exportContainer"></div>
+    <div class="btns"><button class="btn" onclick="goStep(5)">Next: Caption + CTA</button><button class="ghost" onclick="goStep(3)">Back to Edit</button></div>
   </div>
 
+  <!-- STEP 5: CAPTION -->
   <div class="step" id="step5">
     <div class="step-title">Caption + ManyChat Trigger</div>
     <div class="step-sub">Edit your caption, pick the trigger, copy and post.</div>
@@ -320,7 +282,7 @@ option{background:#F7EBE0}
     <div id="captionArea" style="display:none">
       <div class="card"><label>Caption</label><textarea id="captionEdit" style="min-height:200px;font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.7"></textarea></div>
       <div class="card"><label>ManyChat CTA Trigger</label><select id="b-cta-trigger"><option value="WORTHY">WORTHY - Emotional Starter Kit</option><option value="HEAL">HEAL - 1:1 Session</option><option value="UNTANGLE">UNTANGLE - 1:1 Session</option><option value="MALIBURETREAT">MALIBURETREAT - Retreat</option><option value="UNLEARN">UNLEARN - Mother Hunger Course</option><option value="GRIEFRELIEF">GRIEFRELIEF - Grief Relief Series</option><option value="TOOLS">TOOLS - 101 Tools</option><option value="EQUINE">EQUINE - Equine Product</option><option value="MOM">MOM - Community Circle</option><option value="COMMUNITYCALL">COMMUNITYCALL - Motherless Daughters</option><option value="EMDR">EMDR - EMDR Therapy</option><option value="TAPPERS">TAPPERS - Dharma Dr.</option></select><div style="margin-top:12px"><span class="trig-badge" id="triggerDisplay">WORTHY</span></div></div>
-      <div class="cost-bar"><div class="cost-item">Analysis: <strong>~$0.005</strong></div><div class="cost-item">Carousel: <strong>~$0.005</strong></div><div class="cost-item">Caption: <strong>~$0.003</strong></div><div class="cost-item">Rendering: <strong>free</strong></div><div class="cost-item">Total: <strong>~$0.01</strong></div></div>
+      <div class="cost-bar"><div class="cost-item">Scraping: <strong>free</strong></div><div class="cost-item">Research: <strong>~$0.001</strong></div><div class="cost-item">Carousel: <strong>~$0.005</strong></div><div class="cost-item">Caption: <strong>~$0.003</strong></div><div class="cost-item">Total: <strong>~$0.01</strong></div></div>
       <div class="btns"><button class="btn" onclick="copyCaption()">Copy Caption</button><button class="ghost" onclick="goStep(4)">Back to Preview</button><button class="ghost" onclick="goStep(1)">Start Over</button></div>
     </div>
   </div>
@@ -330,39 +292,73 @@ option{background:#F7EBE0}
 </div>
 
 <script>
-var BACKEND="https://therapist-content-engine.onrender.com";var uploadedAssets=[];var viralPosts=[];var viralSelected=[];var carouselSlides=[];var captionText="";
+var BACKEND="https://therapist-content-engine.onrender.com";
+var uploadedAssets=[];
+var viralPosts=[];
+var viralSelected=[];
+var carouselSlides=[];
+var captionText="";
+var savedViralContext="";
+var savedAnalysisContext="";
+var savedResearch="";
 
-// ─── Load saved profile photo ───
+// Profile photo
 var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto){document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto})}
+function changePhoto(e){var file=e.target.files[0];if(!file||!file.type.startsWith("image/"))return;var reader=new FileReader();reader.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(err){}};reader.readAsDataURL(file)}
 
-function changePhoto(e){
-  var file=e.target.files[0];if(!file||!file.type.startsWith("image/"))return;
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    document.getElementById("heroPhoto").src=ev.target.result;
-    try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(err){}
-  };
-  reader.readAsDataURL(file);
-}
-
+// Health check
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
 
+// Tab switching
 function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active")}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 
+// ═══ CONTENT STUDIO ═══
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
+
+// ═══ DM ENGINE ═══
 function genDM(){var m=document.getElementById("dm-in").value.trim();if(!m)return;var b=document.getElementById("dm-btn");b.textContent="Writing...";b.disabled=true;callBackend("dm-response",{message:m,lead_temperature:document.getElementById("lead-temp").value}).then(function(d){document.getElementById("dm-out").textContent=d.response||"Error.";document.getElementById("dm-out-wrap").style.display="block";document.getElementById("copy-dm").style.display="inline-block"}).catch(function(){document.getElementById("dm-out").textContent="Error.";document.getElementById("dm-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate DM Response";b.disabled=false})}
+
+// ═══ MANYCHAT FLOWS ═══
 function genFlow(kw,offer,color,btn){document.querySelectorAll(".trig-btn").forEach(function(b){b.style.background="rgba(210,199,255,.12)";b.style.color="#3B2145"});btn.style.background=color;btn.style.color="#fff";document.getElementById("flow-out-wrap").style.display="block";document.getElementById("flow-label").textContent=kw+" - "+offer;document.getElementById("flow-out").textContent="Writing "+kw+" flow...";callBackend("manychat-flow",{keyword:kw,offer:offer}).then(function(d){document.getElementById("flow-out").textContent=d.flow||"Error."}).catch(function(){document.getElementById("flow-out").textContent="Error."})}
-function handleDragOver(e){e.preventDefault();document.getElementById("upload-zone").classList.add("drag-over")}function handleDragLeave(e){document.getElementById("upload-zone").classList.remove("drag-over")}function handleDrop(e){e.preventDefault();document.getElementById("upload-zone").classList.remove("drag-over");processFiles(e.dataTransfer.files)}function handleFileSelect(e){processFiles(e.target.files)}function processFiles(f){Array.from(f).forEach(function(file){if(!file.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(e){uploadedAssets.push({name:file.name,url:e.target.result});renderAssetGrid()};r.readAsDataURL(file)})}function renderAssetGrid(){document.getElementById("asset-grid").innerHTML=uploadedAssets.map(function(a){return'<div class="asset-item"><img class="asset-img" src="'+a.url+'"><div class="asset-name">'+a.name+"</div></div>"}).join("")}
+
+// ═══ BRAND VAULT ═══
+function handleDragOver(e){e.preventDefault();document.getElementById("upload-zone").classList.add("drag-over")}
+function handleDragLeave(e){document.getElementById("upload-zone").classList.remove("drag-over")}
+function handleDrop(e){e.preventDefault();document.getElementById("upload-zone").classList.remove("drag-over");processFiles(e.dataTransfer.files)}
+function handleFileSelect(e){processFiles(e.target.files)}
+function processFiles(f){Array.from(f).forEach(function(file){if(!file.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(e){uploadedAssets.push({name:file.name,url:e.target.result});renderAssetGrid()};r.readAsDataURL(file)})}
+function renderAssetGrid(){document.getElementById("asset-grid").innerHTML=uploadedAssets.map(function(a){return'<div class="asset-item"><img class="asset-img" src="'+a.url+'"><div class="asset-name">'+a.name+"</div></div>"}).join("")}
 function analyzeStyle(){var u=document.getElementById("insta-urls").value.trim(),n=document.getElementById("style-notes").value.trim();if(!u&&!n&&!uploadedAssets.length){alert("Add something first.");return}var b=document.getElementById("analyze-btn");b.textContent="Analyzing...";b.disabled=true;var p="Analyze and create a style guide for Angela Schellenberg's carousels.";if(uploadedAssets.length)p+="\n\n"+uploadedAssets.length+" examples uploaded.";if(u)p+="\n\nAccounts:\n"+u;if(n)p+="\n\nNotes:\n"+n;p+="\n\nWrite a detailed style guide for Rosa.";fetch(BACKEND+"/generate/content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_type:"Style Guide",pillar:"Brand",topic:p,tone:"educational / expert"})}).then(function(r){return r.json()}).then(function(d){document.getElementById("style-guide-out").textContent=d.content||"Error.";document.getElementById("style-guide-out").style.display="block";document.getElementById("copy-style").style.display="inline-block"}).catch(function(){document.getElementById("style-guide-out").textContent="Error.";document.getElementById("style-guide-out").style.display="block"}).finally(function(){b.textContent="Analyze My Style";b.disabled=false})}
 function copyIt(outId,btnId,orig){navigator.clipboard.writeText(document.getElementById(outId).textContent);var b=document.getElementById(btnId);b.textContent="Copied!";setTimeout(function(){b.textContent=orig},2200)}
 
-// ═══ CAROUSEL BUILDER ═══
-function goStep(n){for(var i=1;i<=5;i++){document.getElementById("step"+i).classList.toggle("active",i===n);var p=document.getElementById("sp"+i);p.className="step-pill";if(i<n)p.classList.add("done");if(i===n)p.classList.add("current")}window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});if(n===2)searchByTopic();if(n===5)loadCaption()}
-function skipToGen(){var t=document.getElementById("b-topic").value.trim();if(!t){alert("Enter a topic first.");return}savedViralContext="";savedAnalysisContext="";goStep(3);genSlidesCopy(t)}
+// ═══════════════════════════════════════════════════
+// CAROUSEL BUILDER
+// ═══════════════════════════════════════════════════
 
+function goStep(n){
+  for(var i=1;i<=5;i++){
+    document.getElementById("step"+i).classList.toggle("active",i===n);
+    var p=document.getElementById("sp"+i);p.className="step-pill";
+    if(i<n)p.classList.add("done");
+    if(i===n)p.classList.add("current");
+  }
+  window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});
+  if(n===2)searchByTopic();
+  if(n===5)loadCaption();
+}
+
+function skipToGen(){
+  var t=document.getElementById("b-topic").value.trim();
+  if(!t){alert("Enter a topic first.");return}
+  savedViralContext="";savedAnalysisContext="";
+  goStep(3);
+  fetchResearchThenGenerate(t);
+}
+
+// ─── STEP 2: SCRAPER ───
 function searchByTopic(){
   var topic=document.getElementById("b-topic").value.trim()||"grief mother loss attachment";
   viralSelected=[];
@@ -372,82 +368,190 @@ function searchByTopic(){
   document.getElementById("feedGrid").innerHTML='<div class="v-loader"><p>Searching Reddit + Instagram...</p></div>';
   fetch(BACKEND+"/api/scrape",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){
     if(d.success&&d.posts&&d.posts.length>0){
-      viralPosts=d.posts;
-      renderFG();
+      viralPosts=d.posts;renderFG();
       var reddit=d.posts.filter(function(p){return p.src==="reddit"}).length;
       var ig=d.posts.filter(function(p){return p.src==="instagram"}).length;
       document.getElementById("scrapeStatus").textContent="Found "+d.posts.length+" posts ("+reddit+" Reddit, "+ig+" Instagram) · "+d.scraped_at;
-    }else if(d.success){
-      document.getElementById("scrapeStatus").textContent="No results. Try a different topic.";
-      document.getElementById("feedGrid").innerHTML='<div class="v-err">No posts found for "'+topic+'". Try broader keywords like "grief" or "mother loss".</div>';
     }else{
-      document.getElementById("scrapeStatus").textContent="Error: "+(d.error||"unknown");
-      document.getElementById("feedGrid").innerHTML='<div class="v-err">'+(d.error||"Scrape failed")+'</div>';
+      document.getElementById("scrapeStatus").textContent="No results. Try broader keywords.";
+      document.getElementById("feedGrid").innerHTML='<div class="v-err">No posts found. Try "grief" or "mother loss".</div>';
     }
   }).catch(function(e){
     document.getElementById("scrapeStatus").textContent="Error: "+e.message;
-    document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not reach scraper. Backend may be starting up.</div>';
-  })
+    document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not reach scraper.</div>';
+  });
 }
 
-function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;renderFG();var status=d.source==="live"?"Last scraped: "+d.scraped_at+" · Topic: "+(d.topic||"general"):"Ready to search";document.getElementById("scrapeStatus").textContent=status}}).catch(function(){})}
 function refreshScraper(){searchByTopic()}
-function renderFG(){var g=document.getElementById("feedGrid");g.innerHTML="";viralPosts.forEach(function(p,i){var c=document.createElement("div");c.className="fc";c.onclick=function(){c.classList.toggle("sel");var x=viralSelected.indexOf(i);if(x>-1)viralSelected.splice(x,1);else viralSelected.push(i);document.getElementById("selCount").textContent=viralSelected.length+" selected";document.getElementById("analyzeBtn").disabled=viralSelected.length===0};var srcClass=p.src==="instagram"?"fc-src-ig":"fc-src-rd";var srcStyle=p.src==="instagram"?'background:rgba(210,199,255,.12);color:#D2C7FF':'background:rgba(255,107,53,.12);color:#ff8a5c';c.innerHTML='<div class="fc-dot"></div><span class="fc-src" style="'+srcStyle+'">'+(p.sub||p.src)+'</span><h3>'+p.title+'</h3><div class="fc-stats">'+p.stats+'</div><p class="fc-ex">'+p.excerpt+'</p><span class="fc-tag">'+p.tag+'</span>';g.appendChild(c)})}
-var savedViralContext="";var savedAnalysisContext="";
-function runAnalysis(){var b=document.getElementById("analyzeBtn");b.textContent="Analyzing...";b.disabled=true;goStep(3);var sp=viralSelected.map(function(i){return viralPosts[i]});var ut=document.getElementById("b-topic").value.trim();savedViralContext=sp.map(function(p){return"Title: "+p.title+"\nExcerpt: "+p.excerpt+"\nEngagement: "+p.stats+"\nPattern: "+p.tag}).join("\n\n");fetch(BACKEND+"/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({posts:sp})}).then(function(r){return r.json()}).then(function(d){var topic=ut;if(d.success&&typeof d.data==="object"){savedAnalysisContext="";if(d.data.patterns)savedAnalysisContext+="Patterns: "+d.data.patterns.join("; ")+"\n";if(d.data.hooks)savedAnalysisContext+="Hooks: "+d.data.hooks.join("; ")+"\n";if(d.data.angle)savedAnalysisContext+="Angle: "+d.data.angle+"\n";if(!topic&&d.data.suggested_topic)topic=d.data.suggested_topic}if(!topic)topic="grief and attachment trauma nobody talks about";genSlidesCopy(topic)}).catch(function(){genSlidesCopy(ut||"grief and attachment trauma nobody talks about")}).finally(function(){b.textContent="Analyze + Write Slides";b.disabled=false})}
-function genSlidesCopy(topic){document.getElementById("editLoader").style.display="block";document.getElementById("slideEditors").innerHTML="";document.getElementById("editActions").style.display="none";fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic,viral_context:savedViralContext,analysis_context:savedAnalysisContext,pillar:document.getElementById("b-pillar").value,tone:document.getElementById("b-tone").value})}).then(function(r){return r.json()}).then(function(d){document.getElementById("editLoader").style.display="none";if(d.success&&!d.raw&&d.data&&d.data.slides){carouselSlides=d.data.slides;captionText=d.data.caption||"";buildEditors()}else{document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not parse. Try again.</div><div class="btns"><button class="btn" onclick="genSlidesCopy(\''+topic.replace(/'/g,"\\'")+'\')">Retry</button></div>'}}).catch(function(e){document.getElementById("editLoader").style.display="none";document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+"</div>"})}
-function buildEditors(){var h="";carouselSlides.forEach(function(s,i){var tl=s.type==="hook"?"Hook":s.type==="cta"?"CTA":"Body";var c="";if(s.type==="hook")c=(s.upper||"")+"\n"+(s.italic||"");else if(s.type==="cta")c=(s.top||"")+"\n"+(s.bottom||"");else c=(s.html||s.text||"").replace(/<em>/g,"*").replace(/<\/em>/g,"*").replace(/<strong>/g,"**").replace(/<\/strong>/g,"**");h+='<div class="slide-editor"><div class="slide-editor-header"><span class="slide-editor-num">Slide '+(i+1)+'</span><span class="slide-editor-type">'+tl+'</span></div><textarea id="se-'+i+'" class="slide-edit-ta">'+c+'</textarea></div>'});document.getElementById("slideEditors").innerHTML=h;document.getElementById("editActions").style.display="flex"}
-function renderSlides(){goStep(4);carouselSlides.forEach(function(s,i){var v=document.getElementById("se-"+i).value;if(s.type==="hook"){var l=v.split("\n");s.upper=l[0]||"";s.italic=l.slice(1).join("\n")||""}else if(s.type==="cta"){var l=v.split("\n");s.top=l[0]||"";s.bottom=l.slice(1).join("\n")||""}else{s.html=v.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>")}});var h='<div class="cr-scroll">';carouselSlides.forEach(function(s,i){h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+" of "+carouselSlides.length+"</div>";if(s.type==="hook")h+='<div class="slide hook-s"><div class="sl-text"><div class="sl-upper">'+s.upper+'</div><div class="sl-italic">'+s.italic+'</div></div><div class="sl-wm">@angelaschellenberg</div></div>';else if(s.type==="cta")h+='<div class="slide cta-s"><div class="sl-text"><div class="sl-cta-top">'+s.top+'</div><div class="sl-cta-bot">'+s.bottom+'</div></div><div class="sl-wm">@angelaschellenberg</div></div>';else h+='<div class="slide body-s"><div class="sl-text">'+s.html+'</div><div class="sl-wm">@angelaschellenberg</div></div>';h+="</div>"});h+="</div>";document.getElementById("renderedSlides").innerHTML=h}
-function loadCaption(){if(captionText){document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block";document.getElementById("captionEdit").value=captionText}else{document.getElementById("captionLoader").style.display="block";document.getElementById("captionArea").style.display="none";var st=carouselSlides.map(function(s,i){if(s.type==="hook")return"Slide "+(i+1)+": "+s.upper+" / "+s.italic;if(s.type==="cta")return"Slide "+(i+1)+": "+s.top+" / "+s.bottom;return"Slide "+(i+1)+": "+(s.html||"").replace(/<[^>]+>/g,"")}).join("\n");callBackend("content",{content_type:"Instagram Caption",pillar:document.getElementById("b-pillar").value,topic:"Write a caption for this carousel:\n\n"+st+"\n\nInclude hashtags. End with: Comment "+document.getElementById("b-cta-trigger").value+" and I'll send it to you.",tone:document.getElementById("b-tone").value}).then(function(d){captionText=d.content||"";document.getElementById("captionEdit").value=captionText;document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block"}).catch(function(){document.getElementById("captionLoader").style.display="none";document.getElementById("captionArea").style.display="block";document.getElementById("captionEdit").value="Error. Write manually."})}}
+
+function loadViralFeed(){
+  fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){
+    if(d.success&&d.posts){viralPosts=d.posts;renderFG();
+      document.getElementById("scrapeStatus").textContent=d.source==="live"?"Last scraped: "+d.scraped_at:"Ready to search"}
+  }).catch(function(){});
+}
+
+function renderFG(){
+  var g=document.getElementById("feedGrid");g.innerHTML="";
+  viralPosts.forEach(function(p,i){
+    var c=document.createElement("div");c.className="fc";
+    c.onclick=function(){c.classList.toggle("sel");var x=viralSelected.indexOf(i);if(x>-1)viralSelected.splice(x,1);else viralSelected.push(i);document.getElementById("selCount").textContent=viralSelected.length+" selected";document.getElementById("analyzeBtn").disabled=viralSelected.length===0};
+    var srcStyle=p.src==="instagram"?'background:rgba(210,199,255,.12);color:#D2C7FF':'background:rgba(255,107,53,.12);color:#ff8a5c';
+    c.innerHTML='<div class="fc-dot"></div><span class="fc-src" style="'+srcStyle+'">'+(p.sub||p.src)+'</span><h3>'+p.title+'</h3><div class="fc-stats">'+p.stats+'</div><p class="fc-ex">'+p.excerpt+'</p><span class="fc-tag">'+p.tag+'</span>';
+    g.appendChild(c);
+  });
+}
+
+// ─── STEP 2→3: ANALYZE + RESEARCH + GENERATE ───
+function runAnalysis(){
+  var b=document.getElementById("analyzeBtn");b.textContent="Analyzing...";b.disabled=true;
+  goStep(3);
+  var sp=viralSelected.map(function(i){return viralPosts[i]});
+  var ut=document.getElementById("b-topic").value.trim();
+
+  savedViralContext=sp.map(function(p){return"Title: "+p.title+"\nExcerpt: "+p.excerpt+"\nEngagement: "+p.stats+"\nPattern: "+p.tag}).join("\n\n");
+
+  fetch(BACKEND+"/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({posts:sp})}).then(function(r){return r.json()}).then(function(d){
+    var topic=ut;
+    if(d.success&&typeof d.data==="object"){
+      savedAnalysisContext="";
+      if(d.data.patterns)savedAnalysisContext+="Patterns: "+d.data.patterns.join("; ")+"\n";
+      if(d.data.hooks)savedAnalysisContext+="Hooks: "+d.data.hooks.join("; ")+"\n";
+      if(d.data.angle)savedAnalysisContext+="Angle: "+d.data.angle+"\n";
+      if(!topic&&d.data.suggested_topic)topic=d.data.suggested_topic;
+    }
+    if(!topic)topic="grief and attachment trauma nobody talks about";
+    fetchResearchThenGenerate(topic);
+  }).catch(function(){
+    fetchResearchThenGenerate(ut||"grief and attachment trauma nobody talks about");
+  }).finally(function(){b.textContent="Analyze + Write Slides";b.disabled=false});
+}
+
+// ─── PERPLEXITY RESEARCH ───
+function fetchResearchThenGenerate(topic){
+  if(document.getElementById("b-research").value==="no"){
+    savedResearch="";
+    genSlidesCopy(topic);
+    return;
+  }
+  document.getElementById("editLoader").style.display="block";
+  document.getElementById("editLoader").querySelector("p").textContent="Finding clinical research...";
+  fetch(BACKEND+"/api/research",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){
+    if(d.success&&d.data&&d.data.findings){
+      savedResearch=d.data.findings.join("\n");
+      // Show research in the edit step
+      var html='<div class="research-card"><h3>Clinical Research Found</h3><ul>';
+      d.data.findings.forEach(function(f){html+='<li>'+f+'</li>'});
+      html+='</ul></div>';
+      document.getElementById("researchDisplay").innerHTML=html;
+      document.getElementById("editLoader").querySelector("p").textContent="Writing slides with research...";
+    }else{
+      savedResearch="";
+      document.getElementById("researchDisplay").innerHTML="";
+    }
+    genSlidesCopy(topic);
+  }).catch(function(){
+    savedResearch="";
+    document.getElementById("researchDisplay").innerHTML="";
+    genSlidesCopy(topic);
+  });
+}
+
+// ─── GENERATE SLIDES ───
+function genSlidesCopy(topic){
+  document.getElementById("editLoader").style.display="block";
+  document.getElementById("slideEditors").innerHTML="";
+  document.getElementById("editActions").style.display="none";
+  var slideCount=parseInt(document.getElementById("b-slides").value)||10;
+
+  fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    topic:topic,
+    viral_context:savedViralContext,
+    analysis_context:savedAnalysisContext,
+    research_context:savedResearch,
+    pillar:document.getElementById("b-pillar").value,
+    tone:document.getElementById("b-tone").value,
+    slide_count:slideCount
+  })}).then(function(r){return r.json()}).then(function(d){
+    document.getElementById("editLoader").style.display="none";
+    if(d.success&&!d.raw&&d.data&&d.data.slides){
+      carouselSlides=d.data.slides;captionText=d.data.caption||"";
+      buildEditors();
+    }else{
+      document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not parse. Try again.</div><div class="btns"><button class="btn" onclick="genSlidesCopy(\''+topic.replace(/'/g,"\\'")+'\')">Retry</button></div>';
+    }
+  }).catch(function(e){
+    document.getElementById("editLoader").style.display="none";
+    document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+"</div>";
+  });
+}
+
+function buildEditors(){
+  var h="";
+  carouselSlides.forEach(function(s,i){
+    var tl=s.type==="hook"?"Hook":s.type==="cta"?"CTA":"Body";
+    var c="";
+    if(s.type==="hook")c=(s.upper||"")+"\n"+(s.italic||"");
+    else if(s.type==="cta")c=(s.top||"")+"\n"+(s.bottom||"");
+    else c=(s.html||s.text||"").replace(/<em>/g,"*").replace(/<\/em>/g,"*").replace(/<strong>/g,"**").replace(/<\/strong>/g,"**");
+    h+='<div class="slide-editor"><div class="slide-editor-header"><span class="slide-editor-num">Slide '+(i+1)+'</span><span class="slide-editor-type">'+tl+'</span></div><textarea id="se-'+i+'" class="slide-edit-ta">'+c+'</textarea></div>';
+  });
+  document.getElementById("slideEditors").innerHTML=h;
+  document.getElementById("editActions").style.display="flex";
+}
+
+// ─── RENDER SLIDES ───
+function renderSlides(){
+  goStep(4);
+  carouselSlides.forEach(function(s,i){
+    var v=document.getElementById("se-"+i).value;
+    if(s.type==="hook"){var l=v.split("\n");s.upper=l[0]||"";s.italic=l.slice(1).join("\n")||""}
+    else if(s.type==="cta"){var l=v.split("\n");s.top=l[0]||"";s.bottom=l.slice(1).join("\n")||""}
+    else{s.html=v.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>")}
+  });
+  var h='<div class="cr-scroll">';
+  carouselSlides.forEach(function(s,i){
+    h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+" of "+carouselSlides.length+"</div>";
+    if(s.type==="hook")h+='<div class="slide hook-s"><div class="sl-text"><div class="sl-upper">'+s.upper+'</div><div class="sl-italic">'+s.italic+'</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
+    else if(s.type==="cta")h+='<div class="slide cta-s"><div class="sl-text"><div class="sl-cta-top">'+s.top+'</div><div class="sl-cta-bot">'+s.bottom+'</div></div><div class="sl-wm">@angelaschellenberg</div></div>';
+    else h+='<div class="slide body-s"><div class="sl-text">'+s.html+'</div><div class="sl-wm">@angelaschellenberg</div></div>';
+    h+="</div>";
+  });
+  h+="</div>";
+  document.getElementById("renderedSlides").innerHTML=h;
+}
+
+// ─── CAPTION ───
+function loadCaption(){
+  if(captionText){
+    document.getElementById("captionLoader").style.display="none";
+    document.getElementById("captionArea").style.display="block";
+    document.getElementById("captionEdit").value=captionText;
+  }else{
+    document.getElementById("captionLoader").style.display="block";
+    document.getElementById("captionArea").style.display="none";
+    var st=carouselSlides.map(function(s,i){
+      if(s.type==="hook")return"Slide "+(i+1)+": "+s.upper+" / "+s.italic;
+      if(s.type==="cta")return"Slide "+(i+1)+": "+s.top+" / "+s.bottom;
+      return"Slide "+(i+1)+": "+(s.html||"").replace(/<[^>]+>/g,"");
+    }).join("\n");
+    callBackend("content",{content_type:"Instagram Caption",pillar:document.getElementById("b-pillar").value,topic:"Write a caption for this carousel:\n\n"+st+"\n\nInclude hashtags. End with: Comment "+document.getElementById("b-cta-trigger").value+" and I'll send it to you.",tone:document.getElementById("b-tone").value}).then(function(d){
+      captionText=d.content||"";
+      document.getElementById("captionEdit").value=captionText;
+      document.getElementById("captionLoader").style.display="none";
+      document.getElementById("captionArea").style.display="block";
+    }).catch(function(){
+      document.getElementById("captionLoader").style.display="none";
+      document.getElementById("captionArea").style.display="block";
+      document.getElementById("captionEdit").value="Error. Write manually.";
+    });
+  }
+}
+
 document.getElementById("b-cta-trigger").addEventListener("change",function(){document.getElementById("triggerDisplay").textContent=this.value});
 function copyCaption(){navigator.clipboard.writeText(document.getElementById("captionEdit").value);event.target.textContent="Copied!";setTimeout(function(){event.target.textContent="Copy Caption"},2200)}
 
-// ═══ DOWNLOAD SLIDES AS 1080x1080 PNGs ═══
-async function downloadAllSlides(){
-  var prog=document.getElementById("dlProgress");
-  prog.textContent="Building 1080x1080 slides...";
-  var container=document.getElementById("exportContainer");
-  container.innerHTML="";
-
-  // Build 1080x1080 slides in hidden container
-  carouselSlides.forEach(function(s,i){
-    var div=document.createElement("div");
-    div.id="export-slide-"+i;
-    if(s.type==="hook"){
-      div.className="export-slide hook-x";
-      div.innerHTML='<div class="ex-text"><div class="ex-upper">'+s.upper+'</div><div class="ex-italic">'+s.italic+'</div></div><div class="ex-wm">@angelaschellenberg</div>';
-    }else if(s.type==="cta"){
-      div.className="export-slide cta-x";
-      div.innerHTML='<div class="ex-text"><div class="ex-cta-top">'+s.top+'</div><div class="ex-cta-bot">'+s.bottom+'</div></div><div class="ex-wm">@angelaschellenberg</div>';
-    }else{
-      div.className="export-slide body-x";
-      div.innerHTML='<div class="ex-text">'+s.html+'</div><div class="ex-wm">@angelaschellenberg</div>';
-    }
-    container.appendChild(div);
-  });
-
-  // Wait for fonts to render
-  await new Promise(function(r){setTimeout(r,500)});
-
-  // Download each slide
-  for(var i=0;i<carouselSlides.length;i++){
-    prog.textContent="Downloading slide "+(i+1)+" of "+carouselSlides.length+"...";
-    try{
-      var el=document.getElementById("export-slide-"+i);
-      var canvas=await html2canvas(el,{width:1080,height:1080,scale:1,useCORS:true,backgroundColor:"#F7EBE0"});
-      var link=document.createElement("a");
-      link.download="slide-"+(i+1)+"-of-"+carouselSlides.length+".png";
-      link.href=canvas.toDataURL("image/png");
-      link.click();
-      await new Promise(function(r){setTimeout(r,300)});
-    }catch(e){
-      prog.textContent="Error on slide "+(i+1)+": "+e.message;
-      return;
-    }
-  }
-  prog.textContent="All "+carouselSlides.length+" slides downloaded (1080x1080).";
-  setTimeout(function(){prog.textContent=""},5000);
-}
+// ─── INIT ───
 loadViralFeed();
 </script>
 </body>
