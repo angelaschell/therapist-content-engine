@@ -1,8 +1,5 @@
 """
-Viral Content Scraper for Angela Schellenberg's Content Engine
-- Reddit: searches by keyword using public JSON API (free)
-- Instagram: scrapes hashtags + competitor accounts via Apify ($49/mo)
-No Reddit API keys needed. Apify token required for Instagram.
+Viral Content Scraper - Reddit (free) + Instagram via Apify ($49/mo)
 """
 
 import httpx
@@ -11,100 +8,80 @@ import os
 import time
 
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "")
-
 HEADERS = {"User-Agent": "ContentEngine/1.0 (grief-therapy-research)"}
 
-# Default subreddits to search within
 SUBREDDITS = [
     "GriefSupport", "MotherlessDaughters", "CPTSD",
     "raisedbynarcissists", "emotionalneglect",
     "EstrangedAdultKids", "ChildrenofDeadParents",
 ]
 
-# Instagram accounts in Angela's niche (competitor/inspiration)
 INSTAGRAM_ACCOUNTS = [
     "nedratawwab", "therapyjeff", "the.holistic.psychologist",
-    "lisaoliveratherapy", "lori.gottlieb", "estherperel",
+    "lisaoliveratherapy", "lori.gottlieb",
 ]
 
-# Topic to hashtag mapping for Instagram
 TOPIC_HASHTAGS = {
-    "grief": ["grief", "griefjourney", "griefandloss", "grieving", "griefquotes"],
-    "mother": ["motherlessdaughters", "motherhunger", "motherloss", "losingamom", "momgrief"],
-    "trauma": ["trauma", "traumahealing", "childhoodtrauma", "cptsd", "traumatherapy"],
-    "attachment": ["attachmenttheory", "anxiousattachment", "attachmentstyle", "attachmentwounds"],
-    "emdr": ["emdr", "emdrtherapy", "emdrhealing", "traumatherapy"],
-    "equine": ["equinetherapy", "horsetherapy", "equineassisted", "healingwithhorses"],
-    "narcissist": ["narcissisticmother", "raisedbynarcissists", "narcissisticabuse", "toxicparents"],
-    "loss": ["childloss", "parentloss", "bereavement", "griefisnotlinear"],
-    "healing": ["healingjourney", "innerchildhealing", "therapyworks", "mentalhealthmatters"],
+    "grief": ["grief", "griefjourney", "griefandloss", "grieving"],
+    "mother": ["motherlessdaughters", "motherhunger", "motherloss", "losingamom"],
+    "trauma": ["trauma", "traumahealing", "childhoodtrauma", "cptsd"],
+    "attachment": ["attachmenttheory", "anxiousattachment", "attachmentwounds"],
+    "emdr": ["emdr", "emdrtherapy", "emdrhealing"],
+    "equine": ["equinetherapy", "horsetherapy", "healingwithhorses"],
+    "narcissist": ["narcissisticmother", "raisedbynarcissists", "toxicparents"],
+    "loss": ["childloss", "parentloss", "bereavement"],
+    "healing": ["healingjourney", "innerchildhealing", "therapyworks"],
+    "shame": ["toxicshame", "shame", "shamehealing"],
 }
 
-# Pattern detection
 PATTERNS = {
-    "naming unnamed grief": ["guilty", "guilt", "no one talks", "nobody talks", "never told", "unnamed", "can't explain"],
-    "challenging platitudes": ["stay strong", "better place", "at least", "everything happens", "move on", "get over", "time heals"],
-    "milestone grief": ["wedding", "birthday", "graduation", "pregnant", "baby", "mother's day", "holiday", "christmas", "anniversary"],
-    "living loss": ["still alive", "estranged", "no contact", "alive but", "living parent"],
-    "parentification": ["parenting my parent", "caretaker", "took care of", "raised myself", "role reversal"],
-    "somatic awareness": ["body remembers", "flinch", "nervous system", "freeze", "fight or flight", "triggered", "hypervigilant"],
-    "community identification": ["things nobody tells", "only people who", "if you know", "does anyone else", "am I the only"],
-    "grief has no timeline": ["years later", "still cry", "out of nowhere", "thought I was over", "ambush", "wave of grief"],
-    "frozen grief": ["numb", "can't cry", "shut down", "disconnected", "going through the motions"],
-    "attachment wounds": ["attachment", "anxious", "avoidant", "clingy", "too much", "not enough", "abandonment"],
+    "naming unnamed grief": ["guilty", "guilt", "no one talks", "nobody talks", "never told", "unnamed"],
+    "challenging platitudes": ["stay strong", "better place", "at least", "everything happens", "move on", "get over"],
+    "milestone grief": ["wedding", "birthday", "graduation", "pregnant", "baby", "mother's day", "holiday"],
+    "living loss": ["still alive", "estranged", "no contact", "alive but"],
+    "parentification": ["parenting my parent", "caretaker", "took care of", "raised myself"],
+    "somatic awareness": ["body remembers", "flinch", "nervous system", "freeze", "triggered"],
+    "community identification": ["things nobody tells", "does anyone else", "am I the only"],
+    "grief has no timeline": ["years later", "still cry", "out of nowhere", "thought I was over"],
+    "attachment wounds": ["attachment", "anxious", "avoidant", "clingy", "too much", "abandonment"],
 }
 
 CACHE_FILE = "viral_cache.json"
 
 
-def detect_pattern(title, text):
-    combined = (title + " " + text).lower()
+def detect_pattern(text):
+    text_lower = text.lower()
     scores = {}
     for pattern, keywords in PATTERNS.items():
-        score = sum(1 for kw in keywords if kw.lower() in combined)
+        score = sum(1 for kw in keywords if kw in text_lower)
         if score > 0:
             scores[pattern] = score
     return max(scores, key=scores.get) if scores else "general grief"
 
 
 def topic_to_keywords(topic):
-    """Convert a topic string into search keywords."""
-    topic_lower = topic.lower()
-    keywords = []
-
-    # Extract core words
-    for word in topic_lower.split():
-        if len(word) > 3 and word not in ["about", "that", "this", "with", "from", "your", "when", "what", "have", "been", "they", "their", "there", "nobody", "talks", "still"]:
-            keywords.append(word)
-
-    return " ".join(keywords[:5]) if keywords else topic[:50]
+    words = [w for w in topic.lower().split() if len(w) > 3 and w not in ["about", "that", "this", "with", "from", "your", "when", "what", "have", "been", "they", "their", "there", "nobody", "talks", "still"]]
+    return " ".join(words[:5]) if words else topic[:50]
 
 
 def topic_to_hashtags(topic):
-    """Convert a topic to relevant Instagram hashtags."""
     topic_lower = topic.lower()
     hashtags = set()
-
     for key, tags in TOPIC_HASHTAGS.items():
         if key in topic_lower:
             hashtags.update(tags)
-
-    # Always include base grief/therapy hashtags
-    hashtags.update(["grief", "traumatherapy", "grieftherapist"])
-
-    return list(hashtags)[:8]
+    if not hashtags:
+        hashtags.update(["grief", "traumatherapy", "grieftherapist"])
+    return list(hashtags)[:6]
 
 
-# ─── REDDIT SCRAPER (free, no API key) ───
+# ─── REDDIT (free) ───
 
 def search_reddit(query, limit=20):
-    """Search Reddit for posts matching a query."""
     posts = []
-
-    # Search across all grief subreddits
-    search_url = f"https://www.reddit.com/search.json?q={query}&sort=top&t=week&limit={limit}"
     try:
-        resp = httpx.get(search_url, headers=HEADERS, timeout=15, follow_redirects=True)
+        url = f"https://www.reddit.com/search.json?q={query}&sort=top&t=week&limit={limit}"
+        resp = httpx.get(url, headers=HEADERS, timeout=15, follow_redirects=True)
         if resp.status_code == 200:
             data = resp.json()
             for child in data.get("data", {}).get("children", []):
@@ -112,15 +89,12 @@ def search_reddit(query, limit=20):
                 if p.get("stickied"):
                     continue
                 sub = p.get("subreddit", "")
-                # Filter to grief/trauma related subs
-                relevant_subs = [s.lower() for s in SUBREDDITS] + ["grief", "trauma", "ptsd", "mentalhealth", "therapy", "loss", "bereavement"]
-                if not any(rs in sub.lower() for rs in relevant_subs):
+                relevant = [s.lower() for s in SUBREDDITS] + ["grief", "trauma", "ptsd", "mentalhealth", "therapy", "loss"]
+                if not any(r in sub.lower() for r in relevant):
                     continue
-
                 ups = p.get("ups", 0)
-                if ups < 20:
+                if ups < 10:
                     continue
-
                 title = p.get("title", "")
                 selftext = (p.get("selftext", "") or "")[:300]
                 posts.append({
@@ -129,26 +103,24 @@ def search_reddit(query, limit=20):
                     "title": title,
                     "stats": f"{ups:,} upvotes · {p.get('num_comments', 0):,} comments",
                     "excerpt": selftext[:200] if selftext else title,
-                    "tag": detect_pattern(title, selftext),
+                    "tag": detect_pattern(title + " " + selftext),
                     "score": ups,
                 })
         time.sleep(1)
     except Exception as e:
         print(f"Reddit search error: {e}")
 
-    # Also search within specific subreddits
     for sub in SUBREDDITS[:4]:
         try:
             url = f"https://www.reddit.com/r/{sub}/search.json?q={query}&restrict_sr=on&sort=top&t=month&limit=5"
             resp = httpx.get(url, headers=HEADERS, timeout=15, follow_redirects=True)
             if resp.status_code == 200:
-                data = resp.json()
-                for child in data.get("data", {}).get("children", []):
+                for child in resp.json().get("data", {}).get("children", []):
                     p = child.get("data", {})
                     if p.get("stickied"):
                         continue
                     ups = p.get("ups", 0)
-                    if ups < 10:
+                    if ups < 5:
                         continue
                     title = p.get("title", "")
                     selftext = (p.get("selftext", "") or "")[:300]
@@ -158,155 +130,162 @@ def search_reddit(query, limit=20):
                         "title": title,
                         "stats": f"{ups:,} upvotes · {p.get('num_comments', 0):,} comments",
                         "excerpt": selftext[:200] if selftext else title,
-                        "tag": detect_pattern(title, selftext),
+                        "tag": detect_pattern(title + " " + selftext),
                         "score": ups,
                     })
             time.sleep(1)
         except Exception as e:
-            print(f"Reddit sub search error for r/{sub}: {e}")
+            print(f"Reddit sub error r/{sub}: {e}")
 
-    # Deduplicate by title
     seen = set()
     unique = []
     for p in posts:
         if p["title"] not in seen:
             seen.add(p["title"])
             unique.append(p)
-
     unique.sort(key=lambda x: x.get("score", 0), reverse=True)
-    return unique[:15]
+    return unique[:12]
 
 
-# ─── INSTAGRAM SCRAPER via Apify ───
+# ─── INSTAGRAM via Apify ───
 
-def scrape_instagram_hashtags(hashtags, max_posts=5):
-    """Scrape Instagram posts by hashtag using Apify."""
+def parse_ig_post(item):
+    """Extract post data from any Apify Instagram actor response format."""
+    # Try multiple possible field names
+    caption = item.get("caption", "") or item.get("text", "") or ""
+    likes = item.get("likesCount", 0) or item.get("likes", 0) or item.get("dipimaticaCount", 0) or 0
+    comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
+    owner = item.get("ownerUsername", "") or ""
+    if not owner:
+        owner_obj = item.get("owner", {})
+        if isinstance(owner_obj, dict):
+            owner = owner_obj.get("username", "") or ""
+    if not owner:
+        owner = item.get("user", {}).get("username", "") if isinstance(item.get("user"), dict) else ""
+
+    # Build a clean title from caption
+    title = caption[:120].replace("\n", " ").strip()
+    if len(caption) > 120:
+        title += "..."
+
+    return {
+        "src": "instagram",
+        "sub": f"@{owner}" if owner else "Instagram",
+        "title": title,
+        "stats": f"{likes:,} likes · {comments:,} comments",
+        "excerpt": caption[:200].replace("\n", " ") if caption else "",
+        "tag": detect_pattern(caption),
+        "score": likes if isinstance(likes, int) else 0,
+    }
+
+
+def scrape_instagram_hashtags(hashtags):
     if not APIFY_TOKEN:
-        print("No APIFY_TOKEN set, skipping Instagram")
+        print("No APIFY_TOKEN, skipping Instagram hashtags")
         return []
 
     posts = []
     try:
-        # Use Instagram Hashtag Scraper actor
+        print(f"  Apify hashtag scraper: {hashtags}")
         url = f"https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
         body = {
-            "hashtags": hashtags[:5],
-            "resultsLimit": max_posts,
+            "hashtags": hashtags,
+            "resultsLimit": 5,
         }
         resp = httpx.post(url, json=body, timeout=120)
+        print(f"  Apify hashtag response: {resp.status_code}, items: {len(resp.json()) if resp.status_code == 200 else 'N/A'}")
+
         if resp.status_code == 200:
             items = resp.json()
-            for item in items:
-                caption = item.get("caption", "") or ""
-                likes = item.get("likesCount", 0) or item.get("likes", 0) or 0
-                comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
-                owner = item.get("ownerUsername", "") or item.get("owner", {}).get("username", "") or ""
-
-                if likes < 100:
-                    continue
-
-                posts.append({
-                    "src": "instagram",
-                    "sub": f"@{owner}" if owner else "Instagram",
-                    "title": caption[:120] + ("..." if len(caption) > 120 else ""),
-                    "stats": f"{likes:,} likes · {comments:,} comments",
-                    "excerpt": caption[:200] if caption else "",
-                    "tag": detect_pattern(caption, ""),
-                    "score": likes,
-                })
+            if isinstance(items, list):
+                for item in items:
+                    post = parse_ig_post(item)
+                    posts.append(post)
+            print(f"  Parsed {len(posts)} hashtag posts")
         else:
-            print(f"Apify hashtag scraper returned {resp.status_code}: {resp.text[:200]}")
+            print(f"  Apify hashtag error: {resp.status_code} - {resp.text[:300]}")
     except Exception as e:
-        print(f"Apify hashtag error: {e}")
+        print(f"  Apify hashtag exception: {e}")
 
     return posts
 
 
-def scrape_instagram_accounts(usernames, max_posts=3):
-    """Scrape recent posts from specific Instagram accounts using Apify."""
+def scrape_instagram_accounts(usernames):
     if not APIFY_TOKEN:
+        print("No APIFY_TOKEN, skipping Instagram accounts")
         return []
 
     posts = []
     try:
+        print(f"  Apify post scraper: {usernames}")
         url = f"https://api.apify.com/v2/acts/apify~instagram-post-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
         body = {
-            "username": usernames[:4],
-            "resultsLimit": max_posts,
+            "username": usernames,
+            "resultsLimit": 3,
         }
         resp = httpx.post(url, json=body, timeout=120)
+        print(f"  Apify post response: {resp.status_code}, items: {len(resp.json()) if resp.status_code == 200 else 'N/A'}")
+
         if resp.status_code == 200:
             items = resp.json()
-            for item in items:
-                caption = item.get("caption", "") or ""
-                likes = item.get("likesCount", 0) or item.get("likes", 0) or 0
-                comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
-                owner = item.get("ownerUsername", "") or ""
-
-                posts.append({
-                    "src": "instagram",
-                    "sub": f"@{owner}" if owner else "Instagram",
-                    "title": caption[:120] + ("..." if len(caption) > 120 else ""),
-                    "stats": f"{likes:,} likes · {comments:,} comments",
-                    "excerpt": caption[:200] if caption else "",
-                    "tag": detect_pattern(caption, ""),
-                    "score": likes,
-                })
+            if isinstance(items, list):
+                for item in items:
+                    post = parse_ig_post(item)
+                    posts.append(post)
+            print(f"  Parsed {len(posts)} account posts")
         else:
-            print(f"Apify post scraper returned {resp.status_code}: {resp.text[:200]}")
+            print(f"  Apify post error: {resp.status_code} - {resp.text[:300]}")
     except Exception as e:
-        print(f"Apify account error: {e}")
+        print(f"  Apify post exception: {e}")
 
     return posts
 
 
-# ─── COMBINED SCRAPER ───
+# ─── COMBINED ───
 
 def scrape_by_topic(topic="grief"):
-    """Search Reddit + Instagram based on a topic. Returns combined results."""
-    print(f"Scraping for topic: {topic}")
+    print(f"\n{'='*50}")
+    print(f"SCRAPING: {topic}")
+    print(f"{'='*50}")
 
     query = topic_to_keywords(topic)
     hashtags = topic_to_hashtags(topic)
 
-    print(f"  Reddit query: {query}")
-    print(f"  Instagram hashtags: {hashtags}")
+    print(f"Reddit query: {query}")
+    print(f"Instagram hashtags: {hashtags}")
 
-    # Reddit (always runs, free)
+    # Reddit
     reddit_posts = search_reddit(query)
-    print(f"  Reddit: {len(reddit_posts)} posts")
+    print(f"Reddit results: {len(reddit_posts)}")
 
-    # Instagram via Apify (runs if token exists)
-    ig_hashtag_posts = scrape_instagram_hashtags(hashtags, max_posts=5)
-    ig_account_posts = scrape_instagram_accounts(INSTAGRAM_ACCOUNTS[:3], max_posts=2)
+    # Instagram
+    ig_hashtag_posts = scrape_instagram_hashtags(hashtags)
+    ig_account_posts = scrape_instagram_accounts(INSTAGRAM_ACCOUNTS[:3])
     ig_posts = ig_hashtag_posts + ig_account_posts
-    print(f"  Instagram: {len(ig_posts)} posts")
+    print(f"Instagram results: {len(ig_posts)} ({len(ig_hashtag_posts)} hashtag + {len(ig_account_posts)} account)")
 
-    # Combine and sort by engagement
+    # Combine
     all_posts = reddit_posts + ig_posts
     all_posts.sort(key=lambda x: x.get("score", 0), reverse=True)
 
-    # Clean up score field
+    # Clean score field
     for p in all_posts:
         p.pop("score", None)
 
+    print(f"TOTAL: {len(all_posts)} posts")
     return all_posts[:20]
 
 
 def run_scraper(topic="grief"):
-    """Run full scraper and save to cache."""
     posts = scrape_by_topic(topic)
-
     cache = {
         "scraped_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
         "topic": topic,
         "total_found": len(posts),
         "posts": posts,
     }
-
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f, indent=2)
-
     print(f"Saved {len(posts)} posts to {CACHE_FILE}")
     return cache
 
