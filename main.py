@@ -26,7 +26,6 @@ FORMAT: Hook in line 1. Short punchy line breaks. No bullet points. Trust the re
 Three essential elements of attachment: nurturance, protection, guidance."""
 
 
-# ─── Serve index.html ───
 @app.get("/", response_class=HTMLResponse)
 async def root():
     try:
@@ -100,7 +99,6 @@ DEMO_POSTS = [
 
 @app.get("/api/viral")
 async def get_viral():
-    """Return viral posts. Tries scraper cache first, falls back to demo data."""
     try:
         from scraper import load_cache
         cache = load_cache()
@@ -114,7 +112,6 @@ async def get_viral():
     except Exception as e:
         print(f"Scraper cache error: {e}")
 
-    # Fallback to demo data
     return JSONResponse({
         "success": True,
         "posts": DEMO_POSTS,
@@ -125,7 +122,6 @@ async def get_viral():
 
 @app.post("/api/scrape")
 async def trigger_scrape():
-    """Manually trigger the scraper. Takes 20-30 seconds."""
     try:
         from scraper import run_scraper
         result = run_scraper()
@@ -167,22 +163,42 @@ Return ONLY valid JSON, no markdown backticks:
 async def generate_carousel(req: Request):
     data = await req.json()
     topic = data.get("topic", "grief and attachment trauma")
+    viral_context = data.get("viral_context", "")
+    analysis_context = data.get("analysis_context", "")
+    pillar = data.get("pillar", "Grief Education")
+    tone = data.get("tone", "clinical-but-warm")
+
+    # Build a rich prompt that connects viral content to the carousel
+    context_block = ""
+    if viral_context:
+        context_block += f"\n\nVIRAL POSTS THAT ARE PERFORMING RIGHT NOW (base your carousel on these):\n{viral_context}"
+    if analysis_context:
+        context_block += f"\n\nANALYSIS OF WHAT'S WORKING:\n{analysis_context}"
+
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=2000,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f"""Generate a 10-slide Instagram carousel about: {topic}
+        messages=[{"role": "user", "content": f"""Generate a 10-slide Instagram carousel.
 
-Return ONLY valid JSON, no markdown backticks. Match Angela's exact carousel style:
+TOPIC: {topic}
+PILLAR: {pillar}
+TONE: {tone}
+{context_block}
+
+YOUR JOB: Write a carousel that captures the exact emotional nerve these viral posts are hitting, but through Angela's clinical lens and voice. Use the language and framing people are already responding to. Name what they're feeling. Don't just write about the topic generically. Write about the SPECIFIC experience these viral posts describe.
+
+Return ONLY valid JSON, no markdown backticks:
 
 {{"slides": [{{"type":"hook","upper":"BOLD UPPERCASE HOOK","italic":"italic subtitle."}},{{"type":"body","html":"Sentence case with <em>italic emphasis</em> on emotional words."}},{{"type":"body","html":"Next point."}},{{"type":"body","html":"Continue."}},{{"type":"body","html":"Deepen."}},{{"type":"body","html":"More."}},{{"type":"body","html":"Almost."}},{{"type":"body","html":"Validate."}},{{"type":"body","html":"Bridge."}},{{"type":"cta","top":"This is what I work with.","bottom":"Comment <strong>WORTHY</strong> for my free resource."}}],"caption":"Full caption with hashtags","trigger":"WORTHY"}}
 
-RULES:
-- Slide 1: type "hook" with uppercase title and italic subtitle
-- Slides 2-9: type "body" with sentence case. Use <em> on emotional gut-punch words ONLY.
+SLIDE RULES:
+- Slide 1: type "hook" with uppercase title and italic subtitle. This should echo the exact language from the viral posts.
+- Slides 2-9: type "body" with sentence case. Use <em> on emotional gut-punch words ONLY. Each slide should name a SPECIFIC experience from the viral posts, not generic grief content.
 - Slide 10: type "cta"
-- MAX 25 words per slide. Massive negative space.
-- Angela's voice. No em dashes."""}]
+- MAX 25 words per slide.
+- Angela's voice. No em dashes. No fluff.
+- The more specific and recognizable, the better. People share content that makes them feel SEEN."""}]
     )
     try:
         clean = response.content[0].text.strip()
@@ -194,4 +210,4 @@ RULES:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v2-scraper"}
+    return {"status": "ok", "version": "v3-context"}
