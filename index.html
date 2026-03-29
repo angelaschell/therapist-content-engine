@@ -748,7 +748,50 @@ function handleTplFile(f){if(!f||!f.type.startsWith("image/"))return;var r=new F
 
 function analyzeTpl(){if(!tplImageData){alert("Upload an image first.");return}document.getElementById("tplAnalyzeBtn").style.display="none";document.getElementById("tplLoader").style.display="block";var notes=document.getElementById("tplNotesInput").value.trim();fetch(BACKEND+"/api/templates/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:tplImageData,notes:notes})}).then(function(r){return r.json()}).then(function(d){document.getElementById("tplLoader").style.display="none";if(d.success&&d.data&&!d.data.error){tplCurrentAnalysis=d.data;renderTplResult(d.data)}else{document.getElementById("tplResult").style.display="block";document.getElementById("tplResult").innerHTML='<div class="tpl-bubble system">Could not extract style. Try a clearer screenshot.</div>';document.getElementById("tplAnalyzeBtn").style.display="block"}}).catch(function(e){document.getElementById("tplLoader").style.display="none";document.getElementById("tplResult").style.display="block";document.getElementById("tplResult").innerHTML='<div class="tpl-bubble system">Error: '+e.message+'</div>';document.getElementById("tplAnalyzeBtn").style.display="block"})}
 
-function renderTplResult(data){var h='<div class="tpl-bubble system"><div class="tpl-bubble-label">Style Extracted</div>';h+='<div class="tpl-preview-card">';h+='<div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:600;color:#3B2145;margin-bottom:10px">'+(data.suggested_name||"Custom Template")+'</div>';h+='<div style="font-size:13px;color:rgba(59,33,69,.5);margin-bottom:14px;line-height:1.5">'+(data.description||"")+'</div>';h+='<div style="margin-bottom:12px">';h+='<div class="tpl-color-row"><div class="tpl-color-dot" style="background:'+(data.bg_color||"#F7EBE0")+'"></div><div class="tpl-color-info"><strong>Body BG</strong> '+(data.bg_color||"")+'</div></div>';h+='<div class="tpl-color-row"><div class="tpl-color-dot" style="background:'+(data.text_color||"#3B2145")+'"></div><div class="tpl-color-info"><strong>Body Text</strong> '+(data.text_color||"")+'</div></div>';h+='<div class="tpl-color-row"><div class="tpl-color-dot" style="background:'+(data.hook_bg||"#3B2145")+'"></div><div class="tpl-color-info"><strong>Hook BG</strong> '+(data.hook_bg||"")+'</div></div>';h+='<div class="tpl-color-row"><div class="tpl-color-dot" style="background:'+(data.hook_text||"#F7EBE0")+'"></div><div class="tpl-color-info"><strong>Hook Text</strong> '+(data.hook_text||"")+'</div></div>';h+='<div class="tpl-color-row"><div class="tpl-color-dot" style="background:'+(data.close_bg||"#90A9EC")+'"></div><div class="tpl-color-info"><strong>Close BG</strong> '+(data.close_bg||"")+'</div></div>';h+='</div>';h+='<div class="tpl-prop"><strong>Title</strong> '+(data.title_style||"")+'</div>';h+='<div class="tpl-prop"><strong>Body</strong> '+(data.body_style||"")+'</div>';h+='<div class="tpl-prop"><strong>Size</strong> '+(data.text_size||"")+'</div>';h+='<div class="tpl-prop"><strong>Align</strong> '+(data.text_align||"")+'</div>';h+='<div class="tpl-prop"><strong>Spacing</strong> '+(data.spacing||"")+'</div>';h+='<div class="tpl-prop"><strong>Watermark</strong> '+(data.watermark?"Yes":"No")+'</div>';h+='</div></div>';
+function renderTplResult(data){
+var fontMap={"serif-bold":"Cormorant Garamond,serif;font-weight:700","serif-regular":"Cormorant Garamond,serif;font-weight:400","serif-italic":"Cormorant Garamond,serif;font-weight:400;font-style:italic","sans-bold":"Jost,sans-serif;font-weight:600","sans-light":"Jost,sans-serif;font-weight:300","sans-medium":"Jost,sans-serif;font-weight:500","sans-regular":"Jost,sans-serif;font-weight:400","italic-serif":"Playfair Display,serif;font-style:italic;font-weight:400","italic-sans":"Jost,sans-serif;font-style:italic;font-weight:400","uppercase-sans":"Jost,sans-serif;font-weight:600;text-transform:uppercase","uppercase-serif":"Cormorant Garamond,serif;font-weight:700;text-transform:uppercase"};
+var sizeMap={"small":"16px","medium":"20px","large":"26px","xlarge":"32px"};
+var bodySize={"small":"12px","medium":"14px","large":"16px","xlarge":"18px"};
+var titleFont=fontMap[data.title_style]||fontMap["serif-bold"];
+var bodyFont=fontMap[data.body_style]||fontMap["serif-regular"];
+var tSize=sizeMap[data.text_size]||"26px";
+var bSize=bodySize[data.text_size]||"14px";
+var align=data.text_align||"center";
+var h='<div class="tpl-bubble system"><div class="tpl-bubble-label">Style Extracted</div>';
+h+='<div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:600;color:#3B2145;margin-bottom:6px">'+(data.suggested_name||"Custom Template")+'</div>';
+h+='<div style="font-size:13px;color:rgba(59,33,69,.5);margin-bottom:16px;line-height:1.5">'+(data.description||"")+'</div>';
+// VISUAL PREVIEW: 3 mini slides
+h+='<div style="display:flex;gap:10px;margin-bottom:18px;overflow-x:auto">';
+// Hook slide
+h+='<div style="width:140px;height:175px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:16px;position:relative;background:'+(data.hook_bg||"#3B2145")+';text-align:'+align+'">';
+h+='<div style="font-family:'+titleFont+';font-size:'+tSize+';color:'+(data.hook_text||"#F7EBE0")+';line-height:1.15">THIS IS YOUR HOOK</div>';
+h+='<div style="font-family:'+bodyFont+';font-size:11px;color:'+(data.hook_text||"#F7EBE0")+';opacity:.6;margin-top:6px;font-style:italic">the subtitle goes here</div>';
+if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:5px;letter-spacing:2px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.4">@angelaschellenberg</div>';
+h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.35">Hook</div>';
+h+='</div>';
+// Body slide
+h+='<div style="width:140px;height:175px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:16px;position:relative;background:'+(data.bg_color||"#F7EBE0")+';text-align:'+align+'">';
+h+='<div style="font-family:'+bodyFont+';font-size:'+bSize+';color:'+(data.text_color||"#3B2145")+';line-height:1.5">The body slide text would appear here with your extracted styling.</div>';
+if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:5px;letter-spacing:2px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.35">@angelaschellenberg</div>';
+h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.35">Body</div>';
+h+='</div>';
+// Close slide
+h+='<div style="width:140px;height:175px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:16px;position:relative;background:'+(data.close_bg||"#90A9EC")+';text-align:'+align+'">';
+h+='<div style="font-family:'+titleFont+';font-size:13px;color:'+(data.close_text||"#F7EBE0")+';line-height:1.5;font-style:italic">What would it mean to let yourself feel this?</div>';
+if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:5px;letter-spacing:2px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.4">@angelaschellenberg</div>';
+h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.35">Close</div>';
+h+='</div>';
+h+='</div>';
+// Color swatches compact row
+h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
+var swatches=[{c:data.hook_bg,l:"Hook BG"},{c:data.hook_text,l:"Hook Text"},{c:data.bg_color,l:"Body BG"},{c:data.text_color,l:"Body Text"},{c:data.close_bg,l:"Close BG"},{c:data.close_text,l:"Close Text"}];
+swatches.forEach(function(s){h+='<div style="text-align:center"><div style="width:28px;height:28px;border-radius:6px;background:'+(s.c||"#ccc")+';border:1px solid rgba(59,33,69,.08);margin-bottom:2px"></div><div style="font-size:8px;color:rgba(59,33,69,.3)">'+s.l+'</div></div>'});
+h+='</div>';
+// Compact specs
+h+='<div style="font-size:11px;color:rgba(59,33,69,.4);line-height:1.8">';
+h+='<strong style="color:#3B2145">Title:</strong> '+(data.title_style||"")+' · <strong style="color:#3B2145">Body:</strong> '+(data.body_style||"")+' · <strong style="color:#3B2145">Size:</strong> '+(data.text_size||"")+' · <strong style="color:#3B2145">Align:</strong> '+(data.text_align||"")+' · <strong style="color:#3B2145">Spacing:</strong> '+(data.spacing||"");
+h+='</div>';
+h+='</div>';
 h+='<div style="margin-top:12px"><div class="tpl-feedback-row"><textarea id="tplFeedback" placeholder="e.g. Make the hook slide darker, change body text to lavender"></textarea><button class="btn" onclick="regenTpl()">Regenerate</button></div></div>';
 h+='<div class="btns" style="margin-top:12px"><button class="btn" style="background:#6fcf97;color:#3B2145" onclick="saveTpl()">Save Template</button><button class="ghost" onclick="resetTpl()">Start Over</button></div>';
 document.getElementById("tplResult").innerHTML=h;document.getElementById("tplResult").style.display="block"}
