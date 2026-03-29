@@ -1,6 +1,6 @@
 """
-Viral Content Scraper - Reddit + Instagram Hashtags via Apify
-Hashtag-first approach: recommends hashtags, scrapes them, ranks by relevance + virality
+Viral Content Scraper - Reddit + Instagram TOP posts via Apify
+Uses instagram-scraper with hashtag URLs to get TOP posts (not recent)
 """
 
 import httpx
@@ -27,7 +27,6 @@ PATTERNS = {
     "frozen grief": ["numb", "can't cry", "shut down", "disconnected", "autopilot", "going through the motions"],
 }
 
-# Hashtag library organized by therapy topic
 HASHTAG_LIBRARY = {
     "grief": ["grief", "griefjourney", "griefandloss", "grieving", "griefquotes", "griefrecovery", "griefwork", "griefawareness"],
     "mother": ["motherlessdaughters", "motherhunger", "motherloss", "losingamom", "momgrief", "motherwound", "maternalloss"],
@@ -53,7 +52,6 @@ HASHTAG_LIBRARY = {
     "generational": ["generationaltrauma", "intergenerationaltrauma", "breakingthecycle", "generationalhealing"],
 }
 
-# Base therapy hashtags always included
 BASE_THERAPY_HASHTAGS = ["therapistsofinstagram", "therapyworks", "mentalhealth", "healingjourney"]
 
 CACHE_FILE = "viral_cache.json"
@@ -77,23 +75,14 @@ def extract_hook(title):
 
 
 def recommend_hashtags(topic):
-    """Given a topic string, return recommended hashtags to search."""
     topic_lower = topic.lower()
     recommended = set()
-
-    # Match topic words against hashtag library
     for key, tags in HASHTAG_LIBRARY.items():
         if key in topic_lower:
             recommended.update(tags)
-
-    # If nothing matched, use broad therapy hashtags
     if not recommended:
         recommended.update(["grief", "trauma", "healingjourney", "therapistsofinstagram", "mentalhealth", "childhoodtrauma"])
-
-    # Always include base therapy hashtags
     recommended.update(BASE_THERAPY_HASHTAGS)
-
-    # Cap at 15 hashtags
     return list(recommended)[:15]
 
 
@@ -151,7 +140,6 @@ def topic_to_filter_words(topic):
 
 
 def calculate_relevance(text, filter_words):
-    """Score how relevant a post is to the topic."""
     text_lower = text.lower()
     score = 0
     for word in filter_words:
@@ -166,7 +154,7 @@ def calculate_relevance(text, filter_words):
     return score
 
 
-# ─── REDDIT ───
+# --- REDDIT ---
 
 def search_reddit(queries, filter_words, limit=15):
     posts = []
@@ -208,7 +196,6 @@ def search_reddit(queries, filter_words, limit=15):
         except Exception as e:
             print(f"  Reddit error: {e}")
 
-    # Fallback if low results
     if len(posts) < 5:
         print("  Reddit fallback: top posts from subs...")
         for sub in SUBREDDITS[:6]:
@@ -242,7 +229,6 @@ def search_reddit(queries, filter_words, limit=15):
             except:
                 pass
 
-    # Deduplicate
     seen = set()
     unique = []
     for p in posts:
@@ -252,57 +238,65 @@ def search_reddit(queries, filter_words, limit=15):
     return unique
 
 
-# ─── INSTAGRAM via Apify HASHTAG SCRAPER ───
+# --- INSTAGRAM via Apify - TOP POSTS from hashtag pages ---
 
-def scrape_instagram_hashtags(hashtags, filter_words, min_likes=1000):
-    """Scrape Instagram by hashtags. Only returns posts with 1000+ likes."""
+def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
+    """
+    Scrape Instagram TOP posts by feeding hashtag page URLs to apify~instagram-scraper.
+    Instagram explore/tags/ page shows top/popular posts by default.
+    """
     if not APIFY_TOKEN:
         print("  No APIFY_TOKEN set, skipping Instagram")
         return []
     if not hashtags:
         return []
 
-    print(f"  Instagram hashtags: {hashtags[:10]}")
+    hashtag_urls = [f"https://www.instagram.com/explore/tags/{tag}/" for tag in hashtags[:10]]
+    print(f"  Instagram: scraping TOP posts from {len(hashtag_urls)} hashtag pages")
+    print(f"  URLs: {hashtag_urls[:3]}...")
+
     all_posts = []
 
     try:
-        # Use Apify Instagram Hashtag Scraper
-        url = f"https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
+        url = f"https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
         payload = {
-            "hashtags": hashtags[:10],
-            "resultsLimit": 30,
+            "directUrls": hashtag_urls,
+            "resultsLimit": 20,
             "resultsType": "posts",
+            "searchType": "hashtag",
         }
-        print(f"  Calling Apify hashtag scraper...")
-        resp = httpx.post(url, json=payload, timeout=180)
+        print(f"  Calling Apify instagram-scraper with hashtag URLs...")
+        resp = httpx.post(url, json=payload, timeout=240)
         print(f"  Apify response: {resp.status_code}")
 
         if resp.status_code in [200, 201]:
             items = resp.json()
             if isinstance(items, list):
-                print(f"  Apify returned {len(items)} total posts")
+                print(f"  Apify returned {len(items)} total posts from hashtag pages")
+
                 for item in items:
-                    # Try multiple field names (different Apify actors use different names)
-                    caption = item.get("caption", "") or item.get("text", "") or ""
+                    caption = item.get("caption", "") or item.get("text", "") or item.get("alt", "") or ""
                     likes = item.get("likesCount", 0) or item.get("likes", 0) or 0
                     comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
                     owner = item.get("ownerUsername", "") or item.get("username", "") or ""
 
-                    # Try nested owner object
                     if not owner and isinstance(item.get("owner"), dict):
                         owner = item["owner"].get("username", "")
+                    if not caption and isinstance(item.get("edge_media_to_caption"), dict):
+                        edges = item["edge_media_to_caption"].get("edges", [])
+                        if edges:
+                            caption = edges[0].get("node", {}).get("text", "")
+                    if not likes and isinstance(item.get("edge_liked_by"), dict):
+                        likes = item["edge_liked_by"].get("count", 0)
+                    if not likes and isinstance(item.get("edge_media_preview_like"), dict):
+                        likes = item["edge_media_preview_like"].get("count", 0)
 
-                    # Skip posts under 1000 likes
                     if likes < min_likes:
                         continue
-
-                    # Skip empty captions
                     if not caption or len(caption.strip()) < 20:
                         continue
 
-                    # Calculate relevance to topic
                     rel = calculate_relevance(caption, filter_words)
-
                     first_line = caption.split("\n")[0].strip()
                     title = first_line[:120] + ("..." if len(first_line) > 120 else "")
 
@@ -326,23 +320,74 @@ def scrape_instagram_hashtags(hashtags, filter_words, min_likes=1000):
                 print(f"  Apify body: {resp.text[:500]}")
             except:
                 pass
+
+        # Fallback to hashtag-scraper with higher limit if nothing found
+        if len(all_posts) == 0:
+            print("  Fallback: trying instagram-hashtag-scraper with higher limit...")
+            url2 = f"https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
+            payload2 = {
+                "hashtags": hashtags[:10],
+                "resultsLimit": 100,
+                "resultsType": "posts",
+            }
+            resp2 = httpx.post(url2, json=payload2, timeout=240)
+            print(f"  Fallback Apify response: {resp2.status_code}")
+
+            if resp2.status_code in [200, 201]:
+                items2 = resp2.json()
+                if isinstance(items2, list):
+                    print(f"  Fallback returned {len(items2)} posts")
+                    for item in items2:
+                        caption = item.get("caption", "") or item.get("text", "") or ""
+                        likes = item.get("likesCount", 0) or item.get("likes", 0) or 0
+                        comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
+                        owner = item.get("ownerUsername", "") or item.get("username", "") or ""
+                        if not owner and isinstance(item.get("owner"), dict):
+                            owner = item["owner"].get("username", "")
+                        if likes < 100:
+                            continue
+                        if not caption or len(caption.strip()) < 20:
+                            continue
+                        rel = calculate_relevance(caption, filter_words)
+                        first_line = caption.split("\n")[0].strip()
+                        title = first_line[:120] + ("..." if len(first_line) > 120 else "")
+                        all_posts.append({
+                            "src": "instagram",
+                            "sub": f"@{owner}" if owner else "Instagram",
+                            "title": title,
+                            "stats": f"{likes:,} likes . {comments:,} comments",
+                            "excerpt": caption[:200].replace("\n", " "),
+                            "tag": detect_pattern(caption),
+                            "engagement": likes,
+                            "relevance_score": rel,
+                            "virality_score": likes,
+                            "combined_score": rel * 10 + likes,
+                        })
+
     except Exception as e:
         print(f"  Apify exception: {e}")
+        import traceback
+        traceback.print_exc()
 
-    print(f"  Instagram after 1000+ filter: {len(all_posts)} posts")
-    return all_posts
+    seen = set()
+    unique = []
+    for p in all_posts:
+        if p["title"] not in seen:
+            seen.add(p["title"])
+            unique.append(p)
+
+    print(f"  Instagram final: {len(unique)} posts (500+ likes from TOP posts)")
+    return unique
 
 
-# ─── COMBINED + RANKED ───
+# --- COMBINED + RANKED ---
 
 def scrape_by_topic(topic="grief", hashtags=None):
-    """Main scrape function. If hashtags provided, use those. Otherwise auto-recommend."""
     print(f"\n{'=' * 50}\nSCRAPING: {topic}\n{'=' * 50}")
 
     filter_words = topic_to_filter_words(topic)
     reddit_queries = topic_to_reddit_queries(topic)
 
-    # Use provided hashtags or auto-recommend
     if not hashtags:
         hashtags = recommend_hashtags(topic)
 
@@ -351,37 +396,32 @@ def scrape_by_topic(topic="grief", hashtags=None):
     print(f"Filter words: {filter_words}")
 
     reddit_posts = search_reddit(reddit_queries, filter_words)
-    ig_posts = scrape_instagram_hashtags(hashtags, filter_words)
+    ig_posts = scrape_instagram_top_posts(hashtags, filter_words)
     print(f"Raw: {len(reddit_posts)} Reddit, {len(ig_posts)} Instagram")
 
     all_posts = reddit_posts + ig_posts
-
-    # Sort: topic-matching posts float to top, then by virality
     all_posts.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
 
-    # Assign rank labels
     for p in all_posts:
         rel = p.get("relevance_score", 0)
         eng = p.get("engagement", 0)
-        if rel >= 5 and eng >= 100:
+        if rel >= 5 and eng >= 500:
             p["rank"] = "highly relevant + viral"
         elif rel >= 3:
             p["rank"] = "highly relevant"
-        elif eng >= 500:
+        elif eng >= 1000:
             p["rank"] = "viral"
         elif rel >= 1:
             p["rank"] = "relevant"
         else:
             p["rank"] = "general"
 
-    # Extract hooks from top posts
     hooks = []
     for p in all_posts[:10]:
         hook = extract_hook(p["title"])
         if hook and len(hook) > 15:
             hooks.append(hook)
 
-    # Clean internal fields
     for p in all_posts:
         p.pop("engagement", None)
         p.pop("combined_score", None)
