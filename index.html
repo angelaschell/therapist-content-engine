@@ -6,6 +6,7 @@
 <title>Angela Schellenberg — Content Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:100vh}
@@ -198,7 +199,7 @@ option{background:#F7EBE0}
   <button class="tab" onclick="showTab('flows',this)">ManyChat Flows</button>
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
   <button class="tab active" onclick="showTab('builder',this)">Carousel Builder</button>
-  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button>
+  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button>
 </div>
 <div class="main">
 
@@ -322,6 +323,288 @@ option{background:#F7EBE0}
   </div>
 </div>
 
+ <!-- ANALYTICS TAB -->
+<div id="analytics" class="tab-panel" style="display:none">
+  <p class="desc">Instagram performance dashboard. Pulls live data from the Graph API.</p>
+  <div class="card" id="analyticsSetup">
+    <label>Status</label>
+    <div id="analyticsStatus" style="font-size:14px;color:rgba(59,33,69,.5);margin-bottom:14px">Checking connection...</div>
+    <div class="grid2">
+      <div><label>Period</label>
+        <select id="a-period" onchange="loadAnalytics()">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="60">Last 60 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end"><button class="btn" onclick="loadAnalytics()" style="width:100%">Refresh Data</button></div>
+    </div>
+    <div id="tokenStatus" style="margin-top:12px;font-size:11px;color:rgba(59,33,69,.3)"></div>
+  </div>
+
+  <div id="analyticsData" style="display:none">
+    <!-- Metric Cards -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="card" style="text-align:center;padding:18px">
+        <label>Followers</label>
+        <div id="a-followers" style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#3B2145;font-weight:600">--</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px">
+        <label>Posts</label>
+        <div id="a-posts" style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#3B2145;font-weight:600">--</div>
+        <div id="a-posts-sub" style="font-size:11px;color:rgba(59,33,69,.3)">this period</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px">
+        <label>Eng. Rate</label>
+        <div id="a-engrate" style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#3B2145;font-weight:600">--</div>
+        <div id="a-engrate-sub" style="font-size:11px;color:rgba(59,33,69,.3)">avg per post</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="card" style="text-align:center;padding:18px">
+        <label>Total Likes</label>
+        <div id="a-likes" style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#3B2145;font-weight:600">--</div>
+        <div id="a-likes-sub" style="font-size:11px;color:rgba(59,33,69,.3)">--/post</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px">
+        <label>Total Comments</label>
+        <div id="a-comments" style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#3B2145;font-weight:600">--</div>
+        <div id="a-comments-sub" style="font-size:11px;color:rgba(59,33,69,.3)">--/post</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px">
+        <label>Avg Engagement</label>
+        <div id="a-avgeng" style="font-family:'Cormorant Garamond',serif;font-size:28px;color:#3B2145;font-weight:600">--</div>
+        <div id="a-avgeng-sub" style="font-size:11px;color:rgba(59,33,69,.3)">likes + comments/post</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="card" style="margin-bottom:16px">
+      <label>Engagement by Post</label>
+      <div style="height:260px"><canvas id="a-eng-chart"></canvas></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card">
+        <label>Content Mix</label>
+        <div style="height:220px"><canvas id="a-type-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <label>Avg Engagement by Type</label>
+        <div style="height:220px"><canvas id="a-type-eng-chart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Best Days/Hours -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card">
+        <label>Best Days to Post</label>
+        <div id="a-best-days" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <label>Best Hours to Post (UTC)</label>
+        <div id="a-best-hours" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Top Posts Table -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <label style="margin-bottom:0">Top Posts</label>
+        <select id="a-sort" onchange="buildAnalyticsTable()" style="width:auto;padding:6px 12px;font-size:11px">
+          <option value="engagement">By Engagement</option>
+          <option value="likes">By Likes</option>
+          <option value="comments">By Comments</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" id="a-posts-table">
+          <thead><tr>
+            <th style="text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:8px;border-bottom:1px solid rgba(59,33,69,.06)">Post</th>
+            <th style="text-align:left;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:8px;border-bottom:1px solid rgba(59,33,69,.06)">Type</th>
+            <th style="text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:8px;border-bottom:1px solid rgba(59,33,69,.06)">Likes</th>
+            <th style="text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:8px;border-bottom:1px solid rgba(59,33,69,.06)">Comments</th>
+            <th style="text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:8px;border-bottom:1px solid rgba(59,33,69,.06)">Eng Rate</th>
+            <th style="text-align:right;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:8px;border-bottom:1px solid rgba(59,33,69,.06)">Date</th>
+          </tr></thead>
+          <tbody id="a-table-body"><tr><td colspan="6" style="text-align:center;padding:20px;color:rgba(59,33,69,.3)">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Token Status -->
+    <div class="card" style="margin-top:16px">
+      <label>Token Health</label>
+      <div id="a-token-detail" style="font-size:13px;color:rgba(59,33,69,.5);line-height:1.7"></div>
+      <div class="btns" style="margin-top:10px">
+        <button class="ghost" onclick="checkTokenHealth()">Check Token</button>
+        <button class="ghost" onclick="refreshToken()">Force Refresh Token</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ANALYTICS ──
+var aPosts=[], aFollowers=171000, aCharts={};
+
+function afmt(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toLocaleString()}
+function afmtD(ts){return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+function aDestroy(k){if(aCharts[k]){aCharts[k].destroy();aCharts[k]=null}}
+
+var aChartOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#3B2145',titleColor:'#F7EBE0',bodyColor:'rgba(247,235,224,.7)',borderColor:'rgba(210,199,255,.2)',borderWidth:1,cornerRadius:8,padding:10,titleFont:{family:'Jost'},bodyFont:{family:'Jost',size:12}}},scales:{x:{grid:{color:'rgba(59,33,69,.04)'},ticks:{color:'rgba(59,33,69,.3)',font:{family:'Jost',size:10},maxTicksLimit:10},border:{display:false}},y:{grid:{color:'rgba(59,33,69,.04)'},ticks:{color:'rgba(59,33,69,.3)',font:{family:'Jost',size:10},callback:function(v){return afmt(v)}},border:{display:false}}}};
+
+function loadAnalytics(){
+  var period=document.getElementById('a-period').value;
+  document.getElementById('analyticsStatus').textContent='Loading data...';
+  document.getElementById('analyticsStatus').style.color='#90A9EC';
+
+  fetch(BACKEND+'/api/analytics/discover').then(function(r){return r.json()}).then(function(d){
+    if(!d.accounts||!d.accounts.length){
+      document.getElementById('analyticsStatus').innerHTML='No Instagram account found. Make sure your env vars are set: <strong>INSTAGRAM_ACCESS_TOKEN</strong>, <strong>FACEBOOK_PAGE_ID</strong>, <strong>FB_APP_ID</strong>, <strong>FB_APP_SECRET</strong>';
+      document.getElementById('analyticsStatus').style.color='#c45a4a';
+      return;
+    }
+    var igId=d.accounts[0].ig_account_id;
+    return fetch(BACKEND+'/api/analytics/summary/'+igId+'?days='+period).then(function(r){return r.json()}).then(function(s){
+      if(!s.total_posts){
+        document.getElementById('analyticsStatus').textContent='No posts found in this period.';
+        document.getElementById('analyticsStatus').style.color='rgba(59,33,69,.4)';
+        return;
+      }
+      aFollowers=s.followers||171000;
+      aPosts=s.posts||[];
+      document.getElementById('analyticsStatus').textContent='@'+s.username+' \u2022 Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      document.getElementById('analyticsStatus').style.color='#6fcf97';
+      document.getElementById('analyticsData').style.display='block';
+
+      document.getElementById('a-followers').textContent=afmt(s.followers);
+      document.getElementById('a-posts').textContent=s.total_posts;
+      document.getElementById('a-posts-sub').textContent=period+'-day period';
+      document.getElementById('a-engrate').textContent=s.avg_engagement_rate+'%';
+      document.getElementById('a-engrate-sub').textContent='~'+afmt(s.avg_engagement_per_post)+' interactions/post';
+      document.getElementById('a-likes').textContent=afmt(s.total_likes);
+      document.getElementById('a-likes-sub').textContent='~'+afmt(s.avg_likes_per_post)+'/post';
+      document.getElementById('a-comments').textContent=afmt(s.total_comments);
+      document.getElementById('a-comments-sub').textContent='~'+afmt(s.avg_comments_per_post)+'/post';
+      document.getElementById('a-avgeng').textContent=afmt(s.avg_engagement_per_post);
+
+      buildEngChart();
+      buildTypeChart(s.type_breakdown);
+      buildTypeEngChart(s.type_breakdown);
+      buildBestDays(s.best_days);
+      buildBestHours(s.best_hours);
+      buildAnalyticsTable();
+    });
+  }).catch(function(e){
+    document.getElementById('analyticsStatus').textContent='Error: '+e.message;
+    document.getElementById('analyticsStatus').style.color='#c45a4a';
+  });
+}
+
+function buildEngChart(){
+  aDestroy('eng');
+  var sorted=[].concat(aPosts).sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp)});
+  aCharts.eng=new Chart(document.getElementById('a-eng-chart'),{
+    type:'bar',data:{labels:sorted.map(function(p){return afmtD(p.timestamp)}),datasets:[
+      {label:'Likes',data:sorted.map(function(p){return p.like_count||0}),backgroundColor:'rgba(144,169,236,.5)',borderRadius:4,barPercentage:.7},
+      {label:'Comments',data:sorted.map(function(p){return p.comments_count||0}),backgroundColor:'rgba(210,199,255,.5)',borderRadius:4,barPercentage:.7}
+    ]},options:Object.assign({},aChartOpts,{plugins:{legend:{display:true,position:'top',align:'end',labels:{color:'rgba(59,33,69,.4)',font:{family:'Jost',size:11},boxWidth:12,boxHeight:8,padding:12}},tooltip:aChartOpts.plugins.tooltip},scales:{x:Object.assign({},aChartOpts.scales.x,{stacked:true}),y:Object.assign({},aChartOpts.scales.y,{stacked:true})}})
+  });
+}
+
+function buildTypeChart(breakdown){
+  aDestroy('type');
+  var keys=Object.keys(breakdown);
+  var labels={IMAGE:'Images',VIDEO:'Videos',CAROUSEL_ALBUM:'Carousels',REEL:'Reels'};
+  var colors={IMAGE:'#D2C7FF',VIDEO:'#90A9EC',CAROUSEL_ALBUM:'#FFC696',REEL:'#E5ACD7'};
+  aCharts.type=new Chart(document.getElementById('a-type-chart'),{
+    type:'doughnut',data:{labels:keys.map(function(k){return labels[k]||k}),datasets:[{data:keys.map(function(k){return breakdown[k].count}),backgroundColor:keys.map(function(k){return colors[k]||'#90A9EC'}),borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'rgba(59,33,69,.5)',font:{family:'Jost',size:11},padding:12,usePointStyle:true}},tooltip:aChartOpts.plugins.tooltip}}
+  });
+}
+
+function buildTypeEngChart(breakdown){
+  aDestroy('typeEng');
+  var keys=Object.keys(breakdown).sort(function(a,b){var ae=(breakdown[b].likes+breakdown[b].comments)/breakdown[b].count;var be=(breakdown[a].likes+breakdown[a].comments)/breakdown[a].count;return ae-be});
+  var labels={IMAGE:'Images',VIDEO:'Videos',CAROUSEL_ALBUM:'Carousels',REEL:'Reels'};
+  var colors={IMAGE:'#D2C7FF',VIDEO:'#90A9EC',CAROUSEL_ALBUM:'#FFC696',REEL:'#E5ACD7'};
+  aCharts.typeEng=new Chart(document.getElementById('a-type-eng-chart'),{
+    type:'bar',data:{labels:keys.map(function(k){return labels[k]||k}),datasets:[{data:keys.map(function(k){return Math.round((breakdown[k].likes+breakdown[k].comments)/breakdown[k].count)}),backgroundColor:keys.map(function(k){return colors[k]||'#90A9EC'}),borderRadius:6,barPercentage:.5}]},
+    options:Object.assign({},aChartOpts,{indexAxis:'y',scales:{x:aChartOpts.scales.x,y:{grid:{display:false},ticks:{color:'rgba(59,33,69,.5)',font:{family:'Jost',size:12}},border:{display:false}}}})
+  });
+}
+
+function buildBestDays(days){
+  var c=document.getElementById('a-best-days');
+  if(!days||!days.length){c.innerHTML='<span style="color:rgba(59,33,69,.3)">No data</span>';return}
+  c.innerHTML=days.map(function(d,i){
+    var bg=i===0?'background:rgba(144,169,236,.1);border:1px solid rgba(144,169,236,.25)':'background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.15)';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;margin-bottom:6px;'+bg+'"><span style="font-weight:500">'+d.day+'</span><span style="font-size:12px;color:rgba(59,33,69,.4)">'+d.posts+' posts</span><span style="font-family:Cormorant Garamond,serif;font-size:18px;font-weight:600;color:#3B2145">'+afmt(d.avg_engagement)+'</span></div>'
+  }).join('');
+}
+
+function buildBestHours(hours){
+  var c=document.getElementById('a-best-hours');
+  if(!hours||!hours.length){c.innerHTML='<span style="color:rgba(59,33,69,.3)">No data</span>';return}
+  var fh=function(h){var ap=h>=12?'PM':'AM';return(h%12||12)+ap};
+  c.innerHTML=hours.map(function(d,i){
+    var bg=i===0?'background:rgba(144,169,236,.1);border:1px solid rgba(144,169,236,.25)':'background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.15)';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;margin-bottom:6px;'+bg+'"><span style="font-weight:500">'+fh(d.hour)+'</span><span style="font-size:12px;color:rgba(59,33,69,.4)">'+d.posts+' posts</span><span style="font-family:Cormorant Garamond,serif;font-size:18px;font-weight:600;color:#3B2145">'+afmt(d.avg_engagement)+'</span></div>'
+  }).join('');
+}
+
+function buildAnalyticsTable(){
+  var tbody=document.getElementById('a-table-body');
+  if(!aPosts.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:rgba(59,33,69,.3)">No posts</td></tr>';return}
+  var sortBy=document.getElementById('a-sort').value;
+  var sorted=[].concat(aPosts);
+  if(sortBy==='likes')sorted.sort(function(a,b){return(b.like_count||0)-(a.like_count||0)});
+  else if(sortBy==='comments')sorted.sort(function(a,b){return(b.comments_count||0)-(a.comments_count||0)});
+  else sorted.sort(function(a,b){return((b.like_count||0)+(b.comments_count||0))-((a.like_count||0)+(a.comments_count||0))});
+  var typeLabels={IMAGE:'Image',VIDEO:'Video',CAROUSEL_ALBUM:'Carousel',REEL:'Reel'};
+  var typeColors={IMAGE:'#D2C7FF',VIDEO:'#90A9EC',CAROUSEL_ALBUM:'#FFC696',REEL:'#E5ACD7'};
+  tbody.innerHTML=sorted.slice(0,20).map(function(p){
+    var eng=(p.like_count||0)+(p.comments_count||0);
+    var rate=((eng/aFollowers)*100).toFixed(2);
+    var cap=(p.caption||'').replace(/</g,'&lt;').substring(0,60);
+    var mt=p.media_type||'IMAGE';
+    var tc=typeColors[mt]||'#90A9EC';
+    return '<tr style="border-bottom:1px solid rgba(59,33,69,.04)">'+
+      '<td style="padding:10px 8px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:rgba(59,33,69,.6)">'+(cap||'<em style="color:rgba(59,33,69,.2)">No caption</em>')+'</td>'+
+      '<td style="padding:10px 8px"><span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:'+tc+'22;color:'+tc+'">'+(typeLabels[mt]||mt)+'</span></td>'+
+      '<td style="padding:10px 8px;text-align:right;font-size:13px">'+afmt(p.like_count||0)+'</td>'+
+      '<td style="padding:10px 8px;text-align:right;font-size:13px">'+afmt(p.comments_count||0)+'</td>'+
+      '<td style="padding:10px 8px;text-align:right;font-size:13px;color:'+(rate>3?'#6fcf97':rate>1?'#e0a060':'rgba(59,33,69,.35)')+'">'+rate+'%</td>'+
+      '<td style="padding:10px 8px;text-align:right;font-size:12px;color:rgba(59,33,69,.3)">'+afmtD(p.timestamp)+'</td>'+
+      '</tr>';
+  }).join('');
+}
+
+function checkTokenHealth(){
+  document.getElementById('a-token-detail').textContent='Checking...';
+  fetch(BACKEND+'/api/analytics/token/status').then(function(r){return r.json()}).then(function(d){
+    var html='Valid: '+(d.valid?'Yes':'No');
+    if(d.days_remaining!==undefined)html+=' \u2022 Expires in: '+d.days_remaining+' days';
+    if(d.expires_at)html+=' \u2022 Expires: '+d.expires_at;
+    if(d.last_refresh)html+='<br>Last refresh: '+d.last_refresh;
+    if(d.scopes)html+='<br>Scopes: '+d.scopes.join(', ');
+    document.getElementById('a-token-detail').innerHTML=html;
+  }).catch(function(e){document.getElementById('a-token-detail').textContent='Error: '+e.message});
+}
+
+function refreshToken(){
+  document.getElementById('a-token-detail').textContent='Refreshing token...';
+  fetch(BACKEND+'/api/analytics/token/refresh',{method:'POST'}).then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      document.getElementById('a-token-detail').innerHTML='Token refreshed! Days remaining: '+d.days_remaining+'<br><strong>Copy this to your Render env var to persist across deploys:</strong><br><textarea style="width:100%;height:60px;margin-top:6px;font-size:11px" onclick="this.select()">'+d.new_token+'</textarea>';
+    } else {
+      document.getElementById('a-token-detail').textContent='Refresh failed: '+d.error;
+    }
+  }).catch(function(e){document.getElementById('a-token-detail').textContent='Error: '+e.message});
+}
+</script>
+<!-- END ANALYTICS TAB --> 
 <div id="recent" class="tab-panel" style="display:none">
   <p class="desc">Your recently generated carousels. Saved in your browser.</p>
   <div id="recentList"></div>
