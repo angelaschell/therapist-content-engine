@@ -6,8 +6,9 @@ import httpx
 import os
 import json
 
-# Import analytics
+# Import analytics and publisher
 from instagram_analytics import router as analytics_router, start_refresh_loop
+from instagram_publisher import router as publisher_router, start_scheduler
 
 app = FastAPI()
 
@@ -19,8 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register analytics routes
+# Register routes
 app.include_router(analytics_router)
+app.include_router(publisher_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
@@ -36,10 +38,11 @@ BRAND FEEL: Regulated (calm nervous system speaking). Intelligent. Spacious. Inv
 Three essential elements of attachment: nurturance, protection, guidance."""
 
 
-# Start token auto-refresh on startup
+# Start background tasks on startup
 @app.on_event("startup")
 async def startup():
     start_refresh_loop()
+    start_scheduler()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -355,4 +358,4 @@ async def login(req: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v9-analytics"}
+    return {"status": "ok", "version": "v10-publisher"}
