@@ -240,7 +240,7 @@ def search_reddit(queries, filter_words, limit=15):
 
 # --- INSTAGRAM via Apify - TOP POSTS from hashtag pages ---
 
-def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
+def scrape_instagram_top_posts(hashtags, filter_words, min_likes=50):
     """
     Scrape Instagram TOP posts by feeding hashtag page URLs to apify~instagram-scraper.
     Instagram explore/tags/ page shows top/popular posts by default.
