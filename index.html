@@ -358,9 +358,11 @@ function pickSuggestedTopic(el){
   document.getElementById("b-topic").value=el.textContent;
   document.querySelectorAll("#topicSuggestions .hook-pill").forEach(function(p){p.style.background="rgba(255,255,255,.6)";p.style.color="#3B2145";p.style.borderColor="rgba(210,199,255,.3)"});
   el.style.background="#90A9EC";el.style.color="#fff";el.style.borderColor="#90A9EC";
-  setTimeout(function(){goStep(2)},800);
+  el.textContent="✓ "+el.textContent;
+  document.getElementById("topicSuggestions").insertAdjacentHTML("beforeend",'<div style="text-align:center;margin-top:14px;font-family:Cormorant Garamond,serif;font-style:italic;font-size:16px;color:#90A9EC;animation:vb 2s ease-in-out infinite">Searching for this topic...</div>');
+  setTimeout(function(){goStep(2)},1000);
 }
-
+  
 function skipToGen(){var t=document.getElementById("b-topic").value.trim();if(!t){alert("Enter a topic first.");return}savedViralContext="";savedAnalysisContext="";viralHooks=[];goStep(3);fetchResearchThenGenerate(t)}
 
 // ─── STEP 2: SCRAPER ───
