@@ -321,7 +321,7 @@ CAPTION RULES:
 - If clinical research was provided above, cite 1-2 findings naturally in the caption (e.g. "Research from Dr. Mary Frances O'Connor shows grief literally reshapes the brain."). This is important. The research must appear in the caption.
 - Include 15-20 relevant hashtags at the end.
 - End with: Comment WORTHY and I'll send you my free Emotional Starter Kit.
-- No em dashes in the caption either."""}}]
+- No em dashes in the caption either."""}]
     )
     try:
         clean = response.content[0].text.strip()
