@@ -6,9 +6,10 @@ import httpx
 import os
 import json
 
-# Import analytics and publisher
+# Import analytics, publisher, and templates
 from instagram_analytics import router as analytics_router, start_refresh_loop
 from instagram_publisher import router as publisher_router, start_scheduler
+from templates import router as templates_router
 
 app = FastAPI()
 
@@ -23,6 +24,7 @@ app.add_middleware(
 # Register routes
 app.include_router(analytics_router)
 app.include_router(publisher_router)
+app.include_router(templates_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
