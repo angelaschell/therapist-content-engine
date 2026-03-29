@@ -321,8 +321,8 @@ def scrape_instagram_top_posts(hashtags, filter_words, min_likes=50):
             except:
                 pass
 
-        # Fallback to hashtag-scraper with higher limit if nothing found
-        if len(all_posts) == 0:
+        # Also run hashtag-scraper for more results
+        if True:
             print("  Fallback: trying instagram-hashtag-scraper with higher limit...")
             url2 = f"https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
             payload2 = {
