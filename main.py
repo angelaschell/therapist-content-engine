@@ -6,6 +6,9 @@ import httpx
 import os
 import json
 
+# Import analytics
+from instagram_analytics import router as analytics_router, start_refresh_loop
+
 app = FastAPI()
 
 app.add_middleware(
@@ -15,6 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register analytics routes
+app.include_router(analytics_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
@@ -28,6 +34,12 @@ AUDIENCE: High-functioning women navigating grief and attachment wounds. She alr
 FORMAT: Hook in line 1. Short punchy line breaks. No bullet points. Trust the reader.
 BRAND FEEL: Regulated (calm nervous system speaking). Intelligent. Spacious. Invitational.
 Three essential elements of attachment: nurturance, protection, guidance."""
+
+
+# Start token auto-refresh on startup
+@app.on_event("startup")
+async def startup():
+    start_refresh_loop()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -343,4 +355,4 @@ async def login(req: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v8-templates"}
+    return {"status": "ok", "version": "v9-analytics"}
