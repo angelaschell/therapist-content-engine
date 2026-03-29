@@ -23,7 +23,7 @@ ENGINE_PASSWORD = os.environ.get("ENGINE_PASSWORD", "")
 ANGELA_SYSTEM = """You are Angela Schellenberg's AI content assistant. Write exactly as Angela would.
 VOICE: Direct. Clinical-but-accessible. No hedging. Short punchy lines. Rhythm over grammar.
 NEVER USE: Em dashes, "healing era", "holding space", "trauma dump", "do the work", "you are not broken", generic AI language.
-PILLARS: Grief education, Mother Hunger© (credit Kelly McDaniel), EMDR, Equine therapy at Shakti Ranch Malibu, Somatic healing.
+PILLARS: Grief education, Mother Hunger (credit Kelly McDaniel), EMDR, Equine therapy at Shakti Ranch Malibu, Somatic healing.
 AUDIENCE: High-functioning women navigating grief and attachment wounds.
 FORMAT: Hook in line 1. Short punchy line breaks. No bullet points. Trust the reader.
 Three essential elements of attachment: nurturance, protection, guidance."""
@@ -87,10 +87,26 @@ async def generate_manychat_flow(req: Request):
 
 
 DEMO_POSTS = [
-    {"src":"reddit","sub":"r/GriefSupport","title":"Does anyone else feel guilty for laughing after losing a parent?","stats":"2,847 upvotes · 412 comments","excerpt":"My mom died 6 months ago and I caught myself genuinely laughing yesterday and immediately felt like the worst person alive.","tag":"naming unnamed grief"},
-    {"src":"reddit","sub":"r/MotherlessDaughters","title":"My wedding is in 3 months and I can't stop crying about my mom not being there","stats":"1,923 upvotes · 287 comments","excerpt":"Everyone keeps saying she'll be there in spirit and I want to scream.","tag":"milestone grief"},
-    {"src":"reddit","sub":"r/CPTSD","title":"Does anyone else grieve a mother who is technically still alive?","stats":"3,102 upvotes · 518 comments","excerpt":"She's alive but she was never really there.","tag":"living loss"},
+    {"src": "reddit", "sub": "r/GriefSupport", "title": "Does anyone else feel guilty for laughing after losing a parent?", "stats": "2,847 upvotes . 412 comments", "excerpt": "My mom died 6 months ago and I caught myself genuinely laughing yesterday and immediately felt like the worst person alive.", "tag": "naming unnamed grief"},
+    {"src": "reddit", "sub": "r/MotherlessDaughters", "title": "My wedding is in 3 months and I can't stop crying about my mom not being there", "stats": "1,923 upvotes . 287 comments", "excerpt": "Everyone keeps saying she'll be there in spirit and I want to scream.", "tag": "milestone grief"},
+    {"src": "reddit", "sub": "r/CPTSD", "title": "Does anyone else grieve a mother who is technically still alive?", "stats": "3,102 upvotes . 518 comments", "excerpt": "She's alive but she was never really there.", "tag": "living loss"},
 ]
+
+
+@app.post("/api/recommend-hashtags")
+async def recommend_hashtags_endpoint(req: Request):
+    """Return recommended hashtags for a topic so user can edit before scraping."""
+    try:
+        data = await req.json()
+        topic = data.get("topic", "grief")
+    except:
+        topic = "grief"
+    try:
+        from scraper import recommend_hashtags
+        hashtags = recommend_hashtags(topic)
+        return JSONResponse({"success": True, "hashtags": hashtags, "topic": topic})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e), "hashtags": ["grief", "trauma", "healingjourney", "therapistsofinstagram"]})
 
 
 @app.get("/api/viral")
@@ -110,11 +126,13 @@ async def trigger_scrape(req: Request):
     try:
         data = await req.json()
         topic = data.get("topic", "grief mother loss")
+        hashtags = data.get("hashtags", None)  # Accept custom hashtags from frontend
     except:
         topic = "grief mother loss"
+        hashtags = None
     try:
         from scraper import run_scraper
-        result = run_scraper(topic)
+        result = run_scraper(topic, hashtags)
         return JSONResponse({"success": True, "total": result.get("total_found", 0), "saved": len(result.get("posts", [])), "posts": result.get("posts", []), "hooks": result.get("hooks", []), "scraped_at": result.get("scraped_at", ""), "topic": topic})
     except Exception as e:
         import traceback
@@ -126,7 +144,7 @@ async def trigger_scrape(req: Request):
 async def analyze_viral(req: Request):
     data = await req.json()
     posts = data.get("posts", [])
-    posts_text = "\n\n".join([f"Source: {p.get('sub','')}\nTitle: {p.get('title','')}\nEngagement: {p.get('stats','')}\nExcerpt: {p.get('excerpt','')}\nPattern: {p.get('tag','')}" for p in posts])
+    posts_text = "\n\n".join([f"Source: {p.get('sub', '')}\nTitle: {p.get('title', '')}\nEngagement: {p.get('stats', '')}\nExcerpt: {p.get('excerpt', '')}\nPattern: {p.get('tag', '')}" for p in posts])
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1500,
@@ -142,7 +160,8 @@ IMPORTANT: The "hooks" should be ready-to-use slide 1 text. Format each as: UPPE
     )
     try:
         clean = response.content[0].text.strip()
-        if clean.startswith("```"): clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         return JSONResponse({"success": True, "data": json.loads(clean)})
     except:
         return JSONResponse({"success": True, "data": response.content[0].text})
@@ -166,7 +185,8 @@ async def research_topic(req: Request):
             content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
             try:
                 clean = content.strip()
-                if clean.startswith("```"): clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+                if clean.startswith("```"):
+                    clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
                 return JSONResponse({"success": True, "data": json.loads(clean)})
             except:
                 return JSONResponse({"success": True, "data": {"findings": [content]}})
@@ -187,9 +207,12 @@ async def generate_carousel(req: Request):
     slide_count = data.get("slide_count", 10)
 
     context_block = ""
-    if viral_context: context_block += f"\n\nVIRAL POSTS:\n{viral_context}"
-    if analysis_context: context_block += f"\n\nANALYSIS:\n{analysis_context}"
-    if research_context: context_block += f"\n\nCLINICAL RESEARCH (weave 1-2 naturally into slides, cite the researcher):\n{research_context}"
+    if viral_context:
+        context_block += f"\n\nVIRAL POSTS:\n{viral_context}"
+    if analysis_context:
+        context_block += f"\n\nANALYSIS:\n{analysis_context}"
+    if research_context:
+        context_block += f"\n\nCLINICAL RESEARCH (weave 1-2 naturally into slides, cite the researcher):\n{research_context}"
 
     example_slides = [{"type": "hook", "upper": "BOLD HOOK", "italic": "italic subtitle."}]
     for i in range(slide_count - 2):
@@ -219,7 +242,8 @@ Return ONLY valid JSON, no backticks:
     )
     try:
         clean = response.content[0].text.strip()
-        if clean.startswith("```"): clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         return JSONResponse({"success": True, "data": json.loads(clean)})
     except:
         return JSONResponse({"success": True, "data": response.content[0].text, "raw": True})
@@ -232,6 +256,8 @@ async def login(req: Request):
     if ENGINE_PASSWORD and password == ENGINE_PASSWORD:
         return JSONResponse({"success": True, "token": ENGINE_PASSWORD})
     return JSONResponse({"success": False, "error": "Wrong password"}, status_code=401)
+
+
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v6"}
+    return {"status": "ok", "version": "v7-hashtag-scraper"}
