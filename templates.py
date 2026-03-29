@@ -12,34 +12,68 @@ import base64
 import uuid
 import anthropic
 import httpx
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, date
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/api/templates", tags=["templates"])
 
+
+def serialize_row(row):
+    """Convert a DB row dict so it's JSON-safe (dates, UUIDs, etc)."""
+    out = {}
+    for k, v in row.items():
+        if isinstance(v, (datetime, date)):
+            out[k] = v.isoformat()
+        elif isinstance(v, uuid.UUID):
+            out[k] = str(v)
+        else:
+            out[k] = v
+    return out
+
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-
-SB_HEADERS = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json",
-    "Prefer": "return=representation",
-}
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 
-def sb_rest(method, table, params="", json_body=None):
-    """Direct HTTP call to Supabase REST API (bypasses supabase-py schema cache)."""
-    url = f"{SUPABASE_URL}/rest/v1/{table}{params}"
-    with httpx.Client(timeout=30) as client:
-        resp = client.request(method, url, headers=SB_HEADERS, json=json_body)
-        resp.raise_for_status()
-        return resp.json() if resp.text else []
+def get_db():
+    """Get a direct Postgres connection (bypasses PostgREST entirely)."""
+    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+
+
+def db_query(sql, params=None):
+    """Run a SELECT query, return list of dicts."""
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        rows = cur.fetchall()
+        return [serialize_row(dict(r)) for r in rows]
+    finally:
+        conn.close()
+
+
+def db_execute(sql, params=None):
+    """Run an INSERT/UPDATE/DELETE, return affected rows."""
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        conn.commit()
+        try:
+            rows = cur.fetchall()
+            return [serialize_row(dict(r)) for r in rows]
+        except Exception:
+            return []
+    finally:
+        conn.close()
 
 
 def sb_storage_upload(bucket, path, file_bytes, content_type):
-    """Upload file to Supabase Storage via HTTP."""
+    """Upload file to Supabase Storage via HTTP (storage still works fine)."""
     url = f"{SUPABASE_URL}/storage/v1/object/{bucket}/{path}"
     headers = {
         "apikey": SUPABASE_KEY,
@@ -365,7 +399,15 @@ async def save_template(req: Request):
             "svg_template": json.dumps(svg_data) if svg_data else None,
         }
 
-        result = sb_rest("POST", "carousel_templates", "", row)
+        result = db_execute(
+            """INSERT INTO carousel_templates (name, bg_color, text_color, hook_bg, hook_text, close_bg, close_text,
+               title_style, body_style, text_size, text_align, spacing, watermark, description, original_image_url,
+               full_analysis, svg_template) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+            (row["name"], row["bg_color"], row["text_color"], row["hook_bg"], row["hook_text"],
+             row["close_bg"], row["close_text"], row["title_style"], row["body_style"], row["text_size"],
+             row["text_align"], row["spacing"], row["watermark"], row["description"], row["original_image_url"],
+             row["full_analysis"], row["svg_template"])
+        )
 
         if result and len(result) > 0:
             return JSONResponse({"success": True, "template": result[0]})
@@ -379,7 +421,7 @@ async def save_template(req: Request):
 async def list_templates():
     """List all saved templates."""
     try:
-        result = sb_rest("GET", "carousel_templates", "?select=id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,created_at&order=created_at.desc")
+        result = db_query("SELECT id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,created_at FROM carousel_templates ORDER BY created_at DESC")
         templates = []
         for t in (result or []):
             has_svg = bool(t.get("svg_template"))
@@ -428,7 +470,10 @@ async def upload_font(req: Request):
         file_url = sb_storage_upload("brand-assets", filename, file_bytes, content_types.get(ext, "font/ttf"))
 
         row = {"name": font_name, "font_family": font_family, "file_url": file_url}
-        result = sb_rest("POST", "custom_fonts", "", row)
+        result = db_execute(
+            "INSERT INTO custom_fonts (name, font_family, file_url) VALUES (%s, %s, %s) RETURNING *",
+            (font_name, font_family, file_url)
+        )
 
         if result and len(result) > 0:
             return JSONResponse({"success": True, "font": result[0]})
@@ -442,7 +487,7 @@ async def upload_font(req: Request):
 async def list_fonts():
     """List all custom fonts."""
     try:
-        result = sb_rest("GET", "custom_fonts", "?select=*&order=created_at.desc")
+        result = db_query("SELECT * FROM custom_fonts ORDER BY created_at DESC")
         return JSONResponse({"success": True, "fonts": result or []})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e), "fonts": []})
@@ -452,7 +497,7 @@ async def list_fonts():
 async def delete_font(font_id: str):
     """Delete a custom font."""
     try:
-        sb_rest("DELETE", "custom_fonts", f"?id=eq.{font_id}")
+        db_execute("DELETE FROM custom_fonts WHERE id = %s", (font_id,))
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -464,7 +509,7 @@ async def delete_font(font_id: str):
 async def get_template(template_id: str):
     """Get a single template with full SVG data."""
     try:
-        result = sb_rest("GET", "carousel_templates", f"?id=eq.{template_id}&select=*")
+        result = db_query("SELECT * FROM carousel_templates WHERE id = %s", (template_id,))
         if result and len(result) > 0:
             return JSONResponse({"success": True, "template": result[0]})
         return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
@@ -476,7 +521,7 @@ async def get_template(template_id: str):
 async def delete_template(template_id: str):
     """Delete a template."""
     try:
-        sb_rest("DELETE", "carousel_templates", f"?id=eq.{template_id}")
+        db_execute("DELETE FROM carousel_templates WHERE id = %s", (template_id,))
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
