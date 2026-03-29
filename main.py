@@ -314,7 +314,14 @@ FORMATTING RULES:
 - Would a shame-sensitive woman feel steadied, not activated?
 
 Return ONLY valid JSON, no backticks:
-{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full caption with hashtags and research citations", "trigger": "WORTHY", "template": "{template_type}"}}"""}]
+{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "WORTHY", "template": "{template_type}"}}
+
+CAPTION RULES:
+- Write the caption in Angela's voice. Short punchy lines. Line breaks between thoughts.
+- If clinical research was provided above, cite 1-2 findings naturally in the caption (e.g. "Research from Dr. Mary Frances O'Connor shows grief literally reshapes the brain."). This is important. The research must appear in the caption.
+- Include 15-20 relevant hashtags at the end.
+- End with: Comment WORTHY and I'll send you my free Emotional Starter Kit.
+- No em dashes in the caption either."""}}]
     )
     try:
         clean = response.content[0].text.strip()
