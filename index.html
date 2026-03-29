@@ -358,7 +358,7 @@ function pickSuggestedTopic(el){
   document.getElementById("b-topic").value=el.textContent;
   document.querySelectorAll("#topicSuggestions .hook-pill").forEach(function(p){p.style.background="rgba(255,255,255,.6)";p.style.color="#3B2145";p.style.borderColor="rgba(210,199,255,.3)"});
   el.style.background="#90A9EC";el.style.color="#fff";el.style.borderColor="#90A9EC";
-  window.scrollTo({top:document.getElementById("b-topic").offsetTop-100,behavior:"smooth"});
+  setTimeout(function(){goStep(2)},800);
 }
 
 function skipToGen(){var t=document.getElementById("b-topic").value.trim();if(!t){alert("Enter a topic first.");return}savedViralContext="";savedAnalysisContext="";viralHooks=[];goStep(3);fetchResearchThenGenerate(t)}
