@@ -22,10 +22,11 @@ ENGINE_PASSWORD = os.environ.get("ENGINE_PASSWORD", "")
 
 ANGELA_SYSTEM = """You are Angela Schellenberg's AI content assistant. Write exactly as Angela would.
 VOICE: Direct. Clinical-but-accessible. No hedging. Short punchy lines. Rhythm over grammar.
-NEVER USE: Em dashes, "healing era", "holding space", "trauma dump", "do the work", "you are not broken", generic AI language.
+NEVER USE: Em dashes, "healing era", "holding space", "trauma dump", "do the work", "you are not broken", generic AI language, outcome promises, urgency or scarcity language, wellness vocabulary clusters (sacred, worthy, hold space), therapy simulation language, AI rhythm tells (threes, mic-drop closers).
 PILLARS: Grief education, Mother Hunger (credit Kelly McDaniel), EMDR, Equine therapy at Shakti Ranch Malibu, Somatic healing.
-AUDIENCE: High-functioning women navigating grief and attachment wounds.
+AUDIENCE: High-functioning women navigating grief and attachment wounds. She already knows attachment theory. Never over-explain. Write as if the reader is the smartest person in the room.
 FORMAT: Hook in line 1. Short punchy line breaks. No bullet points. Trust the reader.
+BRAND FEEL: Regulated (calm nervous system speaking). Intelligent. Spacious. Invitational.
 Three essential elements of attachment: nurturance, protection, guidance."""
 
 
@@ -95,7 +96,6 @@ DEMO_POSTS = [
 
 @app.post("/api/recommend-hashtags")
 async def recommend_hashtags_endpoint(req: Request):
-    """Return recommended hashtags for a topic so user can edit before scraping."""
     try:
         data = await req.json()
         topic = data.get("topic", "grief")
@@ -126,7 +126,7 @@ async def trigger_scrape(req: Request):
     try:
         data = await req.json()
         topic = data.get("topic", "grief mother loss")
-        hashtags = data.get("hashtags", None)  # Accept custom hashtags from frontend
+        hashtags = data.get("hashtags", None)
     except:
         topic = "grief mother loss"
         hashtags = None
@@ -195,6 +195,79 @@ async def research_topic(req: Request):
         return JSONResponse({"success": False, "error": str(e)})
 
 
+# --- CAROUSEL TEMPLATE SYSTEM ---
+
+TEMPLATE_RULES = {
+    "naming": {
+        "name": "The Naming Post",
+        "slides": "5-7",
+        "rules": """TEMPLATE: THE NAMING POST
+PURPOSE: Give language to unnamed experiences. The post they screenshot and send to three people.
+STRUCTURE:
+- Slide 1 (hook): Bold statement in display type. Minimal or no supporting text. This names something they have felt but never had words for.
+- Interior slides: ONE named experience per slide. 10 words max. Name it and let it sit. No explanations. The reader's recognition IS the content.
+- Close slide: One reflective question or quiet invitation. NEVER a hard CTA. No urgency.
+VOICE: Like a calm nervous system speaking. No escalation. No over-explaining."""
+    },
+    "framework": {
+        "name": "The Framework Explainer",
+        "slides": "7-10",
+        "rules": """TEMPLATE: THE FRAMEWORK EXPLAINER
+PURPOSE: Teach a concept in digestible depth. The post they bookmark to return to.
+STRUCTURE:
+- Slide 1 (hook): Frame the concept clearly. A grounded entry point that respects the reader's intelligence. Not a clickbait hook.
+- Interior slides: One point per slide. Short heading, 1-2 sentences of context. Name and connect, don't educate from scratch.
+- Close slide: Summary or reflective landing. Can mention the lead magnet or consult once, quietly.
+VOICE: Clinical warmth. Authority without lecturing."""
+    },
+    "pullquote": {
+        "name": "The Pull Quote",
+        "slides": "3-5",
+        "rules": """TEMPLATE: THE PULL QUOTE
+PURPOSE: One truth, maximum visual weight. Fast to produce, high reach potential.
+STRUCTURE:
+- Slide 1: The statement takes up most of the slide. Let the words be the design. No decoration.
+- Slide 2-3 (optional): One or two sentences of context. A deepening, not an explanation.
+- Close slide: A single reflective question, or nothing at all.
+VOICE: Deliberately minimal. Maximum 3-5 slides total."""
+    },
+    "editorial": {
+        "name": "The Layered Editorial",
+        "slides": "6-9",
+        "rules": """TEMPLATE: THE LAYERED EDITORIAL
+PURPOSE: Mixed layout, more visual depth. Brand recognition and profile visits.
+STRUCTURE:
+- Slide 1 (cover): Strong visual cover. Bold statement or single powerful word.
+- Interior slides: Mix of full text slides and minimal single-word or single-line slides. Let negative space work. One or two slides can be a single word or short phrase for visual punch.
+- Close: Reflective. No hard CTA.
+VOICE: Elevated. Short. Precise. Spacious."""
+    },
+    "conversational": {
+        "name": "The Conversational List",
+        "slides": "5-8",
+        "rules": """TEMPLATE: THE CONVERSATIONAL LIST
+PURPOSE: Raw, voice-led, "notes app" feel. Less produced, more Angela. Drives comments and shares.
+STRUCTURE:
+- Slide 1: A framing statement. "Things that make sense if you were strong too soon." "Signs grief is living in your body." Not clickbait, a genuine entry point.
+- Interior slides: One item per slide. Plain type. Should feel like a thoughtful text message, not a branded graphic. The rawness IS the format.
+- Close slide: Brief, warm, no pressure. Let the last item land.
+VOICE: Like Angela texting a close friend who gets it. Unpolished. Real. Direct. Must NOT sound AI-generated."""
+    },
+    "covercontext": {
+        "name": "The Cover + Context",
+        "slides": "6-8",
+        "rules": """TEMPLATE: THE COVER + CONTEXT
+PURPOSE: Hook to depth to consent-based close. Funnel-aware. Drives saves, follows, DMs.
+STRUCTURE:
+- Slide 1 (cover): Strong enough to earn the swipe. Grounded enough to match Angela's brand. Not clickbait.
+- Slide 2: Context. What are we unpacking, and why does it matter for this specific person.
+- Slides 3-6: The depth. One concept per slide, building on the previous. Angela's clinical knowledge earns trust here.
+- Close slide: A quiet invitation. One mention of a resource, no urgency, no pressure. Optional to include any offer mention at all.
+VOICE: Strategic but genuine. The funnel awareness should be invisible to the reader. She should feel seen, not sold to."""
+    },
+}
+
+
 @app.post("/api/carousel")
 async def generate_carousel(req: Request):
     data = await req.json()
@@ -205,6 +278,10 @@ async def generate_carousel(req: Request):
     pillar = data.get("pillar", "Grief Education")
     tone = data.get("tone", "clinical-but-warm")
     slide_count = data.get("slide_count", 10)
+    template_type = data.get("template_type", "naming")
+
+    template = TEMPLATE_RULES.get(template_type, TEMPLATE_RULES["naming"])
+    template_rules = template["rules"]
 
     context_block = ""
     if viral_context:
@@ -214,31 +291,30 @@ async def generate_carousel(req: Request):
     if research_context:
         context_block += f"\n\nCLINICAL RESEARCH (weave 1-2 naturally into slides, cite the researcher):\n{research_context}"
 
-    example_slides = [{"type": "hook", "upper": "BOLD HOOK", "italic": "italic subtitle."}]
-    for i in range(slide_count - 2):
-        example_slides.append({"type": "body", "html": "Sentence with <em>emphasis</em> words."})
-    example_slides.append({"type": "cta", "top": "This is what I work with.", "bottom": "Comment <strong>WORTHY</strong> for my free resource."})
-
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=2500,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f"""Generate a {slide_count}-slide Instagram carousel.
+        messages=[{"role": "user", "content": f"""Generate a {slide_count}-slide Instagram carousel using this template:
+
+{template_rules}
 
 TOPIC: {topic}
 PILLAR: {pillar}
 TONE: {tone}
 {context_block}
 
-IMPORTANT FORMATTING RULES:
-- Do NOT use <br> tags anywhere. Each slide's text should be a single flowing sentence or phrase.
-- Slide 1: type "hook" with "upper" (UPPERCASE) and "italic" (subtitle). No line breaks.
-- Body slides: type "body" with "html" field. Use <em> for italic emphasis on emotional words ONLY. No <br> tags.
-- Last slide: type "cta" with "top" and "bottom" fields. No line breaks.
-- MAX 25 words per slide. Angela's voice. No em dashes.
+FORMATTING RULES:
+- Do NOT use <br> tags. Each slide is a single flowing sentence or phrase.
+- Slide 1: type "hook" with "upper" (UPPERCASE, short) and "italic" (subtitle, can be empty string).
+- Body slides: type "body" with "html" field. Use <em> for emphasis on emotional words ONLY. No <br> tags.
+- Last slide: type "close" with "text" field. Reflective invitation, NOT a hard CTA.
+- MAX 15 words per slide for Naming Post and Pull Quote. MAX 25 for others.
+- No em dashes. No "you're not broken" structures. No outcome promises. No urgency.
+- Would a shame-sensitive woman feel steadied, not activated?
 
 Return ONLY valid JSON, no backticks:
-{{"slides": {json.dumps(example_slides)}, "caption": "Full caption with hashtags", "trigger": "WORTHY"}}"""}]
+{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full caption with hashtags and research citations", "trigger": "WORTHY", "template": "{template_type}"}}"""}]
     )
     try:
         clean = response.content[0].text.strip()
@@ -260,4 +336,4 @@ async def login(req: Request):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "v7-hashtag-scraper"}
+    return {"status": "ok", "version": "v8-templates"}
