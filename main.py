@@ -18,6 +18,7 @@ app.add_middleware(
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
+ENGINE_PASSWORD = os.environ.get("ENGINE_PASSWORD", "")
 
 ANGELA_SYSTEM = """You are Angela Schellenberg's AI content assistant. Write exactly as Angela would.
 VOICE: Direct. Clinical-but-accessible. No hedging. Short punchy lines. Rhythm over grammar.
@@ -224,6 +225,13 @@ Return ONLY valid JSON, no backticks:
         return JSONResponse({"success": True, "data": response.content[0].text, "raw": True})
 
 
+@app.post("/api/login")
+async def login(req: Request):
+    data = await req.json()
+    password = data.get("password", "")
+    if ENGINE_PASSWORD and password == ENGINE_PASSWORD:
+        return JSONResponse({"success": True, "token": ENGINE_PASSWORD})
+    return JSONResponse({"success": False, "error": "Wrong password"}, status_code=401)
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "v6"}
