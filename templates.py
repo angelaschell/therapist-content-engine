@@ -9,20 +9,47 @@ save/load templates from Supabase.
 import os
 import json
 import base64
+import uuid
 import anthropic
+import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from supabase import create_client
 
 router = APIRouter(prefix="/api/templates", tags=["templates"])
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
+SB_HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=representation",
+}
 
-def get_supabase():
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+def sb_rest(method, table, params="", json_body=None):
+    """Direct HTTP call to Supabase REST API (bypasses supabase-py schema cache)."""
+    url = f"{SUPABASE_URL}/rest/v1/{table}{params}"
+    with httpx.Client(timeout=30) as client:
+        resp = client.request(method, url, headers=SB_HEADERS, json=json_body)
+        resp.raise_for_status()
+        return resp.json() if resp.text else []
+
+
+def sb_storage_upload(bucket, path, file_bytes, content_type):
+    """Upload file to Supabase Storage via HTTP."""
+    url = f"{SUPABASE_URL}/storage/v1/object/{bucket}/{path}"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": content_type,
+    }
+    with httpx.Client(timeout=60) as client:
+        resp = client.post(url, headers=headers, content=file_bytes)
+        resp.raise_for_status()
+        return f"{SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}"
 
 
 ANALYZE_PROMPT = """You are a visual design analyst. Analyze this Instagram carousel slide screenshot and extract the exact visual style properties.
@@ -306,8 +333,6 @@ async def save_template(req: Request):
         svg_data = data.get("svg_data", {})
         original_image = data.get("original_image", "")
 
-        sb = get_supabase()
-
         image_url = ""
         if original_image and SUPABASE_URL:
             try:
@@ -315,10 +340,8 @@ async def save_template(req: Request):
                     img_bytes = base64.b64decode(original_image.split(",", 1)[1])
                 else:
                     img_bytes = base64.b64decode(original_image)
-                import uuid
                 filename = f"template-refs/{uuid.uuid4().hex}.png"
-                sb.storage.from_("brand-assets").upload(filename, img_bytes, {"content-type": "image/png"})
-                image_url = f"{SUPABASE_URL}/storage/v1/object/public/brand-assets/{filename}"
+                image_url = sb_storage_upload("brand-assets", filename, img_bytes, "image/png")
             except Exception as e:
                 print(f"Image upload error (non-fatal): {e}")
 
@@ -342,10 +365,10 @@ async def save_template(req: Request):
             "svg_template": json.dumps(svg_data) if svg_data else None,
         }
 
-        result = sb.table("carousel_templates").insert(row).execute()
+        result = sb_rest("POST", "carousel_templates", "", row)
 
-        if result.data and len(result.data) > 0:
-            return JSONResponse({"success": True, "template": result.data[0]})
+        if result and len(result) > 0:
+            return JSONResponse({"success": True, "template": result[0]})
         return JSONResponse({"success": False, "error": "Insert returned no data"}, status_code=500)
 
     except Exception as e:
@@ -356,10 +379,9 @@ async def save_template(req: Request):
 async def list_templates():
     """List all saved templates."""
     try:
-        sb = get_supabase()
-        result = sb.table("carousel_templates").select("id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,created_at").order("created_at", desc=True).execute()
+        result = sb_rest("GET", "carousel_templates", "?select=id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,created_at&order=created_at.desc")
         templates = []
-        for t in (result.data or []):
+        for t in (result or []):
             has_svg = bool(t.get("svg_template"))
             t["has_svg"] = has_svg
             if has_svg:
@@ -387,14 +409,11 @@ async def upload_font(req: Request):
         if not font_family:
             font_family = font_name
 
-        sb = get_supabase()
-
         if "," in font_data:
             file_bytes = base64.b64decode(font_data.split(",", 1)[1])
         else:
             file_bytes = base64.b64decode(font_data)
 
-        import uuid
         ext = "ttf"
         if data.get("filename", "").endswith(".otf"):
             ext = "otf"
@@ -406,14 +425,13 @@ async def upload_font(req: Request):
         filename = f"fonts/{uuid.uuid4().hex}.{ext}"
         content_types = {"ttf": "font/ttf", "otf": "font/otf", "woff": "font/woff", "woff2": "font/woff2"}
 
-        sb.storage.from_("brand-assets").upload(filename, file_bytes, {"content-type": content_types.get(ext, "font/ttf")})
-        file_url = f"{SUPABASE_URL}/storage/v1/object/public/brand-assets/{filename}"
+        file_url = sb_storage_upload("brand-assets", filename, file_bytes, content_types.get(ext, "font/ttf"))
 
         row = {"name": font_name, "font_family": font_family, "file_url": file_url}
-        result = sb.table("custom_fonts").insert(row).execute()
+        result = sb_rest("POST", "custom_fonts", "", row)
 
-        if result.data and len(result.data) > 0:
-            return JSONResponse({"success": True, "font": result.data[0]})
+        if result and len(result) > 0:
+            return JSONResponse({"success": True, "font": result[0]})
         return JSONResponse({"success": False, "error": "Insert failed"}, status_code=500)
 
     except Exception as e:
@@ -424,9 +442,8 @@ async def upload_font(req: Request):
 async def list_fonts():
     """List all custom fonts."""
     try:
-        sb = get_supabase()
-        result = sb.table("custom_fonts").select("*").order("created_at", desc=True).execute()
-        return JSONResponse({"success": True, "fonts": result.data or []})
+        result = sb_rest("GET", "custom_fonts", "?select=*&order=created_at.desc")
+        return JSONResponse({"success": True, "fonts": result or []})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e), "fonts": []})
 
@@ -435,8 +452,7 @@ async def list_fonts():
 async def delete_font(font_id: str):
     """Delete a custom font."""
     try:
-        sb = get_supabase()
-        sb.table("custom_fonts").delete().eq("id", font_id).execute()
+        sb_rest("DELETE", "custom_fonts", f"?id=eq.{font_id}")
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -448,10 +464,9 @@ async def delete_font(font_id: str):
 async def get_template(template_id: str):
     """Get a single template with full SVG data."""
     try:
-        sb = get_supabase()
-        result = sb.table("carousel_templates").select("*").eq("id", template_id).execute()
-        if result.data and len(result.data) > 0:
-            return JSONResponse({"success": True, "template": result.data[0]})
+        result = sb_rest("GET", "carousel_templates", f"?id=eq.{template_id}&select=*")
+        if result and len(result) > 0:
+            return JSONResponse({"success": True, "template": result[0]})
         return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -461,8 +476,7 @@ async def get_template(template_id: str):
 async def delete_template(template_id: str):
     """Delete a template."""
     try:
-        sb = get_supabase()
-        sb.table("carousel_templates").delete().eq("id", template_id).execute()
+        sb_rest("DELETE", "carousel_templates", f"?id=eq.{template_id}")
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
