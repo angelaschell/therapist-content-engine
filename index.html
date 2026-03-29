@@ -105,6 +105,12 @@ option{background:#F7EBE0}
 .tpl-feedback-row{display:flex;gap:8px;align-items:stretch}
 .tpl-feedback-row textarea{flex:1;min-height:44px;font-size:13px}
 .tpl-feedback-row button{white-space:nowrap}
+.tpl-cpick{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tpl-cpick input[type=color]{width:36px;height:36px;border:1px solid rgba(59,33,69,.1);border-radius:6px;cursor:pointer;padding:2px;background:none;-webkit-appearance:none}
+.tpl-cpick input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.tpl-cpick input[type=color]::-webkit-color-swatch{border:none;border-radius:4px}
+.tpl-cpick-label{font-size:11px;color:rgba(59,33,69,.5);min-width:70px}
+.tpl-cpick-hex{font-size:10px;color:rgba(59,33,69,.3);font-family:monospace}
 .step{display:none;animation:fadeUp .4s ease}.step.active{display:block}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .step-bar{display:flex;align-items:center;gap:6px;margin-bottom:28px;padding:16px 0;border-bottom:1px solid rgba(59,33,69,.06);flex-wrap:wrap}
@@ -305,6 +311,16 @@ option{background:#F7EBE0}
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:12px">Saved Templates</div>
       <div class="tpl-library" id="tplLibrary">
         <div style="font-size:13px;color:rgba(59,33,69,.3);text-align:center;padding:30px 0">Loading...</div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(59,33,69,.06)">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Custom Fonts</div>
+        <div id="fontList" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <input type="text" id="fontNameInput" placeholder="Font name (e.g. Awesome Serif)" style="flex:1;padding:8px 10px;font-size:12px">
+          <button class="ghost" style="font-size:11px;white-space:nowrap" onclick="document.getElementById('font-file-input').click()">Upload .ttf/.otf</button>
+        </div>
+        <input type="file" id="font-file-input" accept=".ttf,.otf,.woff,.woff2" style="display:none" onchange="uploadFont(this.files[0])">
+        <div id="fontUploadStatus" style="font-size:11px;color:rgba(59,33,69,.3);margin-top:6px"></div>
       </div>
     </div>
   </div>
@@ -694,7 +710,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates")loadTemplateLibrary()}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
@@ -769,6 +785,7 @@ function loadRecent(idx){var list=JSON.parse(localStorage.getItem("ce-recent")||
 loadViralFeed();
 loadTemplateLibrary();
 loadCustomTemplateDropdown();
+loadCustomFonts();
 
 // ── TEMPLATES TAB ──
 var tplImageData="",tplCurrentAnalysis=null,tplCurrentSvgs=null,savedTemplates=[];
@@ -812,10 +829,10 @@ if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transfor
 h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.35">Close</div>';
 h+='</div>';
 h+='</div>';
-// Color swatches compact row
-h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
-var swatches=[{c:data.hook_bg,l:"Hook BG"},{c:data.hook_text,l:"Hook Text"},{c:data.bg_color,l:"Body BG"},{c:data.text_color,l:"Body Text"},{c:data.close_bg,l:"Close BG"},{c:data.close_text,l:"Close Text"}];
-swatches.forEach(function(s){h+='<div style="text-align:center"><div style="width:28px;height:28px;border-radius:6px;background:'+(s.c||"#ccc")+';border:1px solid rgba(59,33,69,.08);margin-bottom:2px"></div><div style="font-size:8px;color:rgba(59,33,69,.3)">'+s.l+'</div></div>'});
+// Color pickers
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px">';
+var cpicks=[{key:"hook_bg",l:"Hook BG"},{key:"hook_text",l:"Hook Text"},{key:"bg_color",l:"Body BG"},{key:"text_color",l:"Body Text"},{key:"close_bg",l:"Close BG"},{key:"close_text",l:"Close Text"}];
+cpicks.forEach(function(cp){h+='<div class="tpl-cpick"><input type="color" value="'+(data[cp.key]||"#cccccc")+'" onchange="updateTplColor(\''+cp.key+'\',this.value)" oninput="updateTplColor(\''+cp.key+'\',this.value)"><span class="tpl-cpick-label">'+cp.l+'</span><span class="tpl-cpick-hex" id="cpick-'+cp.key+'">'+(data[cp.key]||"")+'</span></div>'});
 h+='</div>';
 // Compact specs
 h+='<div style="font-size:11px;color:rgba(59,33,69,.4);line-height:1.8">';
@@ -838,7 +855,7 @@ if(tplCurrentSvgs){renderSvgPreview(tplCurrentSvgs)}}
 
 function regenTpl(){var fb=document.getElementById("tplFeedback").value.trim();if(!fb){alert("Type what you want changed.");return}document.getElementById("tplResult").style.display="none";document.getElementById("tplLoader").style.display="block";document.getElementById("tplLoader").querySelector("p").textContent="Applying your feedback...";fetch(BACKEND+"/api/templates/regenerate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({previous:tplCurrentAnalysis,feedback:fb,image:tplImageData})}).then(function(r){return r.json()}).then(function(d){document.getElementById("tplLoader").style.display="none";if(d.success&&d.data&&!d.data.error){tplCurrentAnalysis=d.data;tplCurrentSvgs=null;renderTplResult(d.data)}else{document.getElementById("tplResult").style.display="block";alert("Could not regenerate. Try different feedback.")}}).catch(function(e){document.getElementById("tplLoader").style.display="none";document.getElementById("tplResult").style.display="block";alert("Error: "+e.message)})}
 
-function generateSvgTemplate(){if(!tplImageData||!tplCurrentAnalysis){alert("Analyze an image first.");return}var section=document.getElementById("svgSection");section.innerHTML='<div class="v-loader"><p>Building your template slides...</p></div>';fetch(BACKEND+"/api/templates/generate-svg",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:tplImageData,analysis:tplCurrentAnalysis})}).then(function(r){return r.json()}).then(function(d){if(d.success&&d.data&&d.data.svg_hook){tplCurrentSvgs=d.data;renderSvgPreview(d.data)}else{section.innerHTML='<div class="v-err">Could not build template. '+(d.error||"Try again.")+'</div><button class="btn" style="margin-top:10px" onclick="generateSvgTemplate()">Retry</button>'}}).catch(function(e){section.innerHTML='<div class="v-err">Error: '+e.message+'</div><button class="btn" style="margin-top:10px" onclick="generateSvgTemplate()">Retry</button>'})}
+function generateSvgTemplate(){if(!tplImageData||!tplCurrentAnalysis){alert("Analyze an image first.");return}var section=document.getElementById("svgSection");section.innerHTML='<div class="v-loader"><p>Building your template slides...</p></div>';var fontNames=customFonts.map(function(f){return f.font_family});fetch(BACKEND+"/api/templates/generate-svg",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:tplImageData,analysis:tplCurrentAnalysis,custom_fonts:fontNames})}).then(function(r){return r.json()}).then(function(d){if(d.success&&d.data&&d.data.svg_hook){tplCurrentSvgs=d.data;renderSvgPreview(d.data)}else{section.innerHTML='<div class="v-err">Could not build template. '+(d.error||"Try again.")+'</div><button class="btn" style="margin-top:10px" onclick="generateSvgTemplate()">Retry</button>'}}).catch(function(e){section.innerHTML='<div class="v-err">Error: '+e.message+'</div><button class="btn" style="margin-top:10px" onclick="generateSvgTemplate()">Retry</button>'})}
 
 function renderSvgPreview(svgData){var el=document.getElementById("svgPreview")||document.getElementById("svgSection");var h='<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px;margin-top:16px">Visual Template Preview</div>';h+='<div style="display:flex;gap:10px;margin-bottom:14px;overflow-x:auto">';var labels=["Hook","Body","Close"];var svgs=[svgData.svg_hook,svgData.svg_body,svgData.svg_close];var sampleText=["THIS IS YOUR HOOK SLIDE","Body slide text appears here with your extracted styling and layout.","What would it feel like to let yourself grieve without apology?"];var sampleSub=["the subtitle goes here","",""];svgs.forEach(function(svg,i){if(!svg)return;var filled=injectSvgText(svg,sampleText[i],sampleSub[i]);h+='<div style="flex-shrink:0;position:relative"><div style="width:180px;height:225px;border-radius:8px;overflow:hidden;border:1px solid rgba(59,33,69,.08);box-shadow:0 2px 8px rgba(59,33,69,.06)">'+filled.replace(/viewBox='0 0 1080 1350'/,"viewBox='0 0 1080 1350' width='180' height='225'").replace(/viewBox="0 0 1080 1350"/,'viewBox="0 0 1080 1350" width="180" height="225"')+'</div><div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(59,33,69,.3);text-align:center;margin-top:4px">'+labels[i]+'</div></div>'});h+='</div>';h+='<div class="tpl-feedback-row" style="margin-bottom:10px"><textarea id="svgFeedback" placeholder="e.g. Add a thin line under the title, make more negative space, move text higher"></textarea><button class="btn" onclick="regenSvg()">Regen Visual</button></div>';if(document.getElementById("svgSection")){document.getElementById("svgSection").innerHTML=h}else{el.innerHTML=h}}
 
@@ -849,6 +866,21 @@ function regenSvg(){var fb=document.getElementById("svgFeedback").value.trim();i
 function saveTpl(){if(!tplCurrentAnalysis)return;var name=prompt("Name this template:",tplCurrentAnalysis.suggested_name||"Custom Template");if(!name)return;var saveBtn=document.getElementById("saveTplBtn");if(saveBtn){saveBtn.textContent="Saving...";saveBtn.disabled=true}fetch(BACKEND+"/api/templates/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,template:tplCurrentAnalysis,svg_data:tplCurrentSvgs||{},original_image:tplImageData})}).then(function(r){return r.json()}).then(function(d){if(d.success){loadTemplateLibrary();loadCustomTemplateDropdown();var bubble='<div class="tpl-bubble system"><div class="tpl-bubble-label">Saved</div>"'+name+'" is now in your library. You can select it in the Carousel Builder under Custom Template.</div>';document.getElementById("tplResult").insertAdjacentHTML("beforeend",bubble);if(saveBtn){saveBtn.textContent="Saved!";saveBtn.disabled=true}}else{alert("Save failed: "+(d.error||"Unknown error"));if(saveBtn){saveBtn.textContent="Save Template";saveBtn.disabled=false}}}).catch(function(e){alert("Error: "+e.message);if(saveBtn){saveBtn.textContent="Save Template";saveBtn.disabled=false}})}
 
 function resetTpl(){tplImageData="";tplCurrentAnalysis=null;tplCurrentSvgs=null;document.getElementById("tplPreviewImg").style.display="none";document.getElementById("tplPreviewImg").src="";document.getElementById("tplNotes").style.display="none";document.getElementById("tplNotesInput").value="";document.getElementById("tplAnalyzeBtn").style.display="none";document.getElementById("tplResult").style.display="none";document.getElementById("tplResult").innerHTML="";document.getElementById("tplLoader").style.display="none"}
+
+function updateTplColor(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;var hexEl=document.getElementById("cpick-"+key);if(hexEl)hexEl.textContent=value;renderTplResult(tplCurrentAnalysis)}
+
+// ── FONT UPLOAD ──
+var customFonts=[];
+
+function loadCustomFonts(){fetch(BACKEND+"/api/templates/fonts/list").then(function(r){return r.json()}).then(function(d){customFonts=d.fonts||[];renderFontList();injectFontFaces()}).catch(function(){customFonts=[];renderFontList()})}
+
+function renderFontList(){var el=document.getElementById("fontList");if(!el)return;if(!customFonts.length){el.innerHTML='<div style="font-size:11px;color:rgba(59,33,69,.25);margin-bottom:6px">No custom fonts yet</div>';return}var h="";customFonts.forEach(function(f){h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(59,33,69,.04)">';h+='<div><span style="font-family:\''+f.font_family+'\',serif;font-size:14px;color:#3B2145">'+f.name+'</span><span style="font-size:9px;color:rgba(59,33,69,.2);margin-left:6px">'+f.font_family+'</span></div>';h+='<button style="background:none;border:none;font-size:12px;color:rgba(59,33,69,.2);cursor:pointer;padding:2px 6px" onclick="deleteFont(\''+f.id+'\',\''+f.name.replace(/'/g,"\\'")+'\')">&times;</button>';h+='</div>'});el.innerHTML=h}
+
+function injectFontFaces(){customFonts.forEach(function(f){var existing=document.getElementById("ff-"+f.id);if(existing)return;var ext=f.file_url.split(".").pop().toLowerCase();var format="truetype";if(ext==="otf")format="opentype";else if(ext==="woff")format="woff";else if(ext==="woff2")format="woff2";var style=document.createElement("style");style.id="ff-"+f.id;style.textContent="@font-face { font-family: '"+f.font_family+"'; src: url('"+f.file_url+"') format('"+format+"'); font-display: swap; }";document.head.appendChild(style)})}
+
+function uploadFont(file){if(!file)return;var name=document.getElementById("fontNameInput").value.trim();if(!name){name=file.name.replace(/\.(ttf|otf|woff2?)/i,"").replace(/[-_]/g," ")}var status=document.getElementById("fontUploadStatus");status.textContent="Uploading "+file.name+"...";status.style.color="#90A9EC";var reader=new FileReader();reader.onload=function(e){fetch(BACKEND+"/api/templates/fonts/upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,font_family:name,file:e.target.result,filename:file.name})}).then(function(r){return r.json()}).then(function(d){if(d.success){status.textContent=name+" uploaded!";status.style.color="#6fcf97";document.getElementById("fontNameInput").value="";loadCustomFonts()}else{status.textContent="Error: "+(d.error||"Unknown");status.style.color="#c45a4a"}}).catch(function(err){status.textContent="Error: "+err.message;status.style.color="#c45a4a"})};reader.readAsDataURL(file)}
+
+function deleteFont(id,name){if(!confirm('Delete font "'+name+'"?'))return;fetch(BACKEND+"/api/templates/fonts/"+id,{method:"DELETE"}).then(function(r){return r.json()}).then(function(d){if(d.success){var styleEl=document.getElementById("ff-"+id);if(styleEl)styleEl.remove();loadCustomFonts()}}).catch(function(e){alert("Error: "+e.message)})}
 
 function loadTemplateLibrary(){fetch(BACKEND+"/api/templates/").then(function(r){return r.json()}).then(function(d){savedTemplates=d.templates||[];renderTemplateLibrary()}).catch(function(){document.getElementById("tplLibrary").innerHTML='<div style="font-size:13px;color:rgba(59,33,69,.3);text-align:center;padding:20px">Could not load templates.</div>'})}
 
