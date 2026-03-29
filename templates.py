@@ -161,6 +161,7 @@ async def generate_svg_templates(req: Request):
         data = await req.json()
         image_data = data.get("image", "")
         analysis = data.get("analysis", {})
+        custom_fonts = data.get("custom_fonts", [])
 
         if not image_data:
             return JSONResponse({"success": False, "error": "No image provided"}, status_code=400)
@@ -168,6 +169,10 @@ async def generate_svg_templates(req: Request):
         media_type = detect_media_type(image_data)
         clean_image = strip_base64_prefix(image_data)
         prompt = SVG_GENERATE_PROMPT.format(analysis=json.dumps(analysis, indent=2))
+
+        if custom_fonts:
+            font_list = ", ".join([f"'{f}'" for f in custom_fonts])
+            prompt += f"\n\nADDITIONAL CUSTOM FONTS AVAILABLE (loaded via @font-face, use these if they match the screenshot better than the defaults): {font_list}"
 
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -364,6 +369,80 @@ async def list_templates():
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e), "templates": []})
 
+
+# ── CUSTOM FONTS (must be before /{template_id} catch-all) ──
+
+@router.post("/fonts/upload")
+async def upload_font(req: Request):
+    """Upload a custom font file to Supabase storage and register it."""
+    try:
+        data = await req.json()
+        font_name = data.get("name", "")
+        font_family = data.get("font_family", "")
+        font_data = data.get("file", "")
+
+        if not font_name or not font_data:
+            return JSONResponse({"success": False, "error": "Name and file required"}, status_code=400)
+
+        if not font_family:
+            font_family = font_name
+
+        sb = get_supabase()
+
+        if "," in font_data:
+            file_bytes = base64.b64decode(font_data.split(",", 1)[1])
+        else:
+            file_bytes = base64.b64decode(font_data)
+
+        import uuid
+        ext = "ttf"
+        if data.get("filename", "").endswith(".otf"):
+            ext = "otf"
+        elif data.get("filename", "").endswith(".woff2"):
+            ext = "woff2"
+        elif data.get("filename", "").endswith(".woff"):
+            ext = "woff"
+
+        filename = f"fonts/{uuid.uuid4().hex}.{ext}"
+        content_types = {"ttf": "font/ttf", "otf": "font/otf", "woff": "font/woff", "woff2": "font/woff2"}
+
+        sb.storage.from_("brand-assets").upload(filename, file_bytes, {"content-type": content_types.get(ext, "font/ttf")})
+        file_url = f"{SUPABASE_URL}/storage/v1/object/public/brand-assets/{filename}"
+
+        row = {"name": font_name, "font_family": font_family, "file_url": file_url}
+        result = sb.table("custom_fonts").insert(row).execute()
+
+        if result.data and len(result.data) > 0:
+            return JSONResponse({"success": True, "font": result.data[0]})
+        return JSONResponse({"success": False, "error": "Insert failed"}, status_code=500)
+
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+@router.get("/fonts/list")
+async def list_fonts():
+    """List all custom fonts."""
+    try:
+        sb = get_supabase()
+        result = sb.table("custom_fonts").select("*").order("created_at", desc=True).execute()
+        return JSONResponse({"success": True, "fonts": result.data or []})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e), "fonts": []})
+
+
+@router.delete("/fonts/{font_id}")
+async def delete_font(font_id: str):
+    """Delete a custom font."""
+    try:
+        sb = get_supabase()
+        sb.table("custom_fonts").delete().eq("id", font_id).execute()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+# ── TEMPLATE BY ID (catch-all, must be last) ──
 
 @router.get("/{template_id}")
 async def get_template(template_id: str):
