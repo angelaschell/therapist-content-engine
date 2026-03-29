@@ -240,7 +240,7 @@ def search_reddit(queries, filter_words, limit=15):
 
 # --- INSTAGRAM via Apify - TOP POSTS from hashtag pages ---
 
-def scrape_instagram_top_posts(hashtags, filter_words, min_likes=50):
+def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
     """
     Scrape Instagram TOP posts by feeding hashtag page URLs to apify~instagram-scraper.
     Instagram explore/tags/ page shows top/popular posts by default.
@@ -321,8 +321,8 @@ def scrape_instagram_top_posts(hashtags, filter_words, min_likes=50):
             except:
                 pass
 
-        # Also run hashtag-scraper for more results
-        if True:
+        # Fallback to hashtag-scraper with higher limit if nothing found
+        if len(all_posts) == 0:
             print("  Fallback: trying instagram-hashtag-scraper with higher limit...")
             url2 = f"https://api.apify.com/v2/acts/apify~instagram-hashtag-scraper/run-sync-get-dataset-items?token={APIFY_TOKEN}"
             payload2 = {
