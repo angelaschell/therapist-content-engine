@@ -216,6 +216,21 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 <!-- ═══════════════════════════════════════════════════════ -->
 <div id="sec-subscribers" class="section" style="display:none">
   <div class="stats-row" id="subStats"></div>
+
+  <div class="form-card" style="margin-bottom:20px">
+    <div class="form-title">Look Up Subscriber</div>
+    <div class="section-sub" style="margin-bottom:14px">ManyChat doesn't allow bulk subscriber export via API. Look up individual contacts by their ManyChat ID, email, or phone to pull their data in.</div>
+    <div class="grid2">
+      <div><label>ManyChat Contact ID</label><input type="text" id="lookup-id" placeholder="e.g. 1234567"></div>
+      <div><label>Email</label><input type="text" id="lookup-email" placeholder="e.g. jane@email.com"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Phone</label><input type="text" id="lookup-phone" placeholder="e.g. +15551234567"></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn" onclick="lookupSubscriber()" style="width:100%">Look Up</button></div>
+    </div>
+    <div id="lookupResult" style="display:none;margin-top:14px;padding:14px;background:rgba(144,169,236,.06);border-radius:10px;font-size:13px"></div>
+  </div>
+
   <div class="search-bar">
     <input type="text" id="subSearch" placeholder="Search by name, IG, email..." oninput="debounceSearch()">
     <select id="subInterest" onchange="loadSubscribers()">
@@ -318,7 +333,9 @@ function checkSync() {
     var dot = document.getElementById("syncDot");
     if (d.last_sync) {
       var ago = timeAgo(d.last_sync.completed_at || d.last_sync.started_at);
-      el.textContent = "Last sync: " + ago + " (" + (d.last_sync.records_synced || 0) + " subscribers)";
+      var detail = "";
+      try { var info = JSON.parse(d.last_sync.error_message || "{}"); detail = " (" + (info.flows || 0) + " flows, " + (info.tags || 0) + " tags)"; } catch(e) { detail = " (" + (d.last_sync.records_synced || 0) + " items)"; }
+      el.textContent = "Last sync: " + ago + detail;
       dot.className = "sync-dot " + (d.last_sync.status === "success" ? "ok" : "error");
     } else {
       el.textContent = "Never synced. Click Sync ManyChat to pull subscriber data.";
@@ -330,13 +347,14 @@ function checkSync() {
 }
 
 function runSync() {
-  document.getElementById("syncStatus").textContent = "Syncing ManyChat subscribers...";
+  document.getElementById("syncStatus").textContent = "Syncing ManyChat data...";
   document.getElementById("syncDot").className = "sync-dot stale";
   fetch(BACKEND + "/api/manychat/sync", { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
     if (d.success) {
-      showToast("Synced " + d.synced + " subscribers from ManyChat.");
+      showToast("Synced! " + d.flows + " flows, " + d.tags + " tags from ManyChat.");
+      document.getElementById("syncStatus").textContent = "Connected: " + d.flows + " flows, " + d.tags + " tags synced.";
+      document.getElementById("syncDot").className = "sync-dot ok";
       checkSync();
-      loadSubscribers();
     } else {
       showToast(d.error || "Sync failed.", true);
       document.getElementById("syncStatus").textContent = "Sync failed: " + (d.error || "Unknown");
@@ -476,6 +494,39 @@ function loadSubscribers() {
 function goSubPage(p) { currentSubPage = p; loadSubscribers(); }
 function debounceSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(function() { currentSubPage = 1; loadSubscribers(); }, 400); }
 function viewSubscriber(mcId) { showToast("Subscriber detail view coming in Session 2."); }
+
+function lookupSubscriber() {
+  var mcId = document.getElementById("lookup-id").value.trim();
+  var email = document.getElementById("lookup-email").value.trim();
+  var phone = document.getElementById("lookup-phone").value.trim();
+  if (!mcId && !email && !phone) { showToast("Enter an ID, email, or phone.", true); return; }
+  var el = document.getElementById("lookupResult");
+  el.style.display = "block";
+  el.textContent = "Looking up...";
+  el.style.color = "#90A9EC";
+  fetch(BACKEND + "/api/manychat/lookup", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mc_id: mcId, email: email, phone: phone })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success && d.subscriber) {
+      var s = d.subscriber;
+      el.style.color = "#3B2145";
+      el.innerHTML = '<strong>' + esc(s.full_name || "Unknown") + '</strong>' +
+        (s.ig_username ? ' (@' + esc(s.ig_username) + ')' : '') +
+        (s.email ? ' · ' + esc(s.email) : '') +
+        '<br>Interest: <span class="interest-tag ' + s.interest_level + '">' + s.interest_level + '</span>' +
+        ' · Heat: ' + s.heat_score + ' · Triggers: ' + s.trigger_count + ' · Convos: ' + s.conversation_count +
+        '<br><span style="color:#6fcf97">Saved to your subscriber dashboard.</span>';
+      loadSubscribers();
+    } else {
+      el.style.color = "#c45a4a";
+      el.textContent = d.error || "Not found. Check the ID/email/phone and try again.";
+    }
+  }).catch(function(e) {
+    el.style.color = "#c45a4a";
+    el.textContent = "Error: " + e.message;
+  });
+}
 
 // ─── TRIGGERS ──────────────────────────────────────────────
 var allTriggers = [];
