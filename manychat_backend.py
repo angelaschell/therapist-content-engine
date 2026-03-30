@@ -28,12 +28,24 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
 
+def clean(row):
+    """Convert a RealDictRow to a JSON-safe dict."""
+    if not row:
+        return None
+    d = dict(row)
+    for k, v in d.items():
+        if isinstance(v, (datetime,)):
+            d[k] = v.isoformat()
+        elif hasattr(v, 'isoformat'):
+            d[k] = v.isoformat()
+    return d
+
 def query(sql, params=None, fetch=True):
     conn = get_conn()
     conn.autocommit = True
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute(sql, params or ())
-    result = cur.fetchall() if fetch else []
+    result = [clean(r) for r in cur.fetchall()] if fetch else []
     cur.close()
     conn.close()
     return result
@@ -55,7 +67,7 @@ def insert_returning(sql, params=None):
     conn.autocommit = True
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute(sql, params or ())
-    row = cur.fetchone()
+    row = clean(cur.fetchone())
     cur.close()
     conn.close()
     return row
