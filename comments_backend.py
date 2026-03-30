@@ -158,35 +158,41 @@ async def fetch_comments(limit: int = Query(default=25, le=50)):
             total_fetched += len(comments)
 
             for comment in comments:
+                cid = comment.get("id")
+                if not cid:
+                    continue
                 # Check if exists
-                existing = db_query("SELECT id FROM ig_comments WHERE ig_comment_id = %s", (comment["id"],))
+                existing = db_query("SELECT id FROM ig_comments WHERE ig_comment_id = %s", (cid,))
                 if not existing:
                     db_execute("""
                         INSERT INTO ig_comments (ig_comment_id, ig_media_id, media_permalink, media_caption,
                             media_thumbnail_url, username, comment_text, like_count, is_reply, timestamp, status, category)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'unread', 'uncategorized')
                     """, (
-                        comment["id"], media_id, post.get("permalink"),
+                        cid, media_id, post.get("permalink"),
                         (post.get("caption") or "")[:500],
                         post.get("thumbnail_url") or post.get("media_url"),
-                        comment["username"], comment["text"],
-                        comment.get("like_count", 0), False, comment["timestamp"]
+                        comment.get("username", "unknown"), comment.get("text", ""),
+                        comment.get("like_count", 0), False, comment.get("timestamp", datetime.utcnow().isoformat())
                     ))
                     total_new += 1
 
                 # Insert replies
                 for reply in comment.get("replies", {}).get("data", []):
-                    existing_reply = db_query("SELECT id FROM ig_comments WHERE ig_comment_id = %s", (reply["id"],))
+                    rid = reply.get("id")
+                    if not rid:
+                        continue
+                    existing_reply = db_query("SELECT id FROM ig_comments WHERE ig_comment_id = %s", (rid,))
                     if not existing_reply:
                         db_execute("""
                             INSERT INTO ig_comments (ig_comment_id, ig_media_id, media_permalink, media_caption,
                                 username, comment_text, like_count, is_reply, parent_comment_id, timestamp, status, category)
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'unread', 'uncategorized')
                         """, (
-                            reply["id"], media_id, post.get("permalink"),
+                            rid, media_id, post.get("permalink"),
                             (post.get("caption") or "")[:500],
-                            reply["username"], reply["text"],
-                            reply.get("like_count", 0), True, comment["id"], reply["timestamp"]
+                            reply.get("username", "unknown"), reply.get("text", ""),
+                            reply.get("like_count", 0), True, cid, reply.get("timestamp", datetime.utcnow().isoformat())
                         ))
                         total_new += 1
 
