@@ -17,13 +17,29 @@ from supabase import create_client
 # ── Config ──────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-META_PAGE_TOKEN = os.getenv("META_PAGE_ACCESS_TOKEN")
-IG_USER_ID = os.getenv("IG_USER_ID")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 PERPLEXITY_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+async def get_page_token_and_ig_id():
+    """Discover page token and IG ID dynamically (same as publisher)."""
+    from instagram_analytics import token_mgr
+    token = token_mgr.user_token
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        r = await client.get(
+            f"{GRAPH_API_BASE}/me/accounts",
+            params={"access_token": token, "fields": "id,name,access_token,instagram_business_account{id,username}"}
+        )
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail="Could not fetch page token")
+        for page in r.json().get("data", []):
+            ig = page.get("instagram_business_account")
+            if ig:
+                return page["access_token"], ig["id"], ig.get("username", "")
+        raise HTTPException(status_code=404, detail="No IG business account found")
 
 router = APIRouter(prefix="/api/comments", tags=["Comment Command Center"])
 
@@ -50,11 +66,13 @@ class BulkActionRequest(BaseModel):
 @router.post("/fetch")
 async def fetch_comments(limit: int = Query(default=25, le=50)):
     try:
-        media_url = f"{GRAPH_API_BASE}/{IG_USER_ID}/media"
+        page_token, ig_id, username = await get_page_token_and_ig_id()
+
+        media_url = f"{GRAPH_API_BASE}/{ig_id}/media"
         media_params = {
             "fields": "id,caption,permalink,thumbnail_url,media_url,timestamp,media_type",
             "limit": limit,
-            "access_token": META_PAGE_TOKEN
+            "access_token": page_token
         }
 
         async with httpx.AsyncClient(timeout=30) as client:
@@ -75,7 +93,7 @@ async def fetch_comments(limit: int = Query(default=25, le=50)):
             comments_params = {
                 "fields": "id,text,timestamp,username,like_count,replies{id,text,timestamp,username,like_count}",
                 "limit": 100,
-                "access_token": META_PAGE_TOKEN
+                "access_token": page_token
             }
 
             async with httpx.AsyncClient(timeout=30) as client:
@@ -489,9 +507,10 @@ async def update_comment(comment_id: int, update: CommentUpdateRequest):
 
 @router.post("/reply")
 async def reply_to_comment(req: ReplyRequest):
+    page_token, ig_id, username = await get_page_token_and_ig_id()
     url = f"{GRAPH_API_BASE}/{req.comment_ig_id}/replies"
     async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.post(url, params={"message": req.message, "access_token": META_PAGE_TOKEN})
+        resp = await client.post(url, params={"message": req.message, "access_token": page_token})
         if resp.status_code != 200:
             raise HTTPException(status_code=502, detail=f"IG error: {resp.json().get('error', {}).get('message', '?')}")
         reply_data = resp.json()
