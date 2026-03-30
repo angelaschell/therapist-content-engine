@@ -205,6 +205,44 @@ option{background:#F7EBE0}
 #loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#F7EBE0;z-index:9999;display:flex;align-items:center;justify-content:center}
 .footer{text-align:center;padding:30px 20px;border-top:1px solid rgba(59,33,69,.05);margin-top:40px}
 .footer p{font-size:11px;color:rgba(59,33,69,.2);letter-spacing:.1em}
+/* MANYCHAT TRIGGERS */
+.mc-stats{display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.mc-stat{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:12px;padding:16px 22px;flex:1;min-width:120px;text-align:center}
+.mc-stat-num{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:#90A9EC}
+.mc-stat-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:rgba(59,33,69,.3);margin-top:2px}
+.mc-search{display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.mc-search input{max-width:280px}
+.mc-pills{display:flex;gap:6px}
+.mc-pill{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid rgba(210,199,255,.25);background:none;color:rgba(59,33,69,.4);font-family:'Jost',sans-serif;transition:all .2s}
+.mc-pill.active{background:rgba(144,169,236,.12);color:#90A9EC;border-color:rgba(144,169,236,.35)}
+.mc-pill:hover{border-color:rgba(144,169,236,.3);color:rgba(59,33,69,.6)}
+.mc-trigger-card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.25);border-radius:14px;padding:20px;margin-bottom:12px;transition:border-color .2s,box-shadow .2s}
+.mc-trigger-card:hover{border-color:rgba(144,169,236,.35);box-shadow:0 4px 16px rgba(59,33,69,.06)}
+.mc-trigger-row{display:flex;align-items:flex-start;gap:14px}
+.mc-kw{font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;background:rgba(144,169,236,.1);color:#90A9EC;padding:6px 14px;border-radius:8px;white-space:nowrap;min-width:130px;text-align:center;margin-top:2px}
+.mc-kw.inactive{background:rgba(59,33,69,.04);color:rgba(59,33,69,.25)}
+.mc-info{flex:1;min-width:0}
+.mc-label{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:#3B2145;margin-bottom:3px}
+.mc-desc{font-size:13px;color:rgba(59,33,69,.45);line-height:1.55}
+.mc-status-tag{display:inline-block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:5px;margin-top:6px}
+.mc-status-tag.active{background:rgba(144,169,236,.1);color:#90A9EC}
+.mc-status-tag.inactive{background:rgba(59,33,69,.04);color:rgba(59,33,69,.25)}
+.mc-actions{display:flex;gap:6px;flex-shrink:0;align-items:flex-start}
+.mc-btn-edit{background:rgba(210,199,255,.15);color:#3B2145;border:none;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .2s}
+.mc-btn-edit:hover{background:rgba(210,199,255,.3)}
+.mc-btn-toggle{background:none;color:rgba(59,33,69,.35);border:1px solid rgba(210,199,255,.2);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .2s}
+.mc-btn-toggle:hover{border-color:rgba(144,169,236,.3);color:#90A9EC}
+.mc-btn-delete{background:none;color:rgba(59,33,69,.2);border:1px solid rgba(59,33,69,.08);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .2s}
+.mc-btn-delete:hover{color:#c45a4a;border-color:rgba(196,90,74,.25);background:rgba(232,121,110,.04)}
+.mc-form{background:rgba(144,169,236,.05);border:1px solid rgba(144,169,236,.18);border-radius:14px;padding:24px;margin-bottom:24px}
+.mc-form-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:#3B2145;margin-bottom:18px}
+.mc-form-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.mc-toast{position:fixed;bottom:20px;right:20px;background:#90A9EC;color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 24px rgba(59,33,69,.15);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;font-family:'Jost',sans-serif}
+.mc-toast.show{transform:translateY(0);opacity:1}
+.mc-toast.error{background:#c45a4a}
+.mc-empty{text-align:center;padding:50px 20px;color:rgba(59,33,69,.25)}
+.mc-empty p{font-size:14px;line-height:1.6}
+@media(max-width:560px){.mc-trigger-row{flex-direction:column;gap:10px}.mc-actions{align-self:flex-end}.mc-search input{max-width:100%}.mc-search{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -238,7 +276,7 @@ option{background:#F7EBE0}
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
   <button class="tab" onclick="showTab('templates',this)">Templates</button>
   <button class="tab active" onclick="showTab('builder',this)">Carousel Builder</button>
-  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
+  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
 </div>
 <div class="main">
 
@@ -246,7 +284,7 @@ option{background:#F7EBE0}
   <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
   <div class="card">
     <div class="grid2"><div><label>Content Type</label><select id="ctype"><option>Instagram Reel Script</option><option>Carousel Slide Copy (6 slides)</option><option>Email Newsletter</option><option>Instagram Caption</option><option>Blog Post Outline</option><option>Podcast Intro / Hook</option><option>TikTok Script</option><option>Story Sequence (5 frames)</option></select></div><div><label>Pillar</label><select id="pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option><option>Nervous System Regulation</option><option>Inner Child Work</option><option>Emotional Neglect</option><option>Parentification</option><option>People Pleasing and Fawning</option><option>Boundaries After Trauma</option><option>Relationships and Codependency</option><option>Anxiety and Hypervigilance</option><option>Shame and Worthiness</option><option>Dissociation and Freeze Response</option><option>Generational Trauma</option><option>Milestone Grief</option></select></div></div>
-    <div class="grid2"><div><label>Tone</label><select id="tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div><div><label>ManyChat CTA</label><select id="cta"><option value="">No CTA</option><option value="HEAL">HEAL</option><option value="UNTANGLE">UNTANGLE</option><option value="STEADY">STEADY</option><option value="MALIBURETREAT">MALIBURETREAT</option><option value="UNLEARN">UNLEARN</option><option value="GRIEFRELIEF">GRIEFRELIEF</option><option value="TOOLS">TOOLS</option><option value="WORTHY">WORTHY</option><option value="EQUINE">EQUINE</option><option value="MOM">MOM</option><option value="EMDR">EMDR</option></select></div></div>
+    <div class="grid2"><div><label>Tone</label><select id="tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div><div><label>ManyChat CTA</label><select id="cta"><option value="">No CTA</option></select></div></div>
     <label>Topic</label><textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea>
     <div class="btns"><button class="btn" id="gen-btn" onclick="genContent()">Generate Content</button><button class="ghost" id="copy-content" style="display:none" onclick="copyIt('content-out','copy-content','Copy')">Copy</button><button class="ghost" id="clear-btn" style="display:none" onclick="clearContent()">Clear</button></div>
   </div>
@@ -402,12 +440,49 @@ option{background:#F7EBE0}
     <div class="v-loader" id="captionLoader"><p>Writing caption...</p></div>
     <div id="captionArea" style="display:none">
       <div class="card"><label>Caption</label><textarea id="captionEdit" style="min-height:200px;font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.7"></textarea></div>
-      <div class="card"><label>ManyChat CTA Trigger</label><select id="b-cta-trigger"><option value="WORTHY">WORTHY - Emotional Starter Kit</option><option value="HEAL">HEAL - 1:1 Session</option><option value="MALIBURETREAT">MALIBURETREAT - Retreat</option><option value="UNLEARN">UNLEARN - Mother Hunger Course</option><option value="GRIEFRELIEF">GRIEFRELIEF - Grief Relief</option><option value="TOOLS">TOOLS - 101 Tools</option><option value="EQUINE">EQUINE - Equine Product</option><option value="MOM">MOM - Community</option><option value="EMDR">EMDR - EMDR Therapy</option></select><div style="margin-top:12px"><span class="trig-badge" id="triggerDisplay">WORTHY</span></div></div>
+      <div class="card"><label>ManyChat CTA Trigger</label><select id="b-cta-trigger"><option value="">Select trigger...</option></select><div style="margin-top:12px"><span class="trig-badge" id="triggerDisplay">--</span></div></div>
       <div class="cost-bar"><div class="cost-item">Scraping: <strong>free</strong></div><div class="cost-item">Research: <strong>~$0.001</strong></div><div class="cost-item">Carousel: <strong>~$0.005</strong></div><div class="cost-item">Total: <strong>~$0.01</strong></div></div>
       <div class="btns"><button class="btn" onclick="copyCaption()">Copy Caption</button><button class="btn" style="background:#6fcf97;color:#3B2145" onclick="publishNow()">Post to Instagram Now</button><button class="btn" style="background:#D2C7FF;color:#3B2145" onclick="openScheduler()">Schedule Post</button><button class="ghost" onclick="captionText='';loadCaption()">Regenerate Caption</button><button class="ghost" onclick="goStep(4)">Back</button><button class="ghost" onclick="goStep(1)">Start Over</button></div><div id="publishStatus" style="display:none;margin-top:14px;padding:16px;border-radius:10px"></div><div id="schedulerModal" style="display:none;margin-top:14px"><div class="card"><label>Schedule Date & Time (your local time)</label><input type="datetime-local" id="scheduleDateTime" style="margin-bottom:12px"><div class="btns"><button class="btn" style="background:#D2C7FF;color:#3B2145" onclick="schedulePost()">Confirm Schedule</button><button class="ghost" onclick="document.getElementById('schedulerModal').style.display='none'">Cancel</button></div></div></div>
     </div>
   </div>
 </div>
+
+ <!-- MANYCHAT TRIGGERS TAB -->
+<div id="triggers" class="tab-panel" style="display:none">
+  <p class="desc">Manage all your ManyChat keyword triggers. Changes sync to CTA dropdowns across the Content Engine.</p>
+
+  <div class="mc-stats">
+    <div class="mc-stat"><div class="mc-stat-num" id="mcTotal">0</div><div class="mc-stat-label">Total Triggers</div></div>
+    <div class="mc-stat"><div class="mc-stat-num" id="mcActive">0</div><div class="mc-stat-label">Active</div></div>
+    <div class="mc-stat"><div class="mc-stat-num" id="mcInactive">0</div><div class="mc-stat-label">Inactive</div></div>
+  </div>
+
+  <div class="mc-form" id="mcForm" style="display:none">
+    <div class="mc-form-title" id="mcFormTitle">Add New Trigger</div>
+    <div class="grid2">
+      <div><label>Keyword</label><input type="text" id="mc-f-keyword" placeholder="e.g. WORTHY" style="text-transform:uppercase"></div>
+      <div><label>Label</label><input type="text" id="mc-f-label" placeholder="e.g. Emotional Starter Kit"></div>
+    </div>
+    <div style="margin-top:14px"><label>Description</label><textarea id="mc-f-desc" placeholder="What does this trigger do? What product or service does it connect to?"></textarea></div>
+    <div class="mc-form-actions">
+      <button class="ghost" onclick="mcCloseForm()">Cancel</button>
+      <button class="btn" id="mcFormSubmit" onclick="mcSaveTrigger()">Add Trigger</button>
+    </div>
+  </div>
+
+  <div class="mc-search">
+    <input type="text" id="mcSearch" placeholder="Search triggers..." oninput="mcFilter()">
+    <div class="mc-pills">
+      <button class="mc-pill active" data-filter="all" onclick="mcSetFilter('all',this)">All</button>
+      <button class="mc-pill" data-filter="active" onclick="mcSetFilter('active',this)">Active</button>
+      <button class="mc-pill" data-filter="inactive" onclick="mcSetFilter('inactive',this)">Inactive</button>
+    </div>
+    <button class="btn" onclick="mcOpenAddForm()" style="margin-left:auto;white-space:nowrap">+ New Trigger</button>
+  </div>
+
+  <div id="mcTriggerList"></div>
+</div>
+<div class="mc-toast" id="mcToast"></div>
 
  <!-- ANALYTICS TAB -->
 <div id="analytics" class="tab-panel" style="display:none">
@@ -714,7 +789,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers()}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
@@ -790,6 +865,7 @@ function loadRecent(idx){var list=JSON.parse(localStorage.getItem("ce-recent")||
 loadViralFeed();
 loadTemplateLibrary();
 loadCustomTemplateDropdown();
+loadManyChatCTAs();
 loadCustomFonts();
 
 // ── TEMPLATES TAB ──
@@ -908,6 +984,142 @@ async function publishNow(){if(!confirm('Post this carousel to @angelaschellenbe
 function openScheduler(){var tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);tomorrow.setHours(10,0,0,0);document.getElementById('scheduleDateTime').value=tomorrow.toISOString().slice(0,16);document.getElementById('schedulerModal').style.display='block'}
 async function schedulePost(){var dt=document.getElementById('scheduleDateTime').value;if(!dt){alert('Pick a date and time.');return}var localDate=new Date(dt);var utcISO=localDate.toISOString();showPublishStatus('Capturing slides...','loading');document.getElementById('schedulerModal').style.display='none';try{var slides=await captureSlides();if(slides.length<2){showPublishStatus('Need at least 2 slides.','error');return}var batchId='sched_'+Date.now().toString(36);var urls=[];for(var i=0;i<slides.length;i++){showPublishStatus('Uploading slide '+(i+1)+' of '+slides.length+' for scheduling...','loading');var r=await fetch(BACKEND+'/api/publish/upload-slide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slide:slides[i],batch_id:batchId,index:i})});var d=await r.json();if(!d.success){showPublishStatus('Upload failed on slide '+(i+1),'error');return}urls.push(d.url)}showPublishStatus('Scheduling post for '+localDate.toLocaleString()+'...','loading');var caption=document.getElementById('captionEdit').value||'';var response=await fetch(BACKEND+'/api/publish/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({post_type:'carousel',images:urls,caption:caption,publish_at:utcISO})});var result=await response.json();if(result.success){showPublishStatus('Scheduled! Carousel will post on '+localDate.toLocaleString()+'.','success')}else{showPublishStatus('Error: '+(result.detail||'Unknown error'),'error')}}catch(e){showPublishStatus('Error: '+e.message,'error')}}
 async function boostWithResearch(){var btn=document.getElementById('researchBoostBtn');var status=document.getElementById('researchBoostStatus');btn.disabled=true;btn.textContent='🔬 Researching...';status.style.display='block';status.textContent='Finding clinical research via Perplexity...';var topic=document.getElementById('b-topic').value.trim()||'grief attachment trauma';var currentSlides=[];carouselSlides.forEach(function(s,i){var v=document.getElementById('se-'+i).value;currentSlides.push('Slide '+(i+1)+' ('+s.type+'): '+v)});try{var resResp=await fetch(BACKEND+'/api/research',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:topic})});var resData=await resResp.json();var findings='';if(resData.success&&resData.data&&resData.data.findings){findings=resData.data.findings.join('\n');status.textContent='Found research. Rebuilding slides with evidence...'}else{status.textContent='Limited research found. Applying clinical knowledge...';findings='Use well-established clinical knowledge about '+topic}var sc=parseInt(document.getElementById('b-slides').value)||10;var tpl=document.getElementById('b-template').value||'naming';var resp=await fetch(BACKEND+'/api/carousel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:topic,viral_context:savedViralContext||'',analysis_context:(savedAnalysisContext||'')+'\n\nCURRENT SLIDES:\n'+currentSlides.join('\n')+'\n\nRESEARCH FINDINGS:\n'+findings+'\n\nYOUR JOB: Make this carousel more credible with research. Here is EXACTLY what to do:\n\n1. Keep slide 1 (the hook) as-is or make it punchier. Do not add research to the hook.\n\n2. Look at the body slides and find the 1-2 WEAKEST ones. These are slides that feel generic, vague, or could be said by anyone. REPLACE those weak slides with research-backed slides.\n\n3. A research slide should follow this pattern:\n   - One slide states the research finding as a bold fact. Examples: "Research shows your body stores grief in your nervous system long after your mind has moved on." or "Studies on motherless daughters found they are 3x more likely to struggle with self-worth in adulthood." or "Neuroscience confirms: EMDR rewires the way traumatic memories are stored in the brain."\n   - The NEXT slide explains why that matters to the reader. Examples: "This is why you feel it in your chest when someone mentions her." or "This is why the smallest rejection can send you spiraling." or "This is why one session can shift something talk therapy couldn\'t touch in years."\n\n4. Use phrases like: "Research shows...", "Studies found...", "Neuroscience confirms...", "The data is clear:", "Clinically, we know..."\n\n5. Keep the same total slide count. Replace weak slides, do not just add more.\n\n6. Keep the close/CTA slide. Do not put research there.\n\n7. Voice: Angela Schellenberg. Direct. Clinical but warm. Never use em dashes. Never hedge. State research as fact, then connect it to lived experience.\n\n8. The goal is LOGOS. The reader should think "she really knows her stuff" and "I finally understand why I feel this way."',research_context:findings,pillar:document.getElementById('b-pillar').value,tone:document.getElementById('b-tone').value,slide_count:sc,template_type:tpl})});var data=await resp.json();if(data.success&&!data.raw&&data.data&&data.data.slides){carouselSlides=data.data.slides;if(data.data.caption)captionText=data.data.caption;buildEditors();status.textContent='✓ Research slides added! Review the updated slides above.';status.style.color='#6fcf97'}else{status.textContent='Could not rebuild. Try again or use the feedback box.';status.style.color='#c45a4a'}}catch(e){status.textContent='Error: '+e.message;status.style.color='#c45a4a'}btn.disabled=false;btn.textContent='🔬 Integrate Perplexity Research (make it credible)'}
+// ─── MANYCHAT TRIGGERS ────────────────────────────────────────
+var mcAllTriggers=[];
+var mcCurrentFilter="all";
+var mcEditingId=null;
+
+function mcLoadTriggers(){
+  fetch(BACKEND+"/api/manychat/triggers").then(function(r){return r.json()}).then(function(d){
+    mcAllTriggers=d.triggers||[];
+    mcUpdateStats();
+    mcFilter();
+  }).catch(function(){mcShowToast("Failed to load triggers",true)});
+}
+
+function mcUpdateStats(){
+  var active=mcAllTriggers.filter(function(t){return t.is_active}).length;
+  document.getElementById("mcTotal").textContent=mcAllTriggers.length;
+  document.getElementById("mcActive").textContent=active;
+  document.getElementById("mcInactive").textContent=mcAllTriggers.length-active;
+}
+
+function mcSetFilter(f,el){
+  mcCurrentFilter=f;
+  document.querySelectorAll(".mc-pill").forEach(function(p){p.classList.remove("active")});
+  el.classList.add("active");
+  mcFilter();
+}
+
+function mcFilter(){
+  var q=(document.getElementById("mcSearch").value||"").toLowerCase();
+  var filtered=mcAllTriggers;
+  if(mcCurrentFilter==="active")filtered=filtered.filter(function(t){return t.is_active});
+  if(mcCurrentFilter==="inactive")filtered=filtered.filter(function(t){return !t.is_active});
+  if(q)filtered=filtered.filter(function(t){return t.keyword.toLowerCase().indexOf(q)>-1||t.label.toLowerCase().indexOf(q)>-1||(t.description||"").toLowerCase().indexOf(q)>-1});
+  mcRender(filtered);
+}
+
+function mcEsc(s){var d=document.createElement("div");d.textContent=s||"";return d.innerHTML}
+
+function mcRender(triggers){
+  var el=document.getElementById("mcTriggerList");
+  if(!triggers.length){el.innerHTML='<div class="mc-empty"><p>No triggers found.<br>Add one to get started.</p></div>';return}
+  el.innerHTML=triggers.map(function(t){return '<div class="mc-trigger-card"><div class="mc-trigger-row"><div class="mc-kw'+(t.is_active?'':' inactive')+'">'+mcEsc(t.keyword)+'</div><div class="mc-info"><div class="mc-label">'+mcEsc(t.label)+'</div><div class="mc-desc">'+mcEsc(t.description||"No description")+'</div><div class="mc-status-tag '+(t.is_active?'active':'inactive')+'">'+(t.is_active?'Active':'Inactive')+'</div></div><div class="mc-actions"><button class="mc-btn-toggle" onclick="mcToggle('+t.id+')">'+(t.is_active?'Deactivate':'Activate')+'</button><button class="mc-btn-edit" onclick="mcOpenEditForm('+t.id+')">Edit</button><button class="mc-btn-delete" onclick="mcDelete('+t.id+',\''+mcEsc(t.keyword)+'\')">Delete</button></div></div></div>'}).join("");
+}
+
+function mcOpenAddForm(){
+  mcEditingId=null;
+  document.getElementById("mcFormTitle").textContent="Add New Trigger";
+  document.getElementById("mcFormSubmit").textContent="Add Trigger";
+  document.getElementById("mc-f-keyword").value="";
+  document.getElementById("mc-f-label").value="";
+  document.getElementById("mc-f-desc").value="";
+  document.getElementById("mc-f-keyword").removeAttribute("disabled");
+  document.getElementById("mcForm").style.display="block";
+  document.getElementById("mc-f-keyword").focus();
+  window.scrollTo({top:document.getElementById("mcForm").offsetTop-100,behavior:"smooth"});
+}
+
+function mcOpenEditForm(id){
+  var t=mcAllTriggers.find(function(x){return x.id===id});
+  if(!t)return;
+  mcEditingId=id;
+  document.getElementById("mcFormTitle").textContent="Edit Trigger";
+  document.getElementById("mcFormSubmit").textContent="Save Changes";
+  document.getElementById("mc-f-keyword").value=t.keyword;
+  document.getElementById("mc-f-label").value=t.label;
+  document.getElementById("mc-f-desc").value=t.description||"";
+  document.getElementById("mc-f-keyword").setAttribute("disabled","true");
+  document.getElementById("mcForm").style.display="block";
+  window.scrollTo({top:document.getElementById("mcForm").offsetTop-100,behavior:"smooth"});
+}
+
+function mcCloseForm(){document.getElementById("mcForm").style.display="none";mcEditingId=null}
+
+function mcSaveTrigger(){
+  var keyword=document.getElementById("mc-f-keyword").value.trim().toUpperCase();
+  var label=document.getElementById("mc-f-label").value.trim();
+  var description=document.getElementById("mc-f-desc").value.trim();
+  if(!keyword||!label){mcShowToast("Keyword and label are required.",true);return}
+
+  var url,method;
+  if(mcEditingId){url=BACKEND+"/api/manychat/triggers/"+mcEditingId;method="PUT"}
+  else{url=BACKEND+"/api/manychat/triggers";method="POST"}
+
+  fetch(url,{method:method,headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword:keyword,label:label,description:description})}).then(function(r){return r.json()}).then(function(d){
+    if(d.error){mcShowToast(d.error,true);return}
+    mcShowToast(mcEditingId?"Trigger updated.":"Trigger added.");
+    mcCloseForm();
+    mcLoadTriggers();
+    loadManyChatCTAs();
+  }).catch(function(){mcShowToast("Failed to save.",true)});
+}
+
+function mcToggle(id){
+  fetch(BACKEND+"/api/manychat/triggers/"+id+"/toggle",{method:"PATCH"}).then(function(){
+    mcShowToast("Trigger updated.");
+    mcLoadTriggers();
+    loadManyChatCTAs();
+  }).catch(function(){mcShowToast("Failed to toggle.",true)});
+}
+
+function mcDelete(id,keyword){
+  if(!confirm('Delete trigger "'+keyword+'"? This cannot be undone.'))return;
+  fetch(BACKEND+"/api/manychat/triggers/"+id,{method:"DELETE"}).then(function(){
+    mcShowToast("Trigger deleted.");
+    mcLoadTriggers();
+    loadManyChatCTAs();
+  }).catch(function(){mcShowToast("Failed to delete.",true)});
+}
+
+function mcShowToast(msg,isError){
+  var t=document.getElementById("mcToast");
+  t.textContent=msg;
+  t.className="mc-toast show"+(isError?" error":"");
+  setTimeout(function(){t.className="mc-toast"},3000);
+}
+
+// ─── DYNAMIC CTA DROPDOWNS (synced from Supabase) ────────────
+function loadManyChatCTAs(){
+  fetch(BACKEND+"/api/manychat/triggers").then(function(r){return r.json()}).then(function(d){
+    var triggers=(d.triggers||[]).filter(function(t){return t.is_active});
+    var opts=triggers.map(function(t){return '<option value="'+t.keyword+'">'+t.keyword+' - '+t.label+'</option>'}).join("");
+
+    // Content Studio CTA
+    var ctaEl=document.getElementById("cta");
+    if(ctaEl)ctaEl.innerHTML='<option value="">No CTA</option>'+opts;
+
+    // Carousel Builder Step 5 CTA
+    var bctaEl=document.getElementById("b-cta-trigger");
+    if(bctaEl){
+      bctaEl.innerHTML=opts||'<option value="">No triggers</option>';
+      var badge=document.getElementById("triggerDisplay");
+      if(badge&&triggers.length)badge.textContent=triggers[0].keyword;
+    }
+  }).catch(function(){console.log("Could not load ManyChat triggers for CTA dropdowns")});
+}
+
 function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;viralHooks=d.hooks||[]}}).catch(function(){})}
 </script>
 </body>
