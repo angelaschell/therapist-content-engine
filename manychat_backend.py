@@ -580,6 +580,68 @@ async def send_flow(request:Request):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+@router.post("/api/manychat/smart-send")
+async def smart_send(request:Request):
+    """Send a flow to a subscriber by keyword. Automatically finds the right flow."""
+    try:
+        body = await request.json()
+        mc_id = body.get("mc_id","")
+        keyword = body.get("keyword","").strip().upper()
+        rec_id = body.get("recommendation_id")
+
+        if not mc_id:
+            return JSONResponse(content={"error":"No subscriber to send to (mc_id missing)."}, status_code=400)
+        if not keyword:
+            return JSONResponse(content={"error":"No keyword specified."}, status_code=400)
+
+        # Fetch all flows from ManyChat
+        d = await mc_get("/fb/page/getFlows")
+        raw = d.get("data", {})
+        flows = raw.get("flows", []) if isinstance(raw, dict) else raw if isinstance(raw, list) else []
+
+        # Find matching flow by keyword in the name
+        matched_flow = None
+        keyword_lower = keyword.lower()
+        for f in flows:
+            name = (f.get("name","") or "").lower()
+            # Match patterns like "| WORTHY", "| HEAL", "MALIBURETREAT" in flow name
+            if keyword_lower in name or f"| {keyword_lower}" in name:
+                matched_flow = f
+                break
+
+        if not matched_flow:
+            return JSONResponse(content={"error": f"Could not find a ManyChat flow matching '{keyword}'. Check your flow names."}, status_code=404)
+
+        flow_ns = matched_flow.get("ns","")
+        flow_name = matched_flow.get("name","")
+
+        if not flow_ns:
+            return JSONResponse(content={"error": f"Flow '{flow_name}' has no namespace ID."}, status_code=400)
+
+        # Send it
+        result = await mc_post("/fb/sending/sendFlow", {"subscriber_id":int(mc_id),"flow_ns":flow_ns})
+
+        # Log the action
+        sub = query_one("SELECT full_name FROM manychat_subscribers WHERE mc_id=%s",(mc_id,))
+        name = sub["full_name"] if sub else "Unknown"
+        execute("INSERT INTO completed_actions (mc_id,subscriber_name,action_type,action_detail,flow_id,recommendation_id) VALUES (%s,%s,%s,%s,%s,%s)",
+                (mc_id, name, "sent_flow", f"Sent {keyword} flow ({flow_name}) to {name}", flow_ns, rec_id))
+
+        # Mark recommendation as completed if provided
+        if rec_id:
+            execute("UPDATE lead_recommendations SET status='completed', completed_at=now(), completed_note=%s WHERE id=%s",
+                    (f"Sent {keyword} flow to {name}", rec_id))
+
+        return JSONResponse(content={
+            "success": True,
+            "sent_to": name,
+            "mc_id": mc_id,
+            "flow": flow_name,
+            "keyword": keyword
+        })
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 @router.post("/api/manychat/add-tag")
 async def add_tag(request:Request):
     try:
