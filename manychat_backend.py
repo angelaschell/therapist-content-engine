@@ -178,8 +178,9 @@ def calc_funnel_stage(trigger_count: int, conversation_count: int, tags: list):
 
 
 @router.post("/api/manychat/sync")
-async def sync_subscribers():
-    """Pull all subscribers from ManyChat and cache in Supabase."""
+async def sync_data():
+    """Pull flows, tags, and custom fields from ManyChat. Test API connection."""
+    log_id = None
     try:
         # Log sync start
         log = sb.table("sync_log").insert({
@@ -188,103 +189,62 @@ async def sync_subscribers():
         }).execute()
         log_id = log.data[0]["id"] if log.data else None
 
-        # Get subscribers from ManyChat
-        # The API returns paginated results
-        all_subscribers = []
-        has_more = True
-        page = 1
-
-        while has_more and page <= 50:  # safety limit
-            try:
-                data = await mc_post("/fb/subscriber/getSubscribers", {
-                    "page": page,
-                    "limit": 100
-                })
-                subs = data.get("data", {}).get("data", [])
-                if not subs:
-                    has_more = False
-                else:
-                    all_subscribers.extend(subs)
-                    has_more = len(subs) == 100
-                    page += 1
-            except Exception:
-                # Try alternate endpoint format
-                try:
-                    data = await mc_get(f"/fb/subscriber/getSubscribers?page={page}&limit=100")
-                    subs = data.get("data", {}).get("data", [])
-                    if not subs:
-                        has_more = False
-                    else:
-                        all_subscribers.extend(subs)
-                        has_more = len(subs) == 100
-                        page += 1
-                except:
-                    has_more = False
-
         synced = 0
-        for sub in all_subscribers:
-            mc_id = str(sub.get("id", ""))
-            if not mc_id:
-                continue
 
-            tags = sub.get("tags", [])
-            custom_fields = sub.get("custom_fields", {})
+        # 1. Pull flows
+        try:
+            flows_data = await mc_get("/fb/page/getFlows")
+            flows = flows_data.get("data", [])
+            synced += len(flows)
+        except Exception as e:
+            flows = []
 
-            # Get existing trigger history for this subscriber
-            trig_res = sb.table("subscriber_triggers").select("keyword").eq("mc_id", mc_id).execute()
-            triggers_fired = trig_res.data if trig_res.data else []
-            trigger_count = len(triggers_fired)
+        # 2. Pull tags
+        try:
+            tags_data = await mc_get("/fb/page/getTags")
+            tags = tags_data.get("data", [])
+            synced += len(tags)
+        except:
+            tags = []
 
-            # Get conversation count
-            conv_res = sb.table("subscriber_conversations").select("id").eq("mc_id", mc_id).execute()
-            conversation_count = len(conv_res.data) if conv_res.data else 0
+        # 3. Pull custom fields
+        try:
+            fields_data = await mc_get("/fb/page/getCustomFields")
+            fields = fields_data.get("data", [])
+        except:
+            fields = []
 
-            interest_level, heat_score = calc_interest_level(trigger_count, conversation_count, tags, triggers_fired)
-            funnel_stage = calc_funnel_stage(trigger_count, conversation_count, tags)
-
-            record = {
-                "mc_id": mc_id,
-                "first_name": sub.get("first_name", ""),
-                "last_name": sub.get("last_name", ""),
-                "full_name": f"{sub.get('first_name', '')} {sub.get('last_name', '')}".strip(),
-                "email": sub.get("email", ""),
-                "phone": sub.get("phone", ""),
-                "ig_username": sub.get("ig_username", "") or sub.get("instagram_username", ""),
-                "profile_pic": sub.get("profile_pic", "") or sub.get("profile_picture", ""),
-                "gender": sub.get("gender", ""),
-                "locale": sub.get("locale", ""),
-                "subscribed_at": sub.get("subscribed", sub.get("created_at")),
-                "last_interaction": sub.get("last_interaction"),
-                "last_seen": sub.get("last_seen"),
-                "ig_last_interaction": sub.get("last_interaction_in_instagram"),
-                "opted_in_ig": sub.get("opted_in_for_instagram", False),
-                "opted_in_email": bool(sub.get("email")),
-                "tags": json.dumps(tags) if isinstance(tags, list) else "[]",
-                "custom_fields": json.dumps(custom_fields) if isinstance(custom_fields, dict) else "{}",
-                "trigger_count": trigger_count,
-                "conversation_count": conversation_count,
-                "interest_level": interest_level,
-                "heat_score": heat_score,
-                "funnel_stage": funnel_stage,
-                "synced_at": datetime.now(timezone.utc).isoformat()
-            }
-
-            # Upsert
-            try:
-                sb.table("manychat_subscribers").upsert(record, on_conflict="mc_id").execute()
-                synced += 1
-            except:
-                pass
+        # 4. Pull bot fields
+        try:
+            bot_data = await mc_get("/fb/page/getBotFields")
+            bot_fields = bot_data.get("data", [])
+        except:
+            bot_fields = []
 
         # Update sync log
         if log_id:
             sb.table("sync_log").update({
                 "records_synced": synced,
                 "status": "success",
+                "error_message": json.dumps({
+                    "flows": len(flows),
+                    "tags": len(tags),
+                    "custom_fields": len(fields),
+                    "bot_fields": len(bot_fields)
+                }),
                 "completed_at": datetime.now(timezone.utc).isoformat()
             }).eq("id", log_id).execute()
 
-        return JSONResponse(content={"success": True, "synced": synced, "total": len(all_subscribers)})
+        return JSONResponse(content={
+            "success": True,
+            "synced": synced,
+            "flows": len(flows),
+            "tags": len(tags),
+            "custom_fields": len(fields),
+            "bot_fields": len(bot_fields),
+            "flow_list": [{"name": f.get("name", ""), "ns": f.get("ns", ""), "id": f.get("id", "")} for f in flows[:50]],
+            "tag_list": [{"name": t.get("name", ""), "id": t.get("id", "")} for t in tags[:50]]
+        })
 
     except Exception as e:
         if log_id:
@@ -293,6 +253,81 @@ async def sync_subscribers():
                 "error_message": str(e),
                 "completed_at": datetime.now(timezone.utc).isoformat()
             }).eq("id", log_id).execute()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@router.post("/api/manychat/lookup")
+async def lookup_subscriber(request: Request):
+    """Look up a single subscriber by ID, email, or phone and cache in Supabase."""
+    try:
+        body = await request.json()
+        mc_id = body.get("mc_id", "")
+        email = body.get("email", "")
+        phone = body.get("phone", "")
+
+        sub_data = None
+
+        if mc_id:
+            data = await mc_get(f"/fb/subscriber/getInfo?subscriber_id={mc_id}")
+            sub_data = data.get("data", {})
+        elif email:
+            data = await mc_get(f"/fb/subscriber/findBySystemField?email={email}")
+            sub_data = data.get("data", {})
+        elif phone:
+            data = await mc_get(f"/fb/subscriber/findBySystemField?phone={phone}")
+            sub_data = data.get("data", {})
+        else:
+            return JSONResponse(content={"error": "Provide mc_id, email, or phone."}, status_code=400)
+
+        if not sub_data or not sub_data.get("id"):
+            return JSONResponse(content={"error": "Subscriber not found."}, status_code=404)
+
+        # Cache in Supabase
+        mc_sub_id = str(sub_data.get("id", ""))
+        tags = sub_data.get("tags", [])
+        custom_fields = sub_data.get("custom_fields", {})
+
+        # Get existing trigger/conversation history
+        trig_res = sb.table("subscriber_triggers").select("keyword").eq("mc_id", mc_sub_id).execute()
+        triggers_fired = trig_res.data if trig_res.data else []
+        trigger_count = len(triggers_fired)
+        conv_res = sb.table("subscriber_conversations").select("id").eq("mc_id", mc_sub_id).execute()
+        conversation_count = len(conv_res.data) if conv_res.data else 0
+
+        interest_level, heat_score = calc_interest_level(trigger_count, conversation_count, tags, triggers_fired)
+        funnel_stage = calc_funnel_stage(trigger_count, conversation_count, tags)
+
+        record = {
+            "mc_id": mc_sub_id,
+            "first_name": sub_data.get("first_name", ""),
+            "last_name": sub_data.get("last_name", ""),
+            "full_name": f"{sub_data.get('first_name', '')} {sub_data.get('last_name', '')}".strip(),
+            "email": sub_data.get("email", "") or "",
+            "phone": sub_data.get("phone", "") or "",
+            "ig_username": sub_data.get("ig_username", "") or sub_data.get("instagram_username", "") or "",
+            "profile_pic": sub_data.get("profile_pic", "") or "",
+            "gender": sub_data.get("gender", "") or "",
+            "locale": sub_data.get("locale", "") or "",
+            "subscribed_at": sub_data.get("subscribed", sub_data.get("created_at")),
+            "last_interaction": sub_data.get("last_interaction"),
+            "last_seen": sub_data.get("last_seen"),
+            "ig_last_interaction": sub_data.get("last_interaction_in_instagram"),
+            "opted_in_ig": sub_data.get("opted_in_for_instagram", False),
+            "opted_in_email": bool(sub_data.get("email")),
+            "tags": json.dumps(tags) if isinstance(tags, list) else "[]",
+            "custom_fields": json.dumps(custom_fields) if isinstance(custom_fields, (dict, list)) else "{}",
+            "trigger_count": trigger_count,
+            "conversation_count": conversation_count,
+            "interest_level": interest_level,
+            "heat_score": heat_score,
+            "funnel_stage": funnel_stage,
+            "synced_at": datetime.now(timezone.utc).isoformat()
+        }
+
+        sb.table("manychat_subscribers").upsert(record, on_conflict="mc_id").execute()
+
+        return JSONResponse(content={"success": True, "subscriber": record})
+    except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
