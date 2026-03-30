@@ -148,6 +148,41 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .page-btn.active{background:rgba(144,169,236,.12);color:#90A9EC;border-color:#90A9EC}
 .page-info{font-size:11px;color:rgba(59,33,69,.3);margin:0 8px}
 
+/* ─── SUBSCRIBER DETAIL ───────────────────────────────── */
+.detail-overlay{position:fixed;inset:0;background:rgba(59,33,69,.4);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.detail-overlay.open{display:flex}
+.detail-panel{background:#F7EBE0;border-radius:18px;max-width:800px;width:100%;box-shadow:0 20px 60px rgba(59,33,69,.25);position:relative;animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.detail-close{position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:rgba(59,33,69,.3);cursor:pointer;padding:4px 10px;border-radius:6px;transition:all .2s;z-index:2}
+.detail-close:hover{color:#3B2145;background:rgba(210,199,255,.2)}
+.detail-header{padding:28px 28px 20px;border-bottom:1px solid rgba(59,33,69,.06)}
+.detail-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:#3B2145;margin-bottom:4px}
+.detail-ig{font-size:13px;color:#90A9EC;margin-bottom:10px}
+.detail-badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.detail-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.detail-meta-item{text-align:center}
+.detail-meta-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#3B2145}
+.detail-meta-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(59,33,69,.3)}
+.detail-body{padding:24px 28px}
+.detail-section{margin-bottom:24px}
+.detail-section-title{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px}
+.detail-timeline{position:relative;padding-left:20px}
+.detail-timeline::before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:rgba(210,199,255,.3)}
+.tl-item{position:relative;padding:8px 0 8px 16px;font-size:13px;color:rgba(59,33,69,.6);line-height:1.5}
+.tl-item::before{content:'';position:absolute;left:-18px;top:13px;width:8px;height:8px;border-radius:50%;border:2px solid #90A9EC;background:#F7EBE0}
+.tl-item.trigger::before{background:#90A9EC}
+.tl-item.action::before{border-color:#D2C7FF;background:#D2C7FF}
+.tl-item.note::before{border-color:#FFC696;background:#FFC696}
+.tl-date{font-size:10px;color:rgba(59,33,69,.25);margin-bottom:2px}
+.tl-content{color:#3B2145}
+.tl-keyword{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:4px;background:rgba(144,169,236,.1);color:#90A9EC;font-weight:500;margin-left:6px}
+.detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.detail-tag{font-size:11px;padding:4px 10px;border-radius:6px;background:rgba(210,199,255,.12);color:rgba(59,33,69,.5);border:1px solid rgba(210,199,255,.2)}
+.detail-note-form{display:flex;gap:8px;margin-top:10px}
+.detail-note-form input{flex:1;padding:8px 12px;font-size:13px}
+.detail-actions{padding:16px 28px 24px;border-top:1px solid rgba(59,33,69,.06);display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){.detail-meta{grid-template-columns:repeat(2,1fr)}}
+
 .footer{text-align:center;padding:30px 20px;border-top:1px solid rgba(59,33,69,.05);margin-top:40px}
 .footer p{font-size:11px;color:rgba(59,33,69,.2)}
 
@@ -309,6 +344,47 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 
 <div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved.</p></div>
 <div class="toast" id="toast"></div>
+
+<!-- SUBSCRIBER DETAIL OVERLAY -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-panel">
+    <button class="detail-close" onclick="closeDetail()">&times;</button>
+    <div class="detail-header">
+      <div class="detail-name" id="detailName">Loading...</div>
+      <div class="detail-ig" id="detailIg"></div>
+      <div class="detail-badges" id="detailBadges"></div>
+      <div class="detail-meta">
+        <div class="detail-meta-item"><div class="detail-meta-num" id="detailHeat">0</div><div class="detail-meta-label">Heat Score</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-num" id="detailTriggers">0</div><div class="detail-meta-label">Triggers</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-num" id="detailConvos">0</div><div class="detail-meta-label">Conversations</div></div>
+        <div class="detail-meta-item"><div class="detail-meta-num" id="detailSince">--</div><div class="detail-meta-label">Subscribed</div></div>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-section-title">Contact Info</div>
+        <div id="detailContact" style="font-size:13px;color:rgba(59,33,69,.5);line-height:1.8"></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Tags</div>
+        <div class="detail-tags" id="detailTags"><span style="color:rgba(59,33,69,.25);font-size:12px">No tags</span></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Timeline</div>
+        <div class="detail-timeline" id="detailTimeline"><div class="tl-item"><div class="tl-content" style="color:rgba(59,33,69,.25)">No activity yet</div></div></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Notes</div>
+        <div id="detailNotes"></div>
+        <div class="detail-note-form">
+          <input type="text" id="detailNoteInput" placeholder="Add a note about this person...">
+          <button class="btn btn-sm" onclick="addDetailNote()">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="detail-actions" id="detailActions"></div>
+  </div>
+</div>
 
 <script>
 var BACKEND = "https://therapist-content-engine.onrender.com";
@@ -501,7 +577,166 @@ function loadSubscribers() {
 
 function goSubPage(p) { currentSubPage = p; loadSubscribers(); }
 function debounceSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(function() { currentSubPage = 1; loadSubscribers(); }, 400); }
-function viewSubscriber(mcId) { showToast("Subscriber detail view coming in Session 2."); }
+var currentDetailMcId = null;
+
+function viewSubscriber(mcId) {
+  currentDetailMcId = mcId;
+  document.getElementById("detailOverlay").classList.add("open");
+  document.getElementById("detailName").textContent = "Loading...";
+  document.getElementById("detailIg").textContent = "";
+  document.getElementById("detailBadges").innerHTML = "";
+  document.getElementById("detailTimeline").innerHTML = '<div class="loader">Loading timeline...</div>';
+  document.getElementById("detailNotes").innerHTML = "";
+  document.getElementById("detailContact").innerHTML = "";
+  document.getElementById("detailTags").innerHTML = "";
+  document.getElementById("detailActions").innerHTML = "";
+
+  fetch(BACKEND + "/api/manychat/subscribers/" + mcId).then(function(r) { return r.json(); }).then(function(d) {
+    var s = d.subscriber;
+    if (!s) { showToast("Subscriber not found.", true); closeDetail(); return; }
+
+    // Header
+    document.getElementById("detailName").textContent = s.full_name || "Unknown";
+    document.getElementById("detailIg").textContent = s.ig_username ? "@" + s.ig_username : "";
+    document.getElementById("detailHeat").textContent = s.heat_score || 0;
+    document.getElementById("detailTriggers").textContent = s.trigger_count || 0;
+    document.getElementById("detailConvos").textContent = s.conversation_count || 0;
+    document.getElementById("detailSince").textContent = s.subscribed_at ? timeAgo(s.subscribed_at) : "--";
+
+    // Badges
+    var badges = '<span class="interest-tag ' + (s.interest_level || 'new') + '">' + (s.interest_level || 'new') + '</span>';
+    badges += '<span style="font-size:10px;padding:3px 10px;border-radius:5px;background:rgba(59,33,69,.05);color:rgba(59,33,69,.4);letter-spacing:.1em;text-transform:uppercase">' + (s.funnel_stage || 'subscriber') + '</span>';
+    if (s.do_not_contact) badges += '<span style="font-size:10px;padding:3px 10px;border-radius:5px;background:rgba(232,121,110,.1);color:#c45a4a;letter-spacing:.1em;text-transform:uppercase">Do Not Contact</span>';
+    if (s.flodesk_synced) badges += '<span style="font-size:10px;padding:3px 10px;border-radius:5px;background:rgba(111,207,151,.1);color:#6fcf97;letter-spacing:.1em;text-transform:uppercase">Flodesk Synced</span>';
+    document.getElementById("detailBadges").innerHTML = badges;
+
+    // Contact info
+    var contact = "";
+    if (s.email) contact += "Email: <strong>" + esc(s.email) + "</strong><br>";
+    if (s.phone) contact += "Phone: <strong>" + esc(s.phone) + "</strong><br>";
+    if (s.ig_username) contact += "Instagram: <strong>@" + esc(s.ig_username) + "</strong><br>";
+    if (s.last_interaction) contact += "Last active: <strong>" + timeAgo(s.last_interaction) + "</strong><br>";
+    if (s.last_seen) contact += "Last seen: <strong>" + timeAgo(s.last_seen) + "</strong>";
+    document.getElementById("detailContact").innerHTML = contact || '<span style="color:rgba(59,33,69,.25)">No contact info available</span>';
+
+    // Tags
+    var tags = s.tags || [];
+    if (typeof tags === "string") { try { tags = JSON.parse(tags); } catch(e) { tags = []; } }
+    if (tags.length) {
+      document.getElementById("detailTags").innerHTML = tags.map(function(t) {
+        var name = typeof t === "object" ? (t.name || JSON.stringify(t)) : String(t);
+        return '<span class="detail-tag">' + esc(name) + '</span>';
+      }).join("");
+    } else {
+      document.getElementById("detailTags").innerHTML = '<span style="color:rgba(59,33,69,.25);font-size:12px">No tags</span>';
+    }
+
+    // Build timeline from triggers, conversations, actions
+    var timeline = [];
+    (d.triggers || []).forEach(function(t) {
+      timeline.push({ type: "trigger", date: t.fired_at || t.created_at, keyword: t.keyword, source: t.source || "instagram" });
+    });
+    (d.conversations || []).forEach(function(c) {
+      timeline.push({ type: "conversation", date: c.sent_at || c.created_at, direction: c.direction, preview: c.message_preview, flow: c.flow_name });
+    });
+    (d.actions || []).forEach(function(a) {
+      timeline.push({ type: "action", date: a.created_at, detail: a.action_detail, action_type: a.action_type });
+    });
+
+    // Sort by date descending
+    timeline.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+
+    if (timeline.length) {
+      document.getElementById("detailTimeline").innerHTML = timeline.slice(0, 30).map(function(t) {
+        var cls = t.type === "trigger" ? "trigger" : t.type === "action" ? "action" : "";
+        var content = "";
+        if (t.type === "trigger") {
+          content = 'Triggered <span class="tl-keyword">' + esc(t.keyword) + '</span> via ' + esc(t.source);
+        } else if (t.type === "conversation") {
+          content = (t.direction === "inbound" ? "Received: " : "Sent: ") + esc(t.preview || t.flow || "message");
+        } else if (t.type === "action") {
+          content = esc(t.detail || t.action_type);
+        }
+        return '<div class="tl-item ' + cls + '"><div class="tl-date">' + formatDate(t.date) + '</div><div class="tl-content">' + content + '</div></div>';
+      }).join("");
+    } else {
+      document.getElementById("detailTimeline").innerHTML = '<div style="color:rgba(59,33,69,.25);font-size:13px;padding:10px 0">No activity recorded yet</div>';
+    }
+
+    // Notes
+    var notes = d.notes || [];
+    if (notes.length) {
+      document.getElementById("detailNotes").innerHTML = notes.map(function(n) {
+        return '<div style="padding:8px 0;border-bottom:1px solid rgba(59,33,69,.04);font-size:13px">' +
+          '<span style="color:rgba(59,33,69,.25);font-size:10px">' + formatDate(n.created_at) + '</span><br>' +
+          esc(n.note) +
+          ' <button class="btn-danger" style="font-size:10px;padding:2px 8px;margin-left:8px" onclick="deleteDetailNote(' + n.id + ')">x</button></div>';
+      }).join("");
+    } else {
+      document.getElementById("detailNotes").innerHTML = '<div style="color:rgba(59,33,69,.25);font-size:12px;margin-bottom:8px">No notes yet</div>';
+    }
+
+    // Action buttons
+    var actionsHtml = '<button class="btn btn-sm" onclick="sendFlowToSub(\'' + mcId + '\',\'WORTHY\')">Send WORTHY</button>';
+    actionsHtml += '<button class="btn btn-sm" onclick="sendFlowToSub(\'' + mcId + '\',\'HEAL\')">Send HEAL</button>';
+    actionsHtml += '<button class="btn btn-sm" onclick="sendFlowToSub(\'' + mcId + '\',\'MOM\')">Send MOM</button>';
+    actionsHtml += '<button class="btn btn-sm" style="background:#D2C7FF;color:#3B2145" onclick="sendFlowToSub(\'' + mcId + '\',\'MALIBURETREAT\')">Send Retreat</button>';
+    actionsHtml += '<button class="ghost" onclick="toggleDnc(\'' + mcId + '\')">' + (s.do_not_contact ? 'Remove DNC' : 'Do Not Contact') + '</button>';
+    document.getElementById("detailActions").innerHTML = actionsHtml;
+
+  }).catch(function(e) {
+    showToast("Error loading subscriber: " + e.message, true);
+    closeDetail();
+  });
+}
+
+function closeDetail() {
+  document.getElementById("detailOverlay").classList.remove("open");
+  currentDetailMcId = null;
+}
+
+function addDetailNote() {
+  var note = document.getElementById("detailNoteInput").value.trim();
+  if (!note || !currentDetailMcId) return;
+  fetch(BACKEND + "/api/manychat/subscribers/" + currentDetailMcId + "/notes", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: note })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.error) { showToast(d.error, true); return; }
+    document.getElementById("detailNoteInput").value = "";
+    viewSubscriber(currentDetailMcId);
+    showToast("Note added.");
+  });
+}
+
+function deleteDetailNote(noteId) {
+  fetch(BACKEND + "/api/manychat/notes/" + noteId, { method: "DELETE" }).then(function() {
+    viewSubscriber(currentDetailMcId);
+    showToast("Note deleted.");
+  });
+}
+
+function sendFlowToSub(mcId, keyword) {
+  showToast("Sending " + keyword + " flow...");
+  fetch(BACKEND + "/api/manychat/smart-send", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mc_id: mcId, keyword: keyword })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) {
+      showToast("Sent " + d.keyword + " flow to " + d.sent_to + "!");
+      viewSubscriber(mcId);
+    } else {
+      showToast(d.error || "Failed to send.", true);
+    }
+  });
+}
+
+function toggleDnc(mcId) {
+  fetch(BACKEND + "/api/manychat/subscribers/" + mcId + "/dnc", { method: "PATCH" }).then(function(r) { return r.json(); }).then(function(d) {
+    showToast(d.do_not_contact ? "Marked Do Not Contact." : "Removed Do Not Contact.");
+    viewSubscriber(mcId);
+    loadSubscribers();
+  });
+}
 
 function lookupSubscriber() {
   var mcId = document.getElementById("lookup-id").value.trim();
