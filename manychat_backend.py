@@ -344,6 +344,99 @@ async def setup_db():
 
 
 # ================================================================
+#  WEBHOOK: ManyChat pushes subscriber data here automatically
+# ================================================================
+@router.post("/api/manychat/webhook")
+async def manychat_webhook(request: Request):
+    """
+    ManyChat sends subscriber data here via External Request.
+    Accepts any combination of fields ManyChat sends.
+    Auto-creates/updates subscriber and logs the trigger.
+    """
+    try:
+        body = await request.json()
+
+        # ManyChat can send data in different formats
+        # Support both flat and nested structures
+        mc_id = str(body.get("id", "") or body.get("subscriber_id", "") or body.get("mc_id", "") or body.get("user_id", ""))
+        first_name = body.get("first_name", "") or ""
+        last_name = body.get("last_name", "") or ""
+        full_name = body.get("full_name", "") or body.get("name", "") or f"{first_name} {last_name}".strip()
+        email = body.get("email", "") or ""
+        phone = body.get("phone", "") or ""
+        ig_username = body.get("ig_username", "") or body.get("instagram_username", "") or ""
+        profile_pic = body.get("profile_pic", "") or body.get("profile_picture", "") or ""
+        gender = body.get("gender", "") or ""
+        keyword = (body.get("keyword", "") or body.get("trigger", "") or body.get("trigger_keyword", "") or "").strip().upper()
+        source = body.get("source", "instagram") or "instagram"
+        tags = body.get("tags", [])
+        custom_fields = body.get("custom_fields", {})
+
+        if not mc_id:
+            return JSONResponse(content={"error": "No subscriber ID provided. Send 'id' or 'subscriber_id'."}, status_code=400)
+
+        # Get existing counts
+        trig_res = query("SELECT keyword FROM subscriber_triggers WHERE mc_id=%s", (mc_id,))
+        trigger_count = len(trig_res) + (1 if keyword else 0)
+        conv_res = query("SELECT id FROM subscriber_conversations WHERE mc_id=%s", (mc_id,))
+        conversation_count = len(conv_res)
+
+        all_triggers = trig_res + ([{"keyword": keyword}] if keyword else [])
+        il, hs = calc_interest(trigger_count, conversation_count, tags, all_triggers)
+        fs = calc_funnel(trigger_count, conversation_count, tags)
+
+        # Upsert subscriber
+        execute("""INSERT INTO manychat_subscribers
+            (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
+             tags, custom_fields, trigger_count, conversation_count,
+             interest_level, heat_score, funnel_stage, synced_at, last_interaction)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),now())
+            ON CONFLICT (mc_id) DO UPDATE SET
+             first_name=COALESCE(NULLIF(EXCLUDED.first_name,''), manychat_subscribers.first_name),
+             last_name=COALESCE(NULLIF(EXCLUDED.last_name,''), manychat_subscribers.last_name),
+             full_name=COALESCE(NULLIF(EXCLUDED.full_name,''), manychat_subscribers.full_name),
+             email=COALESCE(NULLIF(EXCLUDED.email,''), manychat_subscribers.email),
+             phone=COALESCE(NULLIF(EXCLUDED.phone,''), manychat_subscribers.phone),
+             ig_username=COALESCE(NULLIF(EXCLUDED.ig_username,''), manychat_subscribers.ig_username),
+             profile_pic=COALESCE(NULLIF(EXCLUDED.profile_pic,''), manychat_subscribers.profile_pic),
+             trigger_count=EXCLUDED.trigger_count,
+             conversation_count=EXCLUDED.conversation_count,
+             interest_level=EXCLUDED.interest_level,
+             heat_score=EXCLUDED.heat_score,
+             funnel_stage=EXCLUDED.funnel_stage,
+             last_interaction=now(),
+             synced_at=now(),
+             updated_at=now()""",
+            (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
+             json.dumps(tags) if isinstance(tags, list) else "[]",
+             json.dumps(custom_fields) if isinstance(custom_fields, (dict, list)) else "{}",
+             trigger_count, conversation_count, il, hs, fs))
+
+        # Log the trigger if a keyword was sent
+        if keyword:
+            execute("INSERT INTO subscriber_triggers (mc_id, keyword, source, fired_at) VALUES (%s,%s,%s,now())",
+                    (mc_id, keyword, source))
+
+        return JSONResponse(content={
+            "success": True,
+            "subscriber": mc_id,
+            "name": full_name,
+            "keyword": keyword,
+            "interest_level": il,
+            "heat_score": hs
+        })
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@router.get("/api/manychat/webhook")
+async def webhook_status():
+    """Quick check that the webhook endpoint is alive."""
+    return JSONResponse(content={"status": "ok", "message": "ManyChat webhook is active. Send POST requests here."})
+
+
+# ================================================================
 #  SUBSCRIBER LOOKUP
 # ================================================================
 @router.post("/api/manychat/lookup")
