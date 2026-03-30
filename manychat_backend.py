@@ -25,6 +25,178 @@ sb = create_client(SUPABASE_URL, SUPABASE_KEY)
 MC_API = "https://api.manychat.com"
 MC_KEY = os.environ.get("MANYCHAT_API_KEY", "")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+
+# ================================================================
+#  AUTO-SETUP: Create tables via DATABASE_URL
+# ================================================================
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS manychat_triggers (
+  id            BIGSERIAL PRIMARY KEY,
+  keyword       TEXT NOT NULL UNIQUE,
+  label         TEXT NOT NULL,
+  description   TEXT DEFAULT '',
+  product_url   TEXT DEFAULT '',
+  is_active     BOOLEAN DEFAULT true,
+  sort_order    INT DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS manychat_subscribers (
+  id              BIGSERIAL PRIMARY KEY,
+  mc_id           TEXT NOT NULL UNIQUE,
+  first_name      TEXT DEFAULT '',
+  last_name       TEXT DEFAULT '',
+  full_name       TEXT DEFAULT '',
+  email           TEXT DEFAULT '',
+  phone           TEXT DEFAULT '',
+  ig_username     TEXT DEFAULT '',
+  profile_pic     TEXT DEFAULT '',
+  gender          TEXT DEFAULT '',
+  locale          TEXT DEFAULT '',
+  subscribed_at   TIMESTAMPTZ,
+  last_interaction TIMESTAMPTZ,
+  last_seen       TIMESTAMPTZ,
+  ig_last_interaction TIMESTAMPTZ,
+  opted_in_ig     BOOLEAN DEFAULT false,
+  opted_in_email  BOOLEAN DEFAULT false,
+  tags            JSONB DEFAULT '[]'::jsonb,
+  custom_fields   JSONB DEFAULT '{}'::jsonb,
+  trigger_count   INT DEFAULT 0,
+  conversation_count INT DEFAULT 0,
+  interest_level  TEXT DEFAULT 'new',
+  heat_score      INT DEFAULT 0,
+  funnel_stage    TEXT DEFAULT 'subscriber',
+  flodesk_synced  BOOLEAN DEFAULT false,
+  do_not_contact  BOOLEAN DEFAULT false,
+  synced_at       TIMESTAMPTZ DEFAULT now(),
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS subscriber_triggers (
+  id              BIGSERIAL PRIMARY KEY,
+  mc_id           TEXT NOT NULL,
+  keyword         TEXT NOT NULL,
+  source          TEXT DEFAULT 'instagram',
+  fired_at        TIMESTAMPTZ DEFAULT now(),
+  post_id         TEXT DEFAULT '',
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS subscriber_conversations (
+  id              BIGSERIAL PRIMARY KEY,
+  mc_id           TEXT NOT NULL,
+  direction       TEXT NOT NULL,
+  message_preview TEXT DEFAULT '',
+  flow_name       TEXT DEFAULT '',
+  channel         TEXT DEFAULT 'instagram',
+  sent_at         TIMESTAMPTZ DEFAULT now(),
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS lead_recommendations (
+  id              BIGSERIAL PRIMARY KEY,
+  mc_id           TEXT,
+  subscriber_name TEXT DEFAULT '',
+  priority        INT DEFAULT 5,
+  category        TEXT DEFAULT 'follow_up',
+  title           TEXT NOT NULL,
+  description     TEXT NOT NULL,
+  suggested_action TEXT DEFAULT '',
+  suggested_flow  TEXT DEFAULT '',
+  data_points     JSONB DEFAULT '{}'::jsonb,
+  status          TEXT DEFAULT 'pending',
+  completed_at    TIMESTAMPTZ,
+  completed_note  TEXT DEFAULT '',
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  expires_at      TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS completed_actions (
+  id              BIGSERIAL PRIMARY KEY,
+  mc_id           TEXT NOT NULL,
+  subscriber_name TEXT DEFAULT '',
+  action_type     TEXT NOT NULL,
+  action_detail   TEXT DEFAULT '',
+  flow_id         TEXT DEFAULT '',
+  recommendation_id BIGINT,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS subscriber_notes (
+  id              BIGSERIAL PRIMARY KEY,
+  mc_id           TEXT NOT NULL,
+  note            TEXT NOT NULL,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sync_log (
+  id              BIGSERIAL PRIMARY KEY,
+  sync_type       TEXT NOT NULL,
+  records_synced  INT DEFAULT 0,
+  status          TEXT DEFAULT 'success',
+  error_message   TEXT DEFAULT '',
+  started_at      TIMESTAMPTZ DEFAULT now(),
+  completed_at    TIMESTAMPTZ
+);
+
+-- Seed triggers if empty
+INSERT INTO manychat_triggers (keyword, label, description, sort_order)
+SELECT * FROM (VALUES
+  ('HEAL',            '1:1 Session',                  'Book a 1:1 therapy session with Angela.',                                          1),
+  ('UNTANGLE',        '1:1 Session',                  'Book a 1:1 therapy session. Alternate trigger for HEAL.',                           2),
+  ('STEADY',          '1:1 Session',                  'Book a 1:1 therapy session. Alternate trigger for HEAL.',                           3),
+  ('MALIBURETREAT',   'Healing with Horses Retreat',  'Healing with Horses Somatic Grief Retreat in Malibu. April 30 to May 3, 2026.',    4),
+  ('MALIBU RETREAT',  'Healing with Horses Retreat',  'Alternate trigger for the Malibu retreat.',                                         5),
+  ('UNLEARN',         'Mother Hunger Course',          'Eight-week live Mother Hunger course by Kelly McDaniel.',                           6),
+  ('WORTHY',          'Emotional Starter Kit',        'Free Emotional Starter Kit. Entry-level lead magnet.',                              7),
+  ('GRIEFRELIEF',     'Grief Relief Video Series',    'Grief Relief Video Series. Paid digital product.',                                  8),
+  ('GRIEFTOOLS',      'Grief Relief Video Series',    'Alternate trigger for Grief Relief.',                                               9),
+  ('TOOLS',           '101 Tools',                    '101 Tools digital product.',                                                        10),
+  ('EQUINE',          'Equine Digital Product',       'Equine-assisted learning digital product.',                                         11),
+  ('HORSEHEALING',    'Equine Digital Product',       'Alternate trigger for Equine product.',                                             12),
+  ('MOM',             'Community Circle',             'Free Grief, Trauma & Your Mama community on Circle.',                               13),
+  ('COMMUNITYCALL',   'Motherless Daughters Group',   'Hope Edelman Motherless Daughters Thursday group call.',                            14),
+  ('EMDR',            'EMDR Therapy',                 'EMDR therapy information and booking.',                                             15),
+  ('TAPPERS',         'Dharma Dr.',                   'Dharma Dr. bilateral stimulation tappers.',                                         16)
+) AS v(keyword, label, description, sort_order)
+WHERE NOT EXISTS (SELECT 1 FROM manychat_triggers LIMIT 1)
+ON CONFLICT (keyword) DO NOTHING;
+"""
+
+def run_setup():
+    """Create all tables using direct PostgreSQL connection."""
+    if not DATABASE_URL:
+        return False, "DATABASE_URL not set"
+    try:
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(SCHEMA_SQL)
+        cur.close()
+        conn.close()
+        return True, "All tables created successfully"
+    except Exception as e:
+        return False, str(e)
+
+@router.get("/api/manychat/setup")
+async def setup_database():
+    """Create all Lead CRM tables. Hit this once."""
+    success, msg = run_setup()
+    if success:
+        return JSONResponse(content={"success": True, "message": msg})
+    return JSONResponse(content={"success": False, "error": msg}, status_code=500)
+
+# Try auto-setup on import
+try:
+    run_setup()
+except:
+    pass
 
 def mc_headers():
     return {
