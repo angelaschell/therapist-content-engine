@@ -10,6 +10,7 @@ import json
 from instagram_analytics import router as analytics_router, start_refresh_loop
 from instagram_publisher import router as publisher_router, start_scheduler
 from templates import router as templates_router
+from comments_backend import router as comments_router
 
 app = FastAPI()
 
@@ -25,6 +26,7 @@ app.add_middleware(
 app.include_router(analytics_router)
 app.include_router(publisher_router)
 app.include_router(templates_router)
+app.include_router(comments_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
@@ -54,6 +56,15 @@ async def root():
             return f.read()
     except:
         return HTMLResponse("<h1>Content Engine running</h1>")
+
+
+@app.get("/comments", response_class=HTMLResponse)
+async def comments_page():
+    try:
+        with open("comments.html", "r") as f:
+            return f.read()
+    except:
+        return HTMLResponse("<h1>Comments page not found</h1>")
 
 
 @app.post("/generate/content")
