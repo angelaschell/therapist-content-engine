@@ -1,31 +1,82 @@
 """
 COMMENT COMMAND CENTER - FastAPI Backend
-=========================================
-Add these routes to your existing main.py on Render.
-Requires: supabase-py, httpx, anthropic
+Uses psycopg2 + DATABASE_URL (same as templates.py)
 """
 
 import os
 import json
+import uuid
 import httpx
-from datetime import datetime, timedelta
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, date, timedelta
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from supabase import create_client
 
 # ── Config ──────────────────────────────────────────────
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-PERPLEXITY_KEY = os.getenv("PERPLEXITY_API_KEY", "")
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+router = APIRouter(prefix="/api/comments", tags=["Comment Command Center"])
 
 
+# ── DB Helpers (same pattern as templates.py) ───────────
+def get_db():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+
+
+def serialize_row(row):
+    out = {}
+    for k, v in row.items():
+        if isinstance(v, (datetime, date)):
+            out[k] = v.isoformat()
+        elif isinstance(v, uuid.UUID):
+            out[k] = str(v)
+        else:
+            out[k] = v
+    return out
+
+
+def db_query(sql, params=None):
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        return [serialize_row(dict(r)) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def db_execute(sql, params=None):
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        conn.commit()
+        try:
+            return [serialize_row(dict(r)) for r in cur.fetchall()]
+        except Exception:
+            return []
+    finally:
+        conn.close()
+
+
+def db_count(sql, params=None):
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        row = cur.fetchone()
+        return row["count"] if row else 0
+    finally:
+        conn.close()
+
+
+# ── Instagram Token Discovery (same as publisher.py) ────
 async def get_page_token_and_ig_id():
-    """Discover page token and IG ID dynamically (same as publisher)."""
     from instagram_analytics import token_mgr
     token = token_mgr.user_token
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -40,8 +91,6 @@ async def get_page_token_and_ig_id():
             if ig:
                 return page["access_token"], ig["id"], ig.get("username", "")
         raise HTTPException(status_code=404, detail="No IG business account found")
-
-router = APIRouter(prefix="/api/comments", tags=["Comment Command Center"])
 
 
 # ── Pydantic Models ─────────────────────────────────────
@@ -62,7 +111,10 @@ class BulkActionRequest(BaseModel):
     assigned_to: Optional[str] = None
 
 
-# ── FETCH COMMENTS FROM INSTAGRAM ───────────────────────
+# ═══════════════════════════════════════════════════════
+# FETCH COMMENTS FROM INSTAGRAM
+# ═══════════════════════════════════════════════════════
+
 @router.post("/fetch")
 async def fetch_comments(limit: int = Query(default=25, le=50)):
     try:
@@ -106,56 +158,42 @@ async def fetch_comments(limit: int = Query(default=25, le=50)):
             total_fetched += len(comments)
 
             for comment in comments:
-                existing = supabase.table("ig_comments").select("id").eq(
-                    "ig_comment_id", comment["id"]
-                ).execute()
-
-                if not existing.data:
-                    row = {
-                        "ig_comment_id": comment["id"],
-                        "ig_media_id": media_id,
-                        "media_permalink": post.get("permalink"),
-                        "media_caption": (post.get("caption") or "")[:500],
-                        "media_thumbnail_url": post.get("thumbnail_url") or post.get("media_url"),
-                        "username": comment["username"],
-                        "comment_text": comment["text"],
-                        "like_count": comment.get("like_count", 0),
-                        "is_reply": False,
-                        "timestamp": comment["timestamp"],
-                        "status": "unread",
-                        "category": "uncategorized"
-                    }
-                    supabase.table("ig_comments").insert(row).execute()
+                # Check if exists
+                existing = db_query("SELECT id FROM ig_comments WHERE ig_comment_id = %s", (comment["id"],))
+                if not existing:
+                    db_execute("""
+                        INSERT INTO ig_comments (ig_comment_id, ig_media_id, media_permalink, media_caption,
+                            media_thumbnail_url, username, comment_text, like_count, is_reply, timestamp, status, category)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'unread', 'uncategorized')
+                    """, (
+                        comment["id"], media_id, post.get("permalink"),
+                        (post.get("caption") or "")[:500],
+                        post.get("thumbnail_url") or post.get("media_url"),
+                        comment["username"], comment["text"],
+                        comment.get("like_count", 0), False, comment["timestamp"]
+                    ))
                     total_new += 1
 
-                replies = comment.get("replies", {}).get("data", [])
-                for reply in replies:
-                    existing_reply = supabase.table("ig_comments").select("id").eq(
-                        "ig_comment_id", reply["id"]
-                    ).execute()
-                    if not existing_reply.data:
-                        reply_row = {
-                            "ig_comment_id": reply["id"],
-                            "ig_media_id": media_id,
-                            "media_permalink": post.get("permalink"),
-                            "media_caption": (post.get("caption") or "")[:500],
-                            "username": reply["username"],
-                            "comment_text": reply["text"],
-                            "like_count": reply.get("like_count", 0),
-                            "is_reply": True,
-                            "parent_comment_id": comment["id"],
-                            "timestamp": reply["timestamp"],
-                            "status": "unread",
-                            "category": "uncategorized"
-                        }
-                        supabase.table("ig_comments").insert(reply_row).execute()
+                # Insert replies
+                for reply in comment.get("replies", {}).get("data", []):
+                    existing_reply = db_query("SELECT id FROM ig_comments WHERE ig_comment_id = %s", (reply["id"],))
+                    if not existing_reply:
+                        db_execute("""
+                            INSERT INTO ig_comments (ig_comment_id, ig_media_id, media_permalink, media_caption,
+                                username, comment_text, like_count, is_reply, parent_comment_id, timestamp, status, category)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'unread', 'uncategorized')
+                        """, (
+                            reply["id"], media_id, post.get("permalink"),
+                            (post.get("caption") or "")[:500],
+                            reply["username"], reply["text"],
+                            reply.get("like_count", 0), True, comment["id"], reply["timestamp"]
+                        ))
                         total_new += 1
 
-            supabase.table("comment_fetch_log").insert({
-                "ig_media_id": media_id,
-                "comments_fetched": len(comments),
-                "new_comments": total_new
-            }).execute()
+            db_execute("""
+                INSERT INTO comment_fetch_log (ig_media_id, comments_fetched, new_comments)
+                VALUES (%s, %s, %s)
+            """, (media_id, len(comments), total_new))
 
         return {
             "success": True,
@@ -163,20 +201,25 @@ async def fetch_comments(limit: int = Query(default=25, le=50)):
             "total_comments_fetched": total_fetched,
             "new_comments_stored": total_new
         }
+    except HTTPException:
+        raise
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"Meta API error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── AI CATEGORIZATION ───────────────────────────────────
+# ═══════════════════════════════════════════════════════
+# AI CATEGORIZATION
+# ═══════════════════════════════════════════════════════
+
 @router.post("/categorize")
 async def categorize_comments(batch_size: int = Query(default=20, le=50)):
-    result = supabase.table("ig_comments").select("*").eq(
-        "category", "uncategorized"
-    ).order("timestamp", desc=True).limit(batch_size).execute()
+    comments = db_query("""
+        SELECT * FROM ig_comments WHERE category = 'uncategorized'
+        ORDER BY timestamp DESC LIMIT %s
+    """, (batch_size,))
 
-    comments = result.data
     if not comments:
         return {"success": True, "categorized": 0, "message": "No uncategorized comments"}
 
@@ -184,7 +227,7 @@ async def categorize_comments(batch_size: int = Query(default=20, le=50)):
         "post_caption": (c.get("media_caption") or "")[:200], "like_count": c.get("like_count", 0),
         "is_reply": c.get("is_reply", False)} for c in comments]
 
-    system_prompt = """You analyze Instagram comments for Angela Schellenberg, a licensed trauma/grief therapist (171K followers, @angelaschellenberg). Brand: "Grief, Trauma & Your Mama." Specializes in motherless daughters, Mother Hunger (Kelly McDaniel), EMDR, frozen grief, somatic/equine therapy.
+    system_prompt = """You analyze Instagram comments for Angela Schellenberg, a licensed trauma/grief therapist (171K followers). Brand: "Grief, Trauma & Your Mama." Specializes in motherless daughters, Mother Hunger (Kelly McDaniel), EMDR, frozen grief, somatic/equine therapy.
 
 Products: 1:1 sessions (HEAL/UNTANGLE/STEADY), Mother Hunger course (UNLEARN), Healing with Horses Retreat Malibu (MALIBURETREAT), Grief Relief Videos (GRIEFRELIEF), Starter Kit (WORTHY), Community (MOM), Equine Digital (EQUINE).
 
@@ -204,7 +247,8 @@ Return ONLY valid JSON array."""
 
     ai_text = "".join(b["text"] for b in ai_data.get("content", []) if b.get("type") == "text")
     ai_text = ai_text.strip().strip("`").strip()
-    if ai_text.startswith("json"): ai_text = ai_text[4:].strip()
+    if ai_text.startswith("json"):
+        ai_text = ai_text[4:].strip()
 
     try:
         categorized = json.loads(ai_text)
@@ -214,86 +258,95 @@ Return ONLY valid JSON array."""
     updated = 0
     for item in categorized:
         db_id = item.get("db_id")
-        if not db_id: continue
-        supabase.table("ig_comments").update({
-            "category": item.get("category", "uncategorized"),
-            "category_confidence": item.get("category_confidence"),
-            "category_reasoning": item.get("category_reasoning"),
-            "sentiment": item.get("sentiment"),
-            "sentiment_score": item.get("sentiment_score"),
-            "lead_score": item.get("lead_score", 0),
-            "lead_signals": item.get("lead_signals", []),
-            "reply_draft": item.get("reply_draft", ""),
-            "categorized_at": datetime.utcnow().isoformat()
-        }).eq("id", db_id).execute()
+        if not db_id:
+            continue
+        db_execute("""
+            UPDATE ig_comments SET category=%s, category_confidence=%s, category_reasoning=%s,
+                sentiment=%s, sentiment_score=%s, lead_score=%s, lead_signals=%s,
+                reply_draft=%s, categorized_at=NOW()
+            WHERE id=%s
+        """, (
+            item.get("category", "uncategorized"), item.get("category_confidence"),
+            item.get("category_reasoning"), item.get("sentiment"),
+            item.get("sentiment_score"), item.get("lead_score", 0),
+            json.dumps(item.get("lead_signals", [])), item.get("reply_draft", ""), db_id
+        ))
         updated += 1
+
+        # Update commenter profile
         username = next((c["username"] for c in comments if c["id"] == db_id), None)
-        if username: await _update_commenter_profile(username)
+        if username:
+            _update_commenter_profile(username)
 
-    return {"success": True, "categorized": updated, "categories_breakdown": _count_categories(categorized)}
+    cats = {}
+    for i in categorized:
+        c = i.get("category", "?")
+        cats[c] = cats.get(c, 0) + 1
+    return {"success": True, "categorized": updated, "categories_breakdown": cats}
 
 
-async def _update_commenter_profile(username: str):
-    result = supabase.table("ig_comments").select("*").eq("username", username).execute()
-    uc = result.data
-    if not uc: return
+def _update_commenter_profile(username):
+    uc = db_query("SELECT * FROM ig_comments WHERE username = %s", (username,))
+    if not uc:
+        return
     cats = {}
     scores = []
     has_warm = False
     for c in uc:
         cat = c.get("category", "uncategorized")
         cats[cat] = cats.get(cat, 0) + 1
-        if c.get("sentiment_score") is not None: scores.append(c["sentiment_score"])
-        if cat == "warm_lead": has_warm = True
+        if c.get("sentiment_score") is not None:
+            scores.append(float(c["sentiment_score"]))
+        if cat == "warm_lead":
+            has_warm = True
     ts = [c["timestamp"] for c in uc if c.get("timestamp")]
-    profile = {"username": username, "total_comments": len(uc),
-        "first_seen": min(ts) if ts else None, "last_seen": max(ts) if ts else None,
-        "avg_sentiment_score": round(sum(scores)/len(scores), 2) if scores else 0,
-        "categories_breakdown": cats, "is_repeat_commenter": len(uc) >= 2,
-        "is_superfan": len(uc) >= 5,
-        "is_potential_client": has_warm or any(c.get("lead_score", 0) >= 60 for c in uc)}
-    existing = supabase.table("ig_commenters").select("id").eq("username", username).execute()
-    if existing.data:
-        supabase.table("ig_commenters").update(profile).eq("username", username).execute()
+    avg_s = round(sum(scores) / len(scores), 2) if scores else 0
+    total = len(uc)
+    is_repeat = total >= 2
+    is_superfan = total >= 5
+    is_client = has_warm or any(int(c.get("lead_score") or 0) >= 60 for c in uc)
+
+    existing = db_query("SELECT id FROM ig_commenters WHERE username = %s", (username,))
+    if existing:
+        db_execute("""
+            UPDATE ig_commenters SET total_comments=%s, first_seen=%s, last_seen=%s,
+                avg_sentiment_score=%s, categories_breakdown=%s, is_repeat_commenter=%s,
+                is_superfan=%s, is_potential_client=%s, updated_at=NOW()
+            WHERE username=%s
+        """, (total, min(ts) if ts else None, max(ts) if ts else None, avg_s,
+              json.dumps(cats), is_repeat, is_superfan, is_client, username))
     else:
-        supabase.table("ig_commenters").insert(profile).execute()
+        db_execute("""
+            INSERT INTO ig_commenters (username, total_comments, first_seen, last_seen,
+                avg_sentiment_score, categories_breakdown, is_repeat_commenter, is_superfan, is_potential_client)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (username, total, min(ts) if ts else None, max(ts) if ts else None,
+              avg_s, json.dumps(cats), is_repeat, is_superfan, is_client))
 
 
-def _count_categories(items):
-    counts = {}
-    for i in items: counts[i.get("category", "?")] = counts.get(i.get("category", "?"), 0) + 1
-    return counts
-
-
-# ══════════════════════════════════════════════════════════
-# DEEP ANALYSIS + AUTO DRAFT REPLY (Perplexity + Claude)
-# ══════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════
+# DEEP ANALYSIS (Perplexity + Claude)
+# ═══════════════════════════════════════════════════════
 
 @router.post("/deep-analysis/{comment_id}")
 async def deep_analysis(comment_id: int):
-    """
-    Full AI intelligence brief on a comment:
-    1. Perplexity researches sales psychology for the commenter's language
-    2. Claude synthesizes into: decoded message, emotional state, best product fit,
-       sales approach, and an optimized auto-draft reply
-    """
-    result = supabase.table("ig_comments").select("*").eq("id", comment_id).single().execute()
-    comment = result.data
-    if not comment:
+    rows = db_query("SELECT * FROM ig_comments WHERE id = %s", (comment_id,))
+    if not rows:
         raise HTTPException(status_code=404, detail="Comment not found")
+    comment = rows[0]
 
-    # Get commenter history
-    user_history = supabase.table("ig_comments").select(
-        "comment_text,category,sentiment,lead_score,timestamp,media_caption"
-    ).eq("username", comment["username"]).order("timestamp", desc=True).limit(20).execute()
+    # Commenter history
+    history = db_query("""
+        SELECT comment_text, category, sentiment, lead_score, timestamp, media_caption
+        FROM ig_comments WHERE username = %s ORDER BY timestamp DESC LIMIT 20
+    """, (comment["username"],))
+    history_texts = [f"- \"{h['comment_text']}\" (post: {(h.get('media_caption') or '')[:80]})" for h in history]
 
-    history_texts = [f"- \"{h['comment_text']}\" (post: {(h.get('media_caption') or '')[:80]})"
-                     for h in (user_history.data or [])]
+    # Commenter profile
+    cd_rows = db_query("SELECT * FROM ig_commenters WHERE username = %s", (comment["username"],))
+    cd = cd_rows[0] if cd_rows else {}
 
-    commenter = supabase.table("ig_commenters").select("*").eq("username", comment["username"]).execute()
-    cd = commenter.data[0] if commenter.data else {}
-
-    # ── Step 1: Perplexity Sales Research ────────────
+    # Step 1: Perplexity
     perplexity_insights = ""
     if PERPLEXITY_KEY:
         try:
@@ -304,7 +357,7 @@ Post context: "{(comment.get('media_caption') or '')[:200]}"
 
 Research:
 1. What psychological state is this person likely in? (attachment theory lens)
-2. What sales/persuasion approach works best for someone in this state? (cite Cialdini, motivational interviewing, etc.)
+2. What sales/persuasion approach works best for someone in this state?
 3. What therapeutic offer would feel most relevant?
 4. What language patterns signal readiness to invest in help?
 
@@ -315,7 +368,7 @@ Return ONLY valid JSON, no backticks:
                 pplx_resp = await client.post("https://api.perplexity.ai/chat/completions",
                     headers={"Authorization": f"Bearer {PERPLEXITY_KEY}", "Content-Type": "application/json"},
                     json={"model": "sonar", "messages": [
-                        {"role": "system", "content": "You are a sales psychology and therapeutic marketing expert. Attachment theory, grief psychology, ethical persuasion for mental health. Be specific."},
+                        {"role": "system", "content": "Sales psychology and therapeutic marketing expert. Attachment theory, grief psychology, ethical persuasion."},
                         {"role": "user", "content": pplx_prompt}
                     ]})
                 if pplx_resp.status_code == 200:
@@ -323,60 +376,27 @@ Return ONLY valid JSON, no backticks:
         except Exception as e:
             perplexity_insights = f"Perplexity unavailable: {str(e)}"
 
-    # ── Step 2: Claude Deep Analysis ─────────────────
-    system_prompt = """You are Angela Schellenberg's AI sales intelligence assistant. She is a licensed trauma/grief therapist, 171K followers, brand "Grief, Trauma & Your Mama."
+    # Step 2: Claude
+    system_prompt = """You are Angela Schellenberg's AI sales intelligence assistant. Licensed trauma/grief therapist, 171K followers, "Grief, Trauma & Your Mama."
 
-Product suite (by price):
-1. FREE: Emotional Starter Kit (trigger: WORTHY)
-2. FREE: GT&YM Community Circle (trigger: MOM)
-3. $: Grief Relief Video Series (trigger: GRIEFRELIEF)
-4. $: 101 Tools (trigger: TOOLS)
-5. $: Equine Digital Product (trigger: EQUINE)
-6. $$: Mother Hunger© course, Kelly McDaniel (trigger: UNLEARN)
-7. $$$: 1:1 Therapy Sessions (triggers: HEAL, UNTANGLE, STEADY)
-8. $$$$: Healing with Horses Retreat, Malibu April 29 - May 3, 2026 (trigger: MALIBURETREAT)
+Product suite: FREE Starter Kit (WORTHY), FREE Community (MOM), $ Grief Relief Videos (GRIEFRELIEF), $ 101 Tools (TOOLS), $ Equine Digital (EQUINE), $$ Mother Hunger course Kelly McDaniel (UNLEARN), $$$ 1:1 Therapy (HEAL/UNTANGLE/STEADY), $$$$ Horses Retreat Malibu Apr 29-May 3 2026 (MALIBURETREAT).
 
-REPLY RULES:
-- Write as Angela. Warm, direct, real. Not clinical or corporate.
-- NEVER use em dashes
-- NEVER use "It might not be X, it might be Y" framing
-- 1-3 sentences. Brief for Instagram.
-- For warm leads: naturally guide to DM a trigger word. Invitational, not pushy.
-- For people in pain: validate FIRST, offer second.
-- For testimonials: genuine gratitude.
-- Match their energy.
+REPLY RULES: Write as Angela. Warm, direct, real. NEVER em dashes. NEVER "It might not be X, it might be Y." 1-3 sentences. Validate first, offer second. Match their energy.
 
-Return ONLY valid JSON, no markdown or backticks."""
+Return ONLY valid JSON, no backticks."""
 
-    user_prompt = f"""COMMENT:
-@{comment['username']}: "{comment['comment_text']}"
+    user_prompt = f"""COMMENT: @{comment['username']}: "{comment['comment_text']}"
 Post: "{(comment.get('media_caption') or '')[:300]}"
-Likes: {comment.get('like_count', 0)} | Category: {comment.get('category', '?')} | Lead score: {comment.get('lead_score', 0)}
+Likes: {comment.get('like_count', 0)} | Category: {comment.get('category', '?')} | Lead: {comment.get('lead_score', 0)}
 
-HISTORY ({cd.get('total_comments', 1)} total comments):
+HISTORY ({cd.get('total_comments', 1)} comments):
 {chr(10).join(history_texts) if history_texts else "First-time commenter."}
 Superfan={cd.get('is_superfan', False)}, Repeat={cd.get('is_repeat_commenter', False)}
 
-PERPLEXITY RESEARCH:
-{perplexity_insights or "Not available"}
+PERPLEXITY RESEARCH: {perplexity_insights or "N/A"}
 
 Return JSON:
-{{
-  "decoded_message": "What they're REALLY saying, 2-3 sentences, attachment lens",
-  "emotional_state": "Plain language emotional state",
-  "attachment_signals": ["detected attachment indicators"],
-  "readiness_level": "cold|warming|warm|hot|ready_to_buy",
-  "readiness_explanation": "1 sentence why",
-  "best_product_fit": "Best product/service for them right now",
-  "product_fit_reason": "1 sentence why",
-  "secondary_product": "Backup if primary is too big a leap",
-  "sales_approach": "validation-first|education-bridge|social-proof|scarcity|community-pull|direct-invitation",
-  "approach_detail": "Exactly how to execute, 2-3 sentences",
-  "do_not_say": ["things to avoid"],
-  "trigger_word": "ManyChat trigger to use, or empty",
-  "reply_draft": "The actual reply, ready to send on Instagram",
-  "reply_strategy_note": "Why the reply is crafted this way (Angela's eyes only)"
-}}"""
+{{"decoded_message":"2-3 sentences attachment lens","emotional_state":"plain language","attachment_signals":[],"readiness_level":"cold|warming|warm|hot|ready_to_buy","readiness_explanation":"1 sentence","best_product_fit":"product name","product_fit_reason":"1 sentence","secondary_product":"backup","sales_approach":"validation-first|education-bridge|social-proof|scarcity|community-pull|direct-invitation","approach_detail":"2-3 sentences","do_not_say":[],"trigger_word":"or empty","reply_draft":"ready to send","reply_strategy_note":"why"}}"""
 
     async with httpx.AsyncClient(timeout=60) as client:
         ai_resp = await client.post("https://api.anthropic.com/v1/messages",
@@ -388,7 +408,8 @@ Return JSON:
 
     ai_text = "".join(b["text"] for b in ai_data.get("content", []) if b.get("type") == "text")
     ai_text = ai_text.strip().strip("`").strip()
-    if ai_text.startswith("json"): ai_text = ai_text[4:].strip()
+    if ai_text.startswith("json"):
+        ai_text = ai_text[4:].strip()
 
     try:
         analysis = json.loads(ai_text)
@@ -396,18 +417,22 @@ Return JSON:
         raise HTTPException(status_code=500, detail="AI returned invalid JSON")
 
     # Save draft + update lead score
-    update_fields = {"reply_draft": analysis.get("reply_draft", "")}
     readiness_map = {"cold": 15, "warming": 35, "warm": 55, "hot": 75, "ready_to_buy": 95}
     new_score = readiness_map.get(analysis.get("readiness_level", ""))
-    if new_score: update_fields["lead_score"] = new_score
-    supabase.table("ig_comments").update(update_fields).eq("id", comment_id).execute()
+    if analysis.get("reply_draft"):
+        if new_score:
+            db_execute("UPDATE ig_comments SET reply_draft=%s, lead_score=%s WHERE id=%s",
+                       (analysis["reply_draft"], new_score, comment_id))
+        else:
+            db_execute("UPDATE ig_comments SET reply_draft=%s WHERE id=%s",
+                       (analysis["reply_draft"], comment_id))
 
-    # Parse perplexity
     pplx_parsed = {}
     if perplexity_insights:
         try:
             clean = perplexity_insights.strip()
-            if clean.startswith("```"): clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            if clean.startswith("```"):
+                clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             pplx_parsed = json.loads(clean)
         except:
             pplx_parsed = {"key_insight": perplexity_insights[:500]}
@@ -426,16 +451,16 @@ Return JSON:
     }
 
 
-# ── QUICK AUTO-DRAFT (no Perplexity, faster) ────────────
+# ── QUICK AUTO-DRAFT ────────────────────────────────────
 @router.post("/auto-draft/{comment_id}")
 async def auto_draft_reply(comment_id: int):
-    result = supabase.table("ig_comments").select("*").eq("id", comment_id).single().execute()
-    comment = result.data
-    if not comment:
+    rows = db_query("SELECT * FROM ig_comments WHERE id = %s", (comment_id,))
+    if not rows:
         raise HTTPException(status_code=404, detail="Comment not found")
+    comment = rows[0]
 
     system_prompt = """You are Angela Schellenberg, licensed trauma/grief therapist. Write a warm Instagram reply.
-Rules: Never use em dashes. Be direct, compassionate, not clinical. 1-3 sentences.
+Never use em dashes. Be direct, compassionate, not clinical. 1-3 sentences.
 If potential client, guide to DM: HEAL/UNTANGLE/STEADY (1:1), UNLEARN (course), MALIBURETREAT (retreat), WORTHY (free kit), MOM (community).
 Sound human. Respond with ONLY the reply text."""
 
@@ -450,11 +475,14 @@ Sound human. Respond with ONLY the reply text."""
         ai_data = ai_resp.json()
 
     reply = "".join(b["text"] for b in ai_data.get("content", []) if b.get("type") == "text").strip()
-    supabase.table("ig_comments").update({"reply_draft": reply}).eq("id", comment_id).execute()
+    db_execute("UPDATE ig_comments SET reply_draft=%s WHERE id=%s", (reply, comment_id))
     return {"success": True, "reply_draft": reply}
 
 
-# ── LIST / FILTER ───────────────────────────────────────
+# ═══════════════════════════════════════════════════════
+# LIST / FILTER / STATS
+# ═══════════════════════════════════════════════════════
+
 @router.get("/list")
 async def list_comments(
     category: Optional[str] = None, status: Optional[str] = None,
@@ -464,45 +492,93 @@ async def list_comments(
     sort_dir: str = Query(default="desc", regex="^(asc|desc)$"),
     page: int = Query(default=1, ge=1), per_page: int = Query(default=25, le=100)
 ):
-    query = supabase.table("ig_comments").select("*", count="exact")
-    if category: query = query.eq("category", category)
-    if status: query = query.eq("status", status)
-    if assigned_to: query = query.eq("assigned_to", assigned_to)
-    if min_lead_score: query = query.gte("lead_score", min_lead_score)
-    if username: query = query.ilike("username", f"%{username}%")
-    if search: query = query.ilike("comment_text", f"%{search}%")
-    query = query.order(sort_by, desc=(sort_dir == "desc"))
+    wheres = []
+    params = []
+    if category:
+        wheres.append("category = %s"); params.append(category)
+    if status:
+        wheres.append("status = %s"); params.append(status)
+    if assigned_to:
+        wheres.append("assigned_to = %s"); params.append(assigned_to)
+    if min_lead_score:
+        wheres.append("lead_score >= %s"); params.append(min_lead_score)
+    if username:
+        wheres.append("username ILIKE %s"); params.append(f"%{username}%")
+    if search:
+        wheres.append("comment_text ILIKE %s"); params.append(f"%{search}%")
+
+    where_clause = ("WHERE " + " AND ".join(wheres)) if wheres else ""
+
+    # Whitelist sort columns
+    allowed_sorts = {"timestamp": "timestamp", "lead_score": "lead_score", "like_count": "like_count"}
+    sort_col = allowed_sorts.get(sort_by, "timestamp")
+    direction = "DESC" if sort_dir == "desc" else "ASC"
+
+    total = db_count(f"SELECT COUNT(*) as count FROM ig_comments {where_clause}", params)
     offset = (page - 1) * per_page
-    query = query.range(offset, offset + per_page - 1)
-    result = query.execute()
-    return {"data": result.data, "total": result.count, "page": page, "per_page": per_page,
-        "total_pages": (result.count + per_page - 1) // per_page if result.count else 0}
+
+    data = db_query(
+        f"SELECT * FROM ig_comments {where_clause} ORDER BY {sort_col} {direction} LIMIT %s OFFSET %s",
+        params + [per_page, offset]
+    )
+
+    return {
+        "data": data,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page if total else 0
+    }
 
 
-# ── STATS ───────────────────────────────────────────────
 @router.get("/stats")
 async def get_stats(days: int = Query(default=7, le=90)):
     since = (datetime.utcnow() - timedelta(days=days)).isoformat()
-    total = supabase.table("ig_comments").select("id", count="exact").gte("timestamp", since).execute()
-    all_recent = supabase.table("ig_comments").select("category,status,lead_score,sentiment").gte("timestamp", since).execute()
-    cats, sts, sents = {}, {}, {}
-    for c in (all_recent.data or []):
-        cats[c.get("category", "?")] = cats.get(c.get("category", "?"), 0) + 1
-        sts[c.get("status", "?")] = sts.get(c.get("status", "?"), 0) + 1
-        sents[c.get("sentiment", "?")] = sents.get(c.get("sentiment", "?"), 0) + 1
-    sf = supabase.table("ig_commenters").select("*").eq("is_superfan", True).order("total_comments", desc=True).limit(10).execute()
-    pc = supabase.table("ig_commenters").select("*").eq("is_potential_client", True).order("last_seen", desc=True).limit(10).execute()
-    return {"period_days": days, "total_comments": total.count, "categories": cats, "statuses": sts,
-        "sentiments": sents, "warm_leads_count": cats.get("warm_lead", 0),
-        "unread_count": sts.get("unread", 0), "needs_reply_count": cats.get("question_needs_reply", 0),
-        "superfans": sf.data, "potential_clients": pc.data}
 
+    total = db_count("SELECT COUNT(*) as count FROM ig_comments WHERE timestamp >= %s", (since,))
+    all_recent = db_query(
+        "SELECT category, status, lead_score, sentiment FROM ig_comments WHERE timestamp >= %s", (since,)
+    )
+
+    cats, sts, sents = {}, {}, {}
+    for c in all_recent:
+        ca = c.get("category", "?"); cats[ca] = cats.get(ca, 0) + 1
+        st = c.get("status", "?"); sts[st] = sts.get(st, 0) + 1
+        se = c.get("sentiment", "?"); sents[se] = sents.get(se, 0) + 1
+
+    sf = db_query("SELECT * FROM ig_commenters WHERE is_superfan = TRUE ORDER BY total_comments DESC LIMIT 10")
+    pc = db_query("SELECT * FROM ig_commenters WHERE is_potential_client = TRUE ORDER BY last_seen DESC LIMIT 10")
+
+    return {
+        "period_days": days, "total_comments": total, "categories": cats,
+        "statuses": sts, "sentiments": sents,
+        "warm_leads_count": cats.get("warm_lead", 0),
+        "unread_count": sts.get("unread", 0),
+        "needs_reply_count": cats.get("question_needs_reply", 0),
+        "superfans": sf, "potential_clients": pc
+    }
+
+
+# ═══════════════════════════════════════════════════════
+# ACTIONS
+# ═══════════════════════════════════════════════════════
 
 @router.patch("/{comment_id}")
 async def update_comment(comment_id: int, update: CommentUpdateRequest):
-    update_data = {k: v for k, v in update.dict().items() if v is not None}
-    if not update_data: raise HTTPException(status_code=400, detail="No update data")
-    return {"success": True, "updated": supabase.table("ig_comments").update(update_data).eq("id", comment_id).execute().data}
+    sets = []
+    params = []
+    if update.status is not None:
+        sets.append("status = %s"); params.append(update.status)
+    if update.assigned_to is not None:
+        sets.append("assigned_to = %s"); params.append(update.assigned_to)
+    if update.reply_draft is not None:
+        sets.append("reply_draft = %s"); params.append(update.reply_draft)
+    if not sets:
+        raise HTTPException(status_code=400, detail="No update data")
+    sets.append("updated_at = NOW()")
+    params.append(comment_id)
+    db_execute(f"UPDATE ig_comments SET {', '.join(sets)} WHERE id = %s", params)
+    return {"success": True}
 
 
 @router.post("/reply")
@@ -514,23 +590,24 @@ async def reply_to_comment(req: ReplyRequest):
         if resp.status_code != 200:
             raise HTTPException(status_code=502, detail=f"IG error: {resp.json().get('error', {}).get('message', '?')}")
         reply_data = resp.json()
-    supabase.table("ig_comments").update({
-        "status": "replied", "replied_at": datetime.utcnow().isoformat(), "reply_ig_id": reply_data.get("id")
-    }).eq("ig_comment_id", req.comment_ig_id).execute()
+    db_execute(
+        "UPDATE ig_comments SET status='replied', replied_at=NOW(), reply_ig_id=%s WHERE ig_comment_id=%s",
+        (reply_data.get("id"), req.comment_ig_id)
+    )
     return {"success": True, "reply_id": reply_data.get("id")}
 
 
 @router.post("/bulk")
 async def bulk_action(req: BulkActionRequest):
-    action_map = {"archive": {"status": "archived"}, "flag": {"status": "flagged"}, "mark_read": {"status": "read"}}
+    action_map = {"archive": "archived", "flag": "flagged", "mark_read": "read"}
     if req.action == "assign" and req.assigned_to:
-        ud = {"assigned_to": req.assigned_to}
+        for cid in req.comment_ids:
+            db_execute("UPDATE ig_comments SET assigned_to=%s WHERE id=%s", (req.assigned_to, cid))
     elif req.action in action_map:
-        ud = action_map[req.action]
+        for cid in req.comment_ids:
+            db_execute("UPDATE ig_comments SET status=%s WHERE id=%s", (action_map[req.action], cid))
     else:
         raise HTTPException(status_code=400, detail=f"Invalid action: {req.action}")
-    for cid in req.comment_ids:
-        supabase.table("ig_comments").update(ud).eq("id", cid).execute()
     return {"success": True, "updated": len(req.comment_ids), "action": req.action}
 
 
@@ -539,12 +616,16 @@ async def list_commenters(
     filter_type: Optional[str] = Query(default=None, regex="^(superfan|potential_client|repeat)$"),
     page: int = Query(default=1, ge=1), per_page: int = Query(default=20, le=50)
 ):
-    query = supabase.table("ig_commenters").select("*", count="exact")
-    if filter_type == "superfan": query = query.eq("is_superfan", True)
-    elif filter_type == "potential_client": query = query.eq("is_potential_client", True)
-    elif filter_type == "repeat": query = query.eq("is_repeat_commenter", True)
-    query = query.order("total_comments", desc=True)
+    where = ""
+    if filter_type == "superfan":
+        where = "WHERE is_superfan = TRUE"
+    elif filter_type == "potential_client":
+        where = "WHERE is_potential_client = TRUE"
+    elif filter_type == "repeat":
+        where = "WHERE is_repeat_commenter = TRUE"
+
+    total = db_count(f"SELECT COUNT(*) as count FROM ig_commenters {where}")
     offset = (page - 1) * per_page
-    query = query.range(offset, offset + per_page - 1)
-    result = query.execute()
-    return {"data": result.data, "total": result.count, "page": page}
+    data = db_query(f"SELECT * FROM ig_commenters {where} ORDER BY total_comments DESC LIMIT %s OFFSET %s",
+                    (per_page, offset))
+    return {"data": data, "total": total, "page": page}
