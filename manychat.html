@@ -422,15 +422,23 @@ function dismissRec(id) {
 }
 
 function executeRec(recId, mcId, flow) {
-  if (!mcId) { completeRec(recId); return; }
-  showToast("Sending flow...");
-  // For now, mark as completed since sending requires flow_ns
-  fetch(BACKEND + "/api/manychat/actions", {
+  if (!mcId) { 
+    showToast("No subscriber attached to this recommendation. Need more data first.", true); 
+    return; 
+  }
+  showToast("Sending " + flow + " flow...");
+  fetch(BACKEND + "/api/manychat/smart-send", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mc_id: mcId, action_type: "sent_flow", action_detail: "Sent " + flow + " flow via recommendation", recommendation_id: recId })
-  }).then(function() {
-    completeRec(recId);
-    showToast("Action logged. Flow: " + flow);
+    body: JSON.stringify({ mc_id: mcId, keyword: flow, recommendation_id: recId })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) {
+      showToast("Sent " + d.keyword + " flow to " + d.sent_to + "!");
+      loadRecommendations();
+    } else {
+      showToast(d.error || "Failed to send flow.", true);
+    }
+  }).catch(function(e) {
+    showToast("Error: " + e.message, true);
   });
 }
 
