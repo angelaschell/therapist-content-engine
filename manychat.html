@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead CRM | Content Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#F7EBE0;color:#3B2145;font-family:'Jost',sans-serif;min-height:100vh}
+
+/* ─── HEADER + NAV ─────────────────────────────────────── */
+.hero{background:#F7EBE0;padding:28px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
+.hero-inner{max-width:700px;margin:0 auto}
+.hero-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:10px}
+.hero-greeting{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:4px;font-weight:500}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:#3B2145;margin-bottom:4px}
+.hero-handle{font-size:12px;color:rgba(59,33,69,.3);margin-bottom:14px}
+.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;overflow-x:auto;justify-content:center;gap:2px}
+.tab{background:none;border:none;color:rgba(59,33,69,.35);padding:12px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s;text-decoration:none}
+.tab:hover{color:rgba(59,33,69,.6)}
+.tab.active{color:#3B2145;border-bottom-color:#90A9EC}
+
+/* ─── LAYOUT ───────────────────────────────────────────── */
+.main{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+.section{margin-bottom:36px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#3B2145}
+.section-sub{font-size:13px;color:rgba(59,33,69,.4);margin-top:2px}
+
+/* ─── SUBTABS ──────────────────────────────────────────── */
+.subtabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid rgba(59,33,69,.06);padding-bottom:0}
+.subtab{background:none;border:none;color:rgba(59,33,69,.35);padding:10px 16px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;font-weight:500;transition:all .2s;letter-spacing:.03em}
+.subtab:hover{color:rgba(59,33,69,.6)}
+.subtab.active{color:#3B2145;border-bottom-color:#90A9EC}
+.subtab .badge{display:inline-block;background:rgba(144,169,236,.15);color:#90A9EC;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px;font-weight:600}
+
+/* ─── CARDS ────────────────────────────────────────────── */
+.card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.3);border-radius:14px;padding:22px;margin-bottom:12px;backdrop-filter:blur(8px);transition:all .2s}
+.card:hover{border-color:rgba(144,169,236,.35)}
+label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;display:block;margin-bottom:6px;font-weight:500}
+select,textarea,input[type=text],input[type=password]{background:rgba(255,255,255,.7);border:1px solid rgba(210,199,255,.4);border-radius:8px;color:#3B2145;padding:10px 14px;font-size:13px;width:100%;font-family:'Jost',sans-serif;outline:none;transition:border-color .25s}
+select:focus,textarea:focus,input:focus{border-color:#90A9EC}
+textarea{resize:vertical;min-height:70px;line-height:1.6}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+/* ─── BUTTONS ──────────────────────────────────────────── */
+.btn{background:#90A9EC;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
+.btn:hover{background:#7d99e0}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-sm{padding:7px 14px;font-size:11px}
+.ghost{background:rgba(210,199,255,.15);color:#3B2145;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
+.ghost:hover{background:rgba(210,199,255,.3)}
+.btn-danger{background:none;color:rgba(59,33,69,.25);border:1px solid rgba(59,33,69,.08);border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .2s}
+.btn-danger:hover{color:#c45a4a;border-color:rgba(196,90,74,.2);background:rgba(232,121,110,.04)}
+
+/* ─── STATS ────────────────────────────────────────────── */
+.stats-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.stat{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:12px;padding:14px 20px;flex:1;min-width:110px;text-align:center}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:#90A9EC}
+.stat-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(59,33,69,.3);margin-top:2px}
+
+/* ─── RECOMMENDATIONS ──────────────────────────────────── */
+.rec-card{background:rgba(255,255,255,.65);border:1px solid rgba(210,199,255,.25);border-radius:14px;padding:20px;margin-bottom:10px;position:relative;transition:all .25s}
+.rec-card:hover{border-color:rgba(144,169,236,.4)}
+.rec-priority{position:absolute;top:16px;right:16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:5px;font-weight:600}
+.rec-priority.p1{background:rgba(232,121,110,.1);color:#c45a4a}
+.rec-priority.p2{background:rgba(255,198,150,.15);color:#b87a3a}
+.rec-priority.p3{background:rgba(144,169,236,.12);color:#90A9EC}
+.rec-priority.p4,.rec-priority.p5{background:rgba(59,33,69,.05);color:rgba(59,33,69,.35)}
+.rec-cat{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;margin-bottom:6px;font-weight:500}
+.rec-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#3B2145;margin-bottom:6px;padding-right:80px}
+.rec-desc{font-size:13px;color:rgba(59,33,69,.5);line-height:1.55;margin-bottom:10px}
+.rec-action{font-size:12px;color:#3B2145;font-weight:500;margin-bottom:12px;padding:8px 12px;background:rgba(144,169,236,.06);border-radius:8px;border-left:3px solid #90A9EC}
+.rec-btns{display:flex;gap:8px}
+
+/* ─── SUBSCRIBER TABLE ─────────────────────────────────── */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-bar input{max-width:260px}
+.search-bar select{width:auto;max-width:160px;padding:8px 12px;font-size:12px}
+.sub-table{width:100%;border-collapse:collapse}
+.sub-table th{text-align:left;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;padding:10px 12px;border-bottom:1px solid rgba(59,33,69,.06);font-weight:500}
+.sub-table td{padding:12px;border-bottom:1px solid rgba(59,33,69,.04);font-size:13px;vertical-align:middle}
+.sub-table tr{transition:background .15s;cursor:pointer}
+.sub-table tr:hover{background:rgba(144,169,236,.04)}
+.sub-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:#3B2145}
+.sub-ig{font-size:11px;color:rgba(59,33,69,.35)}
+.heat-bar{width:60px;height:6px;background:rgba(59,33,69,.06);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.heat-fill{height:100%;border-radius:3px;transition:width .3s}
+.heat-score{font-size:11px;font-weight:600}
+.interest-tag{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:5px;font-weight:600}
+.interest-tag.new{background:rgba(59,33,69,.05);color:rgba(59,33,69,.3)}
+.interest-tag.cold{background:rgba(211,224,241,.4);color:#5a7ab5}
+.interest-tag.warm{background:rgba(255,198,150,.2);color:#b87a3a}
+.interest-tag.hot{background:rgba(232,121,110,.12);color:#c45a4a}
+.interest-tag.vip{background:rgba(210,199,255,.3);color:#7b5ea7}
+
+/* ─── TRIGGER MANAGEMENT ───────────────────────────────── */
+.trig-card{display:flex;align-items:flex-start;gap:14px}
+.trig-kw{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;background:rgba(144,169,236,.1);color:#90A9EC;padding:6px 14px;border-radius:8px;white-space:nowrap;min-width:120px;text-align:center;margin-top:2px}
+.trig-kw.inactive{background:rgba(59,33,69,.04);color:rgba(59,33,69,.25)}
+.trig-info{flex:1;min-width:0}
+.trig-label{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#3B2145;margin-bottom:3px}
+.trig-desc{font-size:12px;color:rgba(59,33,69,.4);line-height:1.5}
+.trig-status{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin-top:5px}
+.trig-status.active{background:rgba(144,169,236,.1);color:#90A9EC}
+.trig-status.inactive{background:rgba(59,33,69,.04);color:rgba(59,33,69,.25)}
+.trig-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ─── ACTIONS LOG ──────────────────────────────────────── */
+.action-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(59,33,69,.04)}
+.action-time{font-size:11px;color:rgba(59,33,69,.3);min-width:100px;flex-shrink:0}
+.action-detail{flex:1}
+.action-name{font-weight:600;font-size:13px;color:#3B2145}
+.action-what{font-size:12px;color:rgba(59,33,69,.45);margin-top:2px}
+.action-type-tag{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:4px;background:rgba(144,169,236,.08);color:#90A9EC;margin-left:8px}
+
+/* ─── FORM ─────────────────────────────────────────────── */
+.form-card{background:rgba(144,169,236,.04);border:1px solid rgba(144,169,236,.15);border-radius:14px;padding:22px;margin-bottom:20px}
+.form-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;margin-bottom:16px}
+.form-actions{display:flex;gap:10px;margin-top:14px;justify-content:flex-end}
+
+/* ─── SYNC STATUS ──────────────────────────────────────── */
+.sync-bar{display:flex;gap:10px;align-items:center;padding:10px 16px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.15);border-radius:10px;margin-bottom:20px;font-size:12px;color:rgba(59,33,69,.4)}
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sync-dot.ok{background:#6fcf97}
+.sync-dot.stale{background:#f0c040}
+.sync-dot.error{background:#c45a4a}
+
+/* ─── LOADING ──────────────────────────────────────────── */
+.loader{text-align:center;padding:40px 0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:#90A9EC;opacity:.5;animation:pulse 2.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:.6}}
+
+/* ─── EMPTY ────────────────────────────────────────────── */
+.empty{text-align:center;padding:40px;color:rgba(59,33,69,.25)}
+.empty p{font-size:13px;line-height:1.6}
+
+/* ─── TOAST ────────────────────────────────────────────── */
+.toast{position:fixed;bottom:20px;right:20px;background:#90A9EC;color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 24px rgba(59,33,69,.15);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:#c45a4a}
+
+/* ─── PAGINATION ───────────────────────────────────────── */
+.pagination{display:flex;gap:6px;justify-content:center;margin-top:16px;align-items:center}
+.page-btn{padding:6px 12px;border-radius:6px;border:1px solid rgba(210,199,255,.25);background:none;color:rgba(59,33,69,.4);cursor:pointer;font-size:12px;font-family:'Jost',sans-serif;transition:all .2s}
+.page-btn:hover{border-color:#90A9EC;color:#90A9EC}
+.page-btn.active{background:rgba(144,169,236,.12);color:#90A9EC;border-color:#90A9EC}
+.page-info{font-size:11px;color:rgba(59,33,69,.3);margin:0 8px}
+
+.footer{text-align:center;padding:30px 20px;border-top:1px solid rgba(59,33,69,.05);margin-top:40px}
+.footer p{font-size:11px;color:rgba(59,33,69,.2)}
+
+@media(max-width:640px){.sub-table th:nth-child(4),.sub-table td:nth-child(4),.sub-table th:nth-child(5),.sub-table td:nth-child(5){display:none}.trig-card{flex-direction:column;gap:8px}.trig-actions{align-self:flex-end}.search-bar{flex-direction:column}.search-bar input,.search-bar select{max-width:100%}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hero"><div class="hero-inner">
+  <img class="hero-photo" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela">
+  <div class="hero-greeting">Content Engine</div>
+  <h1>Lead CRM</h1>
+  <div class="hero-handle">ManyChat + Instagram Intelligence</div>
+</div></div>
+
+<!-- NAV -->
+<div class="tabs">
+  <a class="tab" href="/">Content Studio</a>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','dm')">DM Engine</a>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','flows')">ManyChat Flows</a>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','vault')">Brand Vault</a>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','templates')">Templates</a>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','builder')">Carousel Builder</a>
+  <a class="tab active" href="/manychat">Lead CRM</a>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','analytics')">Analytics</a>
+  <a class="tab" href="/comments">Comments</a>
+</div>
+
+<div class="main">
+
+<!-- SYNC STATUS -->
+<div class="sync-bar">
+  <div class="sync-dot stale" id="syncDot"></div>
+  <span id="syncStatus">Checking sync status...</span>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-sm" onclick="runSync()">Sync ManyChat</button>
+    <button class="btn btn-sm" style="background:#D2C7FF;color:#3B2145" onclick="runAnalysis()">Run Claude Analysis</button>
+  </div>
+</div>
+
+<!-- SUBTABS -->
+<div class="subtabs">
+  <button class="subtab active" onclick="showSection('intelligence',this)">Lead Intelligence <span class="badge" id="recBadge">0</span></button>
+  <button class="subtab" onclick="showSection('subscribers',this)">Subscribers <span class="badge" id="subBadge">0</span></button>
+  <button class="subtab" onclick="showSection('triggers',this)">Triggers</button>
+  <button class="subtab" onclick="showSection('actions',this)">Completed Actions</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 1: LEAD INTELLIGENCE                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="sec-intelligence" class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Lead Intelligence</div>
+      <div class="section-sub">Claude analyzes your ManyChat + Instagram data and recommends who needs attention.</div>
+    </div>
+  </div>
+  <div id="recLoader" class="loader" style="display:none">Analyzing your leads...</div>
+  <div id="recList"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 2: SUBSCRIBERS                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="sec-subscribers" class="section" style="display:none">
+  <div class="stats-row" id="subStats"></div>
+  <div class="search-bar">
+    <input type="text" id="subSearch" placeholder="Search by name, IG, email..." oninput="debounceSearch()">
+    <select id="subInterest" onchange="loadSubscribers()">
+      <option value="">All Interest Levels</option>
+      <option value="vip">VIP</option>
+      <option value="hot">Hot</option>
+      <option value="warm">Warm</option>
+      <option value="cold">Cold</option>
+      <option value="new">New</option>
+    </select>
+    <select id="subSort" onchange="loadSubscribers()">
+      <option value="heat_score">Sort: Heat Score</option>
+      <option value="recent">Sort: Recent Activity</option>
+      <option value="triggers">Sort: Most Triggers</option>
+      <option value="subscribed">Sort: Newest</option>
+    </select>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="sub-table">
+      <thead><tr>
+        <th>Subscriber</th>
+        <th>Interest</th>
+        <th>Heat</th>
+        <th>Triggers</th>
+        <th>Convos</th>
+        <th>Last Active</th>
+      </tr></thead>
+      <tbody id="subTableBody"><tr><td colspan="6" class="loader">Loading subscribers...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="pagination" id="subPagination"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 3: TRIGGERS                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="sec-triggers" class="section" style="display:none">
+  <div class="section-header">
+    <div>
+      <div class="section-title">ManyChat Triggers</div>
+      <div class="section-sub">Keyword management. Changes sync to CTA dropdowns across the Content Engine.</div>
+    </div>
+    <button class="btn" onclick="openTriggerForm()">+ New Trigger</button>
+  </div>
+
+  <div class="form-card" id="trigForm" style="display:none">
+    <div class="form-title" id="trigFormTitle">Add New Trigger</div>
+    <div class="grid2">
+      <div><label>Keyword</label><input type="text" id="tf-kw" placeholder="e.g. WORTHY" style="text-transform:uppercase"></div>
+      <div><label>Label</label><input type="text" id="tf-label" placeholder="e.g. Emotional Starter Kit"></div>
+    </div>
+    <div><label>Description</label><textarea id="tf-desc" placeholder="What does this trigger do?"></textarea></div>
+    <div class="form-actions">
+      <button class="ghost" onclick="closeTriggerForm()">Cancel</button>
+      <button class="btn" id="trigFormBtn" onclick="saveTrigger()">Add Trigger</button>
+    </div>
+  </div>
+
+  <div id="trigList"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 4: COMPLETED ACTIONS                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="sec-actions" class="section" style="display:none">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Completed Actions</div>
+      <div class="section-sub">Everything you've acted on.</div>
+    </div>
+  </div>
+  <div id="actionList"></div>
+</div>
+
+</div>
+
+<div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved.</p></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var BACKEND = "https://therapist-content-engine.onrender.com";
+var currentSubPage = 1;
+var searchTimer = null;
+
+// ─── SECTIONS ──────────────────────────────────────────────
+function showSection(id, el) {
+  document.querySelectorAll(".section").forEach(function(s) { s.style.display = "none"; });
+  document.querySelectorAll(".subtab").forEach(function(t) { t.classList.remove("active"); });
+  document.getElementById("sec-" + id).style.display = "block";
+  if (el) el.classList.add("active");
+  if (id === "subscribers") loadSubscribers();
+  if (id === "triggers") loadTriggers();
+  if (id === "actions") loadActions();
+}
+
+// ─── SYNC ──────────────────────────────────────────────────
+function checkSync() {
+  fetch(BACKEND + "/api/manychat/sync/status").then(function(r) { return r.json(); }).then(function(d) {
+    var el = document.getElementById("syncStatus");
+    var dot = document.getElementById("syncDot");
+    if (d.last_sync) {
+      var ago = timeAgo(d.last_sync.completed_at || d.last_sync.started_at);
+      el.textContent = "Last sync: " + ago + " (" + (d.last_sync.records_synced || 0) + " subscribers)";
+      dot.className = "sync-dot " + (d.last_sync.status === "success" ? "ok" : "error");
+    } else {
+      el.textContent = "Never synced. Click Sync ManyChat to pull subscriber data.";
+      dot.className = "sync-dot stale";
+    }
+  }).catch(function() {
+    document.getElementById("syncStatus").textContent = "Could not check sync status.";
+  });
+}
+
+function runSync() {
+  document.getElementById("syncStatus").textContent = "Syncing ManyChat subscribers...";
+  document.getElementById("syncDot").className = "sync-dot stale";
+  fetch(BACKEND + "/api/manychat/sync", { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) {
+      showToast("Synced " + d.synced + " subscribers from ManyChat.");
+      checkSync();
+      loadSubscribers();
+    } else {
+      showToast(d.error || "Sync failed.", true);
+      document.getElementById("syncStatus").textContent = "Sync failed: " + (d.error || "Unknown");
+      document.getElementById("syncDot").className = "sync-dot error";
+    }
+  }).catch(function(e) {
+    showToast("Sync error: " + e.message, true);
+  });
+}
+
+function runAnalysis() {
+  document.getElementById("recLoader").style.display = "block";
+  showToast("Running Claude analysis...");
+  fetch(BACKEND + "/api/manychat/analyze", { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
+    document.getElementById("recLoader").style.display = "none";
+    if (d.success) {
+      showToast(d.recommendations + " new recommendations generated.");
+      loadRecommendations();
+    } else {
+      showToast(d.error || "Analysis failed.", true);
+    }
+  }).catch(function(e) {
+    document.getElementById("recLoader").style.display = "none";
+    showToast("Analysis error: " + e.message, true);
+  });
+}
+
+// ─── RECOMMENDATIONS ───────────────────────────────────────
+function loadRecommendations() {
+  fetch(BACKEND + "/api/manychat/recommendations?status=pending").then(function(r) { return r.json(); }).then(function(d) {
+    var recs = d.recommendations || [];
+    document.getElementById("recBadge").textContent = recs.length;
+    if (!recs.length) {
+      document.getElementById("recList").innerHTML = '<div class="empty"><p>No pending recommendations.<br>Click "Run Claude Analysis" to generate insights.</p></div>';
+      return;
+    }
+    var catLabels = { follow_up: "Follow Up", re_engage: "Re-engage", retreat: "Retreat Lead", stalled: "Stalled", high_intent: "High Intent", new_lead: "New Lead", flodesk_sync: "Flodesk Sync" };
+    document.getElementById("recList").innerHTML = recs.map(function(r) {
+      return '<div class="rec-card">' +
+        '<div class="rec-priority p' + r.priority + '">P' + r.priority + '</div>' +
+        '<div class="rec-cat">' + (catLabels[r.category] || r.category) + '</div>' +
+        '<div class="rec-title">' + esc(r.title) + '</div>' +
+        '<div class="rec-desc">' + esc(r.description) + '</div>' +
+        (r.suggested_action ? '<div class="rec-action">' + esc(r.suggested_action) + '</div>' : '') +
+        '<div class="rec-btns">' +
+          (r.suggested_flow ? '<button class="btn btn-sm" onclick="executeRec(' + r.id + ',\'' + esc(r.mc_id || '') + '\',\'' + esc(r.suggested_flow) + '\')">Send ' + esc(r.suggested_flow) + ' Flow</button>' : '') +
+          '<button class="ghost" onclick="completeRec(' + r.id + ')">Mark Done</button>' +
+          '<button class="btn-danger" onclick="dismissRec(' + r.id + ')">Dismiss</button>' +
+        '</div></div>';
+    }).join("");
+  }).catch(function() {
+    document.getElementById("recList").innerHTML = '<div class="empty"><p>Could not load recommendations.</p></div>';
+  });
+}
+
+function completeRec(id) {
+  fetch(BACKEND + "/api/manychat/recommendations/" + id + "/complete", {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: "" })
+  }).then(function() { showToast("Marked as done."); loadRecommendations(); });
+}
+
+function dismissRec(id) {
+  fetch(BACKEND + "/api/manychat/recommendations/" + id + "/dismiss", { method: "PATCH" })
+    .then(function() { showToast("Dismissed."); loadRecommendations(); });
+}
+
+function executeRec(recId, mcId, flow) {
+  if (!mcId) { completeRec(recId); return; }
+  showToast("Sending flow...");
+  // For now, mark as completed since sending requires flow_ns
+  fetch(BACKEND + "/api/manychat/actions", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mc_id: mcId, action_type: "sent_flow", action_detail: "Sent " + flow + " flow via recommendation", recommendation_id: recId })
+  }).then(function() {
+    completeRec(recId);
+    showToast("Action logged. Flow: " + flow);
+  });
+}
+
+// ─── SUBSCRIBERS ───────────────────────────────────────────
+function loadSubscribers() {
+  var search = document.getElementById("subSearch").value;
+  var interest = document.getElementById("subInterest").value;
+  var sort = document.getElementById("subSort").value;
+  var url = BACKEND + "/api/manychat/subscribers?page=" + currentSubPage + "&limit=30&sort=" + sort;
+  if (search) url += "&search=" + encodeURIComponent(search);
+  if (interest) url += "&interest=" + interest;
+
+  fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+    var subs = d.subscribers || [];
+    document.getElementById("subBadge").textContent = d.total || subs.length;
+    if (!subs.length) {
+      document.getElementById("subTableBody").innerHTML = '<tr><td colspan="6" class="empty"><p>No subscribers found. Click "Sync ManyChat" to pull data.</p></td></tr>';
+      document.getElementById("subPagination").innerHTML = "";
+      return;
+    }
+    document.getElementById("subTableBody").innerHTML = subs.map(function(s) {
+      var heatColor = s.heat_score >= 70 ? '#c45a4a' : s.heat_score >= 50 ? '#b87a3a' : s.heat_score >= 25 ? '#90A9EC' : 'rgba(59,33,69,.15)';
+      return '<tr onclick="viewSubscriber(\'' + s.mc_id + '\')">' +
+        '<td><div class="sub-name">' + esc(s.full_name || "Unknown") + '</div><div class="sub-ig">' + (s.ig_username ? '@' + esc(s.ig_username) : esc(s.email || "No IG/email")) + '</div></td>' +
+        '<td><span class="interest-tag ' + s.interest_level + '">' + s.interest_level + '</span></td>' +
+        '<td><div class="heat-bar"><div class="heat-fill" style="width:' + s.heat_score + '%;background:' + heatColor + '"></div></div><span class="heat-score" style="color:' + heatColor + '">' + s.heat_score + '</span></td>' +
+        '<td style="text-align:center">' + (s.trigger_count || 0) + '</td>' +
+        '<td style="text-align:center">' + (s.conversation_count || 0) + '</td>' +
+        '<td style="font-size:11px;color:rgba(59,33,69,.35)">' + (s.last_interaction ? timeAgo(s.last_interaction) : 'Never') + '</td>' +
+      '</tr>';
+    }).join("");
+
+    // Pagination
+    var pages = d.pages || 1;
+    var html = '';
+    if (pages > 1) {
+      if (currentSubPage > 1) html += '<button class="page-btn" onclick="goSubPage(' + (currentSubPage - 1) + ')">Prev</button>';
+      for (var i = 1; i <= Math.min(pages, 7); i++) {
+        html += '<button class="page-btn' + (i === currentSubPage ? ' active' : '') + '" onclick="goSubPage(' + i + ')">' + i + '</button>';
+      }
+      if (currentSubPage < pages) html += '<button class="page-btn" onclick="goSubPage(' + (currentSubPage + 1) + ')">Next</button>';
+    }
+    document.getElementById("subPagination").innerHTML = html;
+  }).catch(function() {
+    document.getElementById("subTableBody").innerHTML = '<tr><td colspan="6" class="empty"><p>Error loading subscribers.</p></td></tr>';
+  });
+
+  // Stats
+  fetch(BACKEND + "/api/manychat/subscribers/stats").then(function(r) { return r.json(); }).then(function(d) {
+    var bi = d.by_interest || {};
+    document.getElementById("subStats").innerHTML =
+      '<div class="stat"><div class="stat-num">' + (d.total || 0) + '</div><div class="stat-label">Total</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#7b5ea7">' + (bi.vip || 0) + '</div><div class="stat-label">VIP</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#c45a4a">' + (bi.hot || 0) + '</div><div class="stat-label">Hot</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#b87a3a">' + (bi.warm || 0) + '</div><div class="stat-label">Warm</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#5a7ab5">' + (bi.cold || 0) + '</div><div class="stat-label">Cold</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:rgba(59,33,69,.3)">' + (bi.new || 0) + '</div><div class="stat-label">New</div></div>';
+  }).catch(function() {});
+}
+
+function goSubPage(p) { currentSubPage = p; loadSubscribers(); }
+function debounceSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(function() { currentSubPage = 1; loadSubscribers(); }, 400); }
+function viewSubscriber(mcId) { showToast("Subscriber detail view coming in Session 2."); }
+
+// ─── TRIGGERS ──────────────────────────────────────────────
+var allTriggers = [];
+var editingTrigId = null;
+
+function loadTriggers() {
+  fetch(BACKEND + "/api/manychat/triggers").then(function(r) { return r.json(); }).then(function(d) {
+    allTriggers = d.triggers || [];
+    renderTriggers(allTriggers);
+  });
+}
+
+function renderTriggers(list) {
+  if (!list.length) { document.getElementById("trigList").innerHTML = '<div class="empty"><p>No triggers. Add one.</p></div>'; return; }
+  document.getElementById("trigList").innerHTML = list.map(function(t) {
+    return '<div class="card"><div class="trig-card">' +
+      '<div class="trig-kw' + (t.is_active ? '' : ' inactive') + '">' + esc(t.keyword) + '</div>' +
+      '<div class="trig-info"><div class="trig-label">' + esc(t.label) + '</div><div class="trig-desc">' + esc(t.description || 'No description') + '</div>' +
+      '<div class="trig-status ' + (t.is_active ? 'active' : 'inactive') + '">' + (t.is_active ? 'Active' : 'Inactive') + '</div></div>' +
+      '<div class="trig-actions">' +
+        '<button class="ghost" onclick="toggleTrig(' + t.id + ')">' + (t.is_active ? 'Deactivate' : 'Activate') + '</button>' +
+        '<button class="ghost" onclick="editTrigger(' + t.id + ')">Edit</button>' +
+        '<button class="btn-danger" onclick="deleteTrig(' + t.id + ',\'' + esc(t.keyword) + '\')">Delete</button>' +
+      '</div></div></div>';
+  }).join("");
+}
+
+function openTriggerForm() {
+  editingTrigId = null;
+  document.getElementById("trigFormTitle").textContent = "Add New Trigger";
+  document.getElementById("trigFormBtn").textContent = "Add Trigger";
+  document.getElementById("tf-kw").value = "";
+  document.getElementById("tf-label").value = "";
+  document.getElementById("tf-desc").value = "";
+  document.getElementById("tf-kw").removeAttribute("disabled");
+  document.getElementById("trigForm").style.display = "block";
+}
+
+function editTrigger(id) {
+  var t = allTriggers.find(function(x) { return x.id === id; });
+  if (!t) return;
+  editingTrigId = id;
+  document.getElementById("trigFormTitle").textContent = "Edit Trigger";
+  document.getElementById("trigFormBtn").textContent = "Save Changes";
+  document.getElementById("tf-kw").value = t.keyword;
+  document.getElementById("tf-label").value = t.label;
+  document.getElementById("tf-desc").value = t.description || "";
+  document.getElementById("tf-kw").setAttribute("disabled", "true");
+  document.getElementById("trigForm").style.display = "block";
+}
+
+function closeTriggerForm() { document.getElementById("trigForm").style.display = "none"; editingTrigId = null; }
+
+function saveTrigger() {
+  var kw = document.getElementById("tf-kw").value.trim().toUpperCase();
+  var label = document.getElementById("tf-label").value.trim();
+  var desc = document.getElementById("tf-desc").value.trim();
+  if (!kw || !label) { showToast("Keyword and label required.", true); return; }
+  var url = editingTrigId ? BACKEND + "/api/manychat/triggers/" + editingTrigId : BACKEND + "/api/manychat/triggers";
+  var method = editingTrigId ? "PUT" : "POST";
+  fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keyword: kw, label: label, description: desc }) })
+    .then(function(r) { return r.json(); }).then(function(d) {
+      if (d.error) { showToast(d.error, true); return; }
+      showToast(editingTrigId ? "Updated." : "Added.");
+      closeTriggerForm(); loadTriggers();
+    });
+}
+
+function toggleTrig(id) {
+  fetch(BACKEND + "/api/manychat/triggers/" + id + "/toggle", { method: "PATCH" }).then(function() { showToast("Updated."); loadTriggers(); });
+}
+
+function deleteTrig(id, kw) {
+  if (!confirm('Delete "' + kw + '"?')) return;
+  fetch(BACKEND + "/api/manychat/triggers/" + id, { method: "DELETE" }).then(function() { showToast("Deleted."); loadTriggers(); });
+}
+
+// ─── ACTIONS LOG ───────────────────────────────────────────
+function loadActions() {
+  fetch(BACKEND + "/api/manychat/actions").then(function(r) { return r.json(); }).then(function(d) {
+    var actions = d.actions || [];
+    if (!actions.length) { document.getElementById("actionList").innerHTML = '<div class="empty"><p>No completed actions yet.</p></div>'; return; }
+    var typeLabels = { sent_flow: "Sent Flow", added_tag: "Added Tag", manual_message: "Manual", dismissed_rec: "Dismissed" };
+    document.getElementById("actionList").innerHTML = '<div class="card">' + actions.map(function(a) {
+      return '<div class="action-item">' +
+        '<div class="action-time">' + formatDate(a.created_at) + '</div>' +
+        '<div class="action-detail"><div class="action-name">' + esc(a.subscriber_name || 'Unknown') +
+        '<span class="action-type-tag">' + (typeLabels[a.action_type] || a.action_type) + '</span></div>' +
+        '<div class="action-what">' + esc(a.action_detail || '') + '</div></div></div>';
+    }).join("") + '</div>';
+  });
+}
+
+// ─── UTILS ─────────────────────────────────────────────────
+function esc(s) { var d = document.createElement("div"); d.textContent = s || ""; return d.innerHTML; }
+
+function timeAgo(ts) {
+  if (!ts) return "Never";
+  var diff = (Date.now() - new Date(ts).getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+  if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+  if (diff < 604800) return Math.floor(diff / 86400) + "d ago";
+  return Math.floor(diff / 604800) + "w ago";
+}
+
+function formatDate(ts) {
+  if (!ts) return "";
+  var d = new Date(ts);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (isError ? " error" : "");
+  setTimeout(function() { t.className = "toast"; }, 3000);
+}
+
+// ─── INIT ──────────────────────────────────────────────────
+checkSync();
+loadRecommendations();
+</script>
+</body>
+</html>
