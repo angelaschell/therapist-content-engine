@@ -278,13 +278,21 @@ async def sync_data():
         synced = 0
         flows, tags = [], []
         try:
-            d = await mc_get("/fb/page/getFlows"); flows = d.get("data", []); synced += len(flows)
+            d = await mc_get("/fb/page/getFlows")
+            raw = d.get("data", {})
+            flows = raw.get("flows", []) if isinstance(raw, dict) else raw if isinstance(raw, list) else []
+            synced += len(flows)
         except: pass
         try:
-            d = await mc_get("/fb/page/getTags"); tags = d.get("data", []); synced += len(tags)
+            d = await mc_get("/fb/page/getTags")
+            raw = d.get("data", [])
+            tags = raw if isinstance(raw, list) else []
+            synced += len(tags)
         except: pass
         try:
-            d = await mc_get("/fb/page/getCustomFields"); fields = d.get("data", [])
+            d = await mc_get("/fb/page/getCustomFields")
+            raw = d.get("data", [])
+            fields = raw if isinstance(raw, list) else []
         except: fields = []
         info = json.dumps({"flows": len(flows), "tags": len(tags), "fields": len(fields)})
         if log_id:
@@ -312,7 +320,9 @@ async def sync_status():
 async def get_flows():
     try:
         d = await mc_get("/fb/page/getFlows")
-        return JSONResponse(content={"flows": d.get("data", [])})
+        raw = d.get("data", {})
+        flows = raw.get("flows", []) if isinstance(raw, dict) else raw if isinstance(raw, list) else []
+        return JSONResponse(content={"flows": flows})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
