@@ -527,6 +527,27 @@ async def sub_stats():
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+@router.get("/api/manychat/subscribers/{mc_id}")
+async def get_subscriber_detail(mc_id: str):
+    """Full subscriber detail with timeline."""
+    try:
+        sub = query_one("SELECT * FROM manychat_subscribers WHERE mc_id=%s", (mc_id,))
+        if not sub:
+            return JSONResponse(content={"error": "Subscriber not found."}, status_code=404)
+        triggers = query("SELECT * FROM subscriber_triggers WHERE mc_id=%s ORDER BY fired_at DESC", (mc_id,))
+        convos = query("SELECT * FROM subscriber_conversations WHERE mc_id=%s ORDER BY sent_at DESC LIMIT 50", (mc_id,))
+        notes = query("SELECT * FROM subscriber_notes WHERE mc_id=%s ORDER BY created_at DESC", (mc_id,))
+        actions = query("SELECT * FROM completed_actions WHERE mc_id=%s ORDER BY created_at DESC LIMIT 20", (mc_id,))
+        return JSONResponse(content={
+            "subscriber": sub,
+            "triggers": triggers,
+            "conversations": convos,
+            "notes": notes,
+            "actions": actions
+        })
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 # ================================================================
 #  NOTES
