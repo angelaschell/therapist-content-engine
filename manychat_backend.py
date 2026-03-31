@@ -548,6 +548,89 @@ async def get_subscriber_detail(mc_id: str):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+@router.post("/api/manychat/subscribers/{mc_id}/analyze")
+async def analyze_subscriber(mc_id: str):
+    """Claude analyzes a single subscriber and recommends which triggers to send."""
+    try:
+        sub = query_one("SELECT * FROM manychat_subscribers WHERE mc_id=%s", (mc_id,))
+        if not sub:
+            return JSONResponse(content={"error": "Subscriber not found."}, status_code=404)
+
+        triggers_fired = query("SELECT keyword, fired_at, source FROM subscriber_triggers WHERE mc_id=%s ORDER BY fired_at DESC", (mc_id,))
+        notes = query("SELECT note, created_at FROM subscriber_notes WHERE mc_id=%s ORDER BY created_at DESC", (mc_id,))
+        actions = query("SELECT action_type, action_detail, created_at FROM completed_actions WHERE mc_id=%s ORDER BY created_at DESC LIMIT 10", (mc_id,))
+        available_triggers = query("SELECT keyword, label, description FROM manychat_triggers WHERE is_active=true ORDER BY sort_order")
+
+        tags = sub.get("tags", "[]")
+        if isinstance(tags, str):
+            try: tags = json.loads(tags)
+            except: tags = []
+
+        now = datetime.now(timezone.utc)
+        prompt = f"""You are Angela Schellenberg's lead intelligence analyst. Today is {now.strftime('%B %d, %Y')}.
+
+Angela is a licensed trauma and grief therapist in LA with 171K IG followers. Her Healing with Horses Somatic Grief Retreat runs April 30 to May 3, 2026, with a few spots remaining.
+
+Here is one subscriber's full profile:
+
+Name: {sub.get('full_name','Unknown')}
+Instagram: @{sub.get('ig_username','')}
+Interest Level: {sub.get('interest_level','new')} (Heat Score: {sub.get('heat_score',0)})
+Funnel Stage: {sub.get('funnel_stage','subscriber')}
+Subscribed: {sub.get('subscribed_at','')}
+Last Interaction: {sub.get('last_interaction','')}
+Email: {'Yes' if sub.get('email') else 'No'}
+Tags: {json.dumps([t.get('name',str(t)) if isinstance(t,dict) else str(t) for t in tags])}
+
+Triggers they've fired:
+{json.dumps([{{'keyword':t['keyword'],'when':str(t['fired_at']),'source':t.get('source','')}} for t in triggers_fired], indent=2)}
+
+Actions taken on this person:
+{json.dumps([{{'type':a['action_type'],'detail':a['action_detail'],'when':str(a['created_at'])}} for a in actions], indent=2)}
+
+Notes about this person:
+{json.dumps([{{'note':n['note'],'when':str(n['created_at'])}} for n in notes], indent=2)}
+
+Available triggers Angela can send (these are her actual products):
+{json.dumps([{{'keyword':t['keyword'],'label':t['label'],'description':t['description']}} for t in available_triggers], indent=2)}
+
+Analyze this subscriber and respond with ONLY a JSON object (no markdown, no backticks):
+{{
+  "overview": "2-3 sentence analysis of where this person is in their journey and what they need next. Be specific to their behavior, not generic.",
+  "recommended_triggers": [
+    {{
+      "keyword": "THE_KEYWORD",
+      "reason": "One sentence explaining why this specific trigger fits this person right now."
+    }}
+  ]
+}}
+
+Rules:
+- Only recommend triggers from the available list above.
+- Rank by relevance. Most relevant first.
+- Recommend 2-4 triggers max.
+- Do NOT recommend triggers they've already been sent via actions.
+- Do NOT recommend triggers they've already fired themselves (they already have that product).
+- If the retreat is relevant, prioritize it (time-sensitive).
+- Be specific. Reference their actual behavior, not generic advice."""
+
+        async with httpx.AsyncClient(timeout=45) as c:
+            r = await c.post("https://api.anthropic.com/v1/messages", headers={
+                "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"
+            }, json={"model": "claude-sonnet-4-20250514", "max_tokens": 1500, "messages": [{"role": "user", "content": prompt}]})
+            r.raise_for_status()
+            resp = r.json()
+
+        text = resp.get("content", [{}])[0].get("text", "{}").strip()
+        if text.startswith("```"): text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        analysis = json.loads(text)
+
+        return JSONResponse(content={"success": True, "analysis": analysis})
+    except json.JSONDecodeError:
+        return JSONResponse(content={"error": "Could not parse analysis."}, status_code=500)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 # ================================================================
 #  NOTES
