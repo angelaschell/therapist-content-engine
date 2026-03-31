@@ -381,6 +381,10 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
           <button class="btn btn-sm" onclick="addDetailNote()">Add</button>
         </div>
       </div>
+      <div class="detail-section">
+        <div class="detail-section-title">AI Analysis</div>
+        <div id="detailAI"><div style="color:rgba(59,33,69,.25);font-size:12px">Click a subscriber to see analysis.</div></div>
+      </div>
     </div>
     <div class="detail-actions" id="detailActions"></div>
   </div>
@@ -676,13 +680,42 @@ function viewSubscriber(mcId) {
       document.getElementById("detailNotes").innerHTML = '<div style="color:rgba(59,33,69,.25);font-size:12px;margin-bottom:8px">No notes yet</div>';
     }
 
-    // Action buttons
-    var actionsHtml = '<button class="btn btn-sm" onclick="sendFlowToSub(\'' + mcId + '\',\'WORTHY\')">Send WORTHY</button>';
-    actionsHtml += '<button class="btn btn-sm" onclick="sendFlowToSub(\'' + mcId + '\',\'HEAL\')">Send HEAL</button>';
-    actionsHtml += '<button class="btn btn-sm" onclick="sendFlowToSub(\'' + mcId + '\',\'MOM\')">Send MOM</button>';
-    actionsHtml += '<button class="btn btn-sm" style="background:#D2C7FF;color:#3B2145" onclick="sendFlowToSub(\'' + mcId + '\',\'MALIBURETREAT\')">Send Retreat</button>';
-    actionsHtml += '<button class="ghost" onclick="toggleDnc(\'' + mcId + '\')">' + (s.do_not_contact ? 'Remove DNC' : 'Do Not Contact') + '</button>';
-    document.getElementById("detailActions").innerHTML = actionsHtml;
+    // Action buttons - load from triggers table
+    fetch(BACKEND + "/api/manychat/triggers").then(function(r) { return r.json(); }).then(function(td) {
+      var trigs = (td.triggers || []).filter(function(t) { return t.is_active; });
+      var html = '<div style="margin-bottom:12px"><div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Send a Flow</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      trigs.forEach(function(t) {
+        html += '<button class="ghost" style="font-size:11px" onclick="sendFlowToSub(\'' + mcId + '\',\'' + esc(t.keyword) + '\')">' + esc(t.keyword) + ' - ' + esc(t.label) + '</button>';
+      });
+      html += '</div></div>';
+      html += '<div style="display:flex;gap:8px;margin-top:8px"><button class="ghost" onclick="toggleDnc(\'' + mcId + '\')">' + (s.do_not_contact ? 'Remove DNC' : 'Do Not Contact') + '</button></div>';
+      document.getElementById("detailActions").innerHTML = html;
+    });
+
+    // Claude AI analysis
+    var aiEl = document.getElementById("detailAI");
+    aiEl.innerHTML = '<div class="loader" style="padding:16px 0">Analyzing this subscriber...</div>';
+    fetch(BACKEND + "/api/manychat/subscribers/" + mcId + "/analyze", { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.success && d.analysis) {
+        var a = d.analysis;
+        var html = '<div style="font-size:14px;color:#3B2145;line-height:1.7;margin-bottom:14px;font-family:Cormorant Garamond,serif">' + esc(a.overview || '') + '</div>';
+        if (a.recommended_triggers && a.recommended_triggers.length) {
+          html += '<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Recommended Triggers</div>';
+          a.recommended_triggers.forEach(function(rt) {
+            html += '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding:10px 14px;background:rgba(144,169,236,.04);border-radius:10px;border:1px solid rgba(144,169,236,.12)">';
+            html += '<button class="btn btn-sm" style="white-space:nowrap;flex-shrink:0" onclick="sendFlowToSub(\'' + mcId + '\',\'' + esc(rt.keyword) + '\')">Send ' + esc(rt.keyword) + '</button>';
+            html += '<div style="font-size:13px;color:rgba(59,33,69,.55);line-height:1.5">' + esc(rt.reason) + '</div>';
+            html += '</div>';
+          });
+        }
+        aiEl.innerHTML = html;
+      } else {
+        aiEl.innerHTML = '<div style="color:rgba(59,33,69,.3);font-size:12px">' + (d.error || 'Could not analyze.') + '</div>';
+      }
+    }).catch(function() {
+      aiEl.innerHTML = '<div style="color:rgba(59,33,69,.3);font-size:12px">Analysis unavailable.</div>';
+    });
 
   }).catch(function(e) {
     showToast("Error loading subscriber: " + e.message, true);
