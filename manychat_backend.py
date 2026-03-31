@@ -350,14 +350,11 @@ async def setup_db():
 async def manychat_webhook(request: Request):
     """
     ManyChat sends subscriber data here via External Request.
-    Accepts any combination of fields ManyChat sends.
-    Auto-creates/updates subscriber and logs the trigger.
+    Auto-enriches with full profile from ManyChat API.
     """
     try:
         body = await request.json()
 
-        # ManyChat can send data in different formats
-        # Support both flat and nested structures
         mc_id = str(body.get("id", "") or body.get("subscriber_id", "") or body.get("mc_id", "") or body.get("user_id", ""))
         first_name = body.get("first_name", "") or ""
         last_name = body.get("last_name", "") or ""
@@ -373,7 +370,39 @@ async def manychat_webhook(request: Request):
         custom_fields = body.get("custom_fields", {})
 
         if not mc_id:
-            return JSONResponse(content={"error": "No subscriber ID provided. Send 'id' or 'subscriber_id'."}, status_code=400)
+            return JSONResponse(content={"error": "No subscriber ID provided."}, status_code=400)
+
+        # ── ENRICHMENT: Pull full profile from ManyChat API ──
+        try:
+            full_profile = await mc_get(f"/fb/subscriber/getInfo?subscriber_id={mc_id}")
+            sub_data = full_profile.get("data", {})
+            if sub_data:
+                # Fill in any missing fields from the API
+                if not email and sub_data.get("email"):
+                    email = sub_data["email"]
+                if not phone and sub_data.get("phone"):
+                    phone = sub_data["phone"]
+                if not ig_username:
+                    ig_username = sub_data.get("ig_username", "") or sub_data.get("instagram_username", "") or ""
+                if not first_name and sub_data.get("first_name"):
+                    first_name = sub_data["first_name"]
+                if not last_name and sub_data.get("last_name"):
+                    last_name = sub_data["last_name"]
+                if not profile_pic and sub_data.get("profile_pic"):
+                    profile_pic = sub_data["profile_pic"]
+                if not gender and sub_data.get("gender"):
+                    gender = sub_data["gender"]
+                # Always grab tags and custom fields from API (more complete)
+                api_tags = sub_data.get("tags", [])
+                if api_tags:
+                    tags = api_tags
+                api_cf = sub_data.get("custom_fields", {})
+                if api_cf:
+                    custom_fields = api_cf
+                # Update full_name if we got better data
+                full_name = f"{first_name} {last_name}".strip() or full_name
+        except:
+            pass  # API enrichment is best-effort, webhook data is fallback
 
         # Get existing counts
         trig_res = query("SELECT keyword FROM subscriber_triggers WHERE mc_id=%s", (mc_id,))
@@ -389,8 +418,8 @@ async def manychat_webhook(request: Request):
         execute("""INSERT INTO manychat_subscribers
             (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
              tags, custom_fields, trigger_count, conversation_count,
-             interest_level, heat_score, funnel_stage, synced_at, last_interaction)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),now())
+             interest_level, heat_score, funnel_stage, opted_in_email, synced_at, last_interaction)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),now())
             ON CONFLICT (mc_id) DO UPDATE SET
              first_name=COALESCE(NULLIF(EXCLUDED.first_name,''), manychat_subscribers.first_name),
              last_name=COALESCE(NULLIF(EXCLUDED.last_name,''), manychat_subscribers.last_name),
@@ -399,20 +428,23 @@ async def manychat_webhook(request: Request):
              phone=COALESCE(NULLIF(EXCLUDED.phone,''), manychat_subscribers.phone),
              ig_username=COALESCE(NULLIF(EXCLUDED.ig_username,''), manychat_subscribers.ig_username),
              profile_pic=COALESCE(NULLIF(EXCLUDED.profile_pic,''), manychat_subscribers.profile_pic),
+             tags=EXCLUDED.tags,
+             custom_fields=EXCLUDED.custom_fields,
              trigger_count=EXCLUDED.trigger_count,
              conversation_count=EXCLUDED.conversation_count,
              interest_level=EXCLUDED.interest_level,
              heat_score=EXCLUDED.heat_score,
              funnel_stage=EXCLUDED.funnel_stage,
+             opted_in_email=EXCLUDED.opted_in_email,
              last_interaction=now(),
              synced_at=now(),
              updated_at=now()""",
             (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
              json.dumps(tags) if isinstance(tags, list) else "[]",
              json.dumps(custom_fields) if isinstance(custom_fields, (dict, list)) else "{}",
-             trigger_count, conversation_count, il, hs, fs))
+             trigger_count, conversation_count, il, hs, fs, bool(email)))
 
-        # Log the trigger if a keyword was sent
+        # Log the trigger
         if keyword:
             execute("INSERT INTO subscriber_triggers (mc_id, keyword, source, fired_at) VALUES (%s,%s,%s,now())",
                     (mc_id, keyword, source))
@@ -423,7 +455,10 @@ async def manychat_webhook(request: Request):
             "name": full_name,
             "keyword": keyword,
             "interest_level": il,
-            "heat_score": hs
+            "heat_score": hs,
+            "email": email or None,
+            "ig_username": ig_username or None,
+            "enriched": True
         })
 
     except Exception as e:
