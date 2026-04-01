@@ -904,16 +904,38 @@ function refreshToken(){
           <div style="display:flex;gap:6px;align-items:center">
             <input type="color" id="reelBgColor" value="#3B2145" onchange="updateReelPreview()" oninput="updateReelPreview()" style="width:36px;height:36px;border:1px solid rgba(210,199,255,.3);border-radius:6px;cursor:pointer;padding:2px">
             <input type="text" id="reelBgHex" value="#3B2145" maxlength="7" placeholder="#3B2145" style="width:80px;font-size:12px;padding:8px;font-family:monospace" oninput="syncReelColor('bg',this.value)">
+            <label style="font-size:11px;color:rgba(59,33,69,.4);display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="reelBgNone" onchange="updateReelPreview()"> No overlay</label>
           </div>
         </div>
       </div>
 
-      <!-- Live Preview -->
-      <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:6px">Preview</div>
-      <div id="reelBrandPreview" style="width:200px;height:356px;border-radius:12px;overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;background:#3B2145">
-        <div id="reelPreviewHeadline" style="font-size:14px;font-weight:700;color:#F7EBE0;margin-bottom:10px;line-height:1.2;font-family:Jost,sans-serif">The grief no one talks about is the grief you carry for a mother who is still alive.</div>
-        <div id="reelPreviewSubtitle" style="font-size:13px;color:#FFFFFF;line-height:1.4;font-family:Jost,sans-serif">Your body remembers what your <span id="reelPreviewHighlight" style="color:#90A9EC;font-weight:700">mind</span> tried to forget.</div>
-        <div style="font-family:Jost,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:12px;text-align:center">@angelaschellenberg</div>
+      <!-- Live Preview: Instagram Safe Zone -->
+      <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:6px">Preview (Instagram Reel Safe Zone)</div>
+      <div id="reelBrandPreview" style="width:200px;height:356px;border-radius:12px;overflow:hidden;position:relative;background:#1a1a2e;border:1px solid rgba(210,199,255,.15)">
+        <!-- Face zone (top 55%) -->
+        <div style="position:absolute;top:0;left:0;right:0;height:55%;display:flex;align-items:center;justify-content:center">
+          <div style="width:60px;height:60px;border-radius:50%;border:2px dashed rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(255,255,255,.2);text-align:center;line-height:1.2">Your face here</div>
+        </div>
+        <!-- Text safe zone: between face and caption (55%-78%) -->
+        <div id="reelPreviewTextZone" style="position:absolute;top:55%;left:12px;right:50px;bottom:22%;display:flex;flex-direction:column;justify-content:flex-end">
+          <div id="reelPreviewHeadline" style="font-size:11px;font-weight:700;color:#F7EBE0;margin-bottom:6px;line-height:1.25;font-family:Jost,sans-serif">The grief no one talks about</div>
+          <div id="reelPreviewSubtitle" style="font-size:10px;color:#FFFFFF;line-height:1.35;font-family:Jost,sans-serif">Your body remembers what your <span id="reelPreviewHighlight" style="color:#90A9EC;font-weight:700">mind</span> tried to forget.</div>
+        </div>
+        <!-- Like/share buttons zone (right side) -->
+        <div style="position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2)"></div>
+          <div style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2)"></div>
+        </div>
+        <!-- Caption zone (bottom 22%) -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:22%;padding:8px 12px;display:flex;flex-direction:column;justify-content:flex-end">
+          <div style="font-size:7px;color:rgba(255,255,255,.3);font-weight:600;margin-bottom:2px">angelaschellenberg</div>
+          <div style="font-size:6px;color:rgba(255,255,255,.2);line-height:1.3">Caption text appears here under your reel...</div>
+        </div>
+        <!-- Safe zone guide lines -->
+        <div style="position:absolute;top:55%;left:0;right:0;border-top:1px dashed rgba(144,169,236,.15)"></div>
+        <div style="position:absolute;bottom:22%;left:0;right:0;border-top:1px dashed rgba(144,169,236,.15)"></div>
+        <div style="position:absolute;top:56%;left:6px;font-size:5px;color:rgba(144,169,236,.25);letter-spacing:.5px">TEXT SAFE ZONE</div>
       </div>
     </div>
 
@@ -1332,7 +1354,7 @@ function loadReelFonts(){
     if(!el)return;
     if(!fonts.length){el.innerHTML='<div style="font-size:11px;color:rgba(59,33,69,.2)">No custom fonts uploaded yet.</div>';return}
     el.innerHTML=fonts.map(function(f){
-      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(59,33,69,.04)"><span style="font-size:12px;color:#3B2145;font-family:\''+f.font_family+'\',serif">'+f.name+'</span><button class="ghost" style="font-size:9px;padding:2px 8px" onclick="deleteReelFont('+f.id+')">Remove</button></div>';
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(59,33,69,.04)"><span style="font-size:12px;color:#3B2145;font-family:\''+f.font_family+'\',serif">'+f.name+'</span><button class="ghost" style="font-size:9px;padding:2px 8px" onclick="deleteReelFont(\''+f.id+'\')">Remove</button></div>';
     }).join("");
     // Inject @font-face for each
     fonts.forEach(function(f){
@@ -1407,19 +1429,25 @@ function updateReelPreview(){
   var hlColor=document.getElementById("reelHighlightColor").value;
   var headColor=document.getElementById("reelHeadlineColor").value;
   var bgColor=document.getElementById("reelBgColor").value;
+  var noOverlay=document.getElementById("reelBgNone").checked;
 
   document.getElementById("reelSubtitleHex").value=subColor;
   document.getElementById("reelHighlightHex").value=hlColor;
   document.getElementById("reelHeadlineHex").value=headColor;
   document.getElementById("reelBgHex").value=bgColor;
 
-  document.getElementById("reelBrandPreview").style.background=bgColor;
+  var preview=document.getElementById("reelBrandPreview");
+  preview.style.background=noOverlay?"#1a1a2e":bgColor;
+
   document.getElementById("reelPreviewHeadline").style.color=headColor;
   document.getElementById("reelPreviewSubtitle").style.color=subColor;
   document.getElementById("reelPreviewHighlight").style.color=hlColor;
 
-  // Save to localStorage so it persists
-  try{localStorage.setItem("ce-reel-brand",JSON.stringify({subtitle:subColor,highlight:hlColor,headline:headColor,bg:bgColor}))}catch(e){}
+  // Dim the bg color picker when "no overlay" is checked
+  document.getElementById("reelBgColor").style.opacity=noOverlay?"0.3":"1";
+  document.getElementById("reelBgHex").style.opacity=noOverlay?"0.3":"1";
+
+  try{localStorage.setItem("ce-reel-brand",JSON.stringify({subtitle:subColor,highlight:hlColor,headline:headColor,bg:bgColor,noOverlay:noOverlay}))}catch(e){}
 }
 
 function loadReelBrandColors(){
@@ -1430,6 +1458,7 @@ function loadReelBrandColors(){
       if(saved.highlight){document.getElementById("reelHighlightColor").value=saved.highlight;document.getElementById("reelHighlightHex").value=saved.highlight}
       if(saved.headline){document.getElementById("reelHeadlineColor").value=saved.headline;document.getElementById("reelHeadlineHex").value=saved.headline}
       if(saved.bg){document.getElementById("reelBgColor").value=saved.bg;document.getElementById("reelBgHex").value=saved.bg}
+      if(saved.noOverlay)document.getElementById("reelBgNone").checked=true;
       updateReelPreview();
     }
   }catch(e){}
