@@ -689,6 +689,15 @@ function viewSubscriber(mcId) {
         html += '<button class="ghost" style="font-size:11px" onclick="sendFlowToSub(\'' + mcId + '\',\'' + esc(t.keyword) + '\')">' + esc(t.keyword) + ' - ' + esc(t.label) + '</button>';
       });
       html += '</div></div>';
+      html += '<div style="margin-top:16px;margin-bottom:12px">';
+      html += '<div style="font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#FFC696;font-weight:500;margin-bottom:8px">Send Personal DM</div>';
+      html += '<textarea id="dmMessageInput" style="width:100%;min-height:70px;padding:10px 14px;border:1px solid rgba(210,199,255,.3);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;line-height:1.5;resize:vertical;background:rgba(255,255,255,.7);color:#3B2145;outline:none" placeholder="Type a personal message to this person..."></textarea>';
+      html += '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
+      html += '<button class="btn btn-sm" onclick="sendDmToSub(\'' + mcId + '\')">Send DM</button>';
+      html += '<span id="dmSendStatus" style="font-size:11px;display:none"></span>';
+      html += '</div>';
+      html += '<div style="font-size:10px;color:rgba(59,33,69,.25);margin-top:4px">Instagram 24hr window applies. HUMAN_AGENT tag extends to 7 days from last interaction.</div>';
+      html += '</div>';
       html += '<div style="display:flex;gap:8px;margin-top:8px"><button class="ghost" onclick="toggleDnc(\'' + mcId + '\')">' + (s.do_not_contact ? 'Remove DNC' : 'Do Not Contact') + '</button></div>';
       document.getElementById("detailActions").innerHTML = html;
     });
@@ -760,6 +769,38 @@ function sendFlowToSub(mcId, keyword) {
     } else {
       showToast(d.error || "Failed to send.", true);
     }
+  });
+}
+
+function sendDmToSub(mcId) {
+  var msg = document.getElementById("dmMessageInput").value.trim();
+  if (!msg) { showToast("Type a message first.", true); return; }
+  if (!confirm("Send this DM via Instagram?\n\n" + msg)) return;
+  var status = document.getElementById("dmSendStatus");
+  status.style.display = "inline";
+  status.textContent = "Sending...";
+  status.style.color = "#90A9EC";
+  fetch(BACKEND + "/api/manychat/send-dm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mc_id: mcId, message: msg })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) {
+      showToast("DM sent to " + d.sent_to + "!");
+      document.getElementById("dmMessageInput").value = "";
+      status.textContent = "Sent!";
+      status.style.color = "#6fcf97";
+      setTimeout(function() { status.style.display = "none"; }, 3000);
+      viewSubscriber(mcId);
+    } else {
+      showToast(d.error || "Failed to send DM.", true);
+      status.textContent = d.error || "Failed";
+      status.style.color = "#c45a4a";
+    }
+  }).catch(function(e) {
+    showToast("Error: " + e.message, true);
+    status.textContent = "Error";
+    status.style.color = "#c45a4a";
   });
 }
 
