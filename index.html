@@ -424,6 +424,40 @@ option{background:#F7EBE0}
       <div class="grid2"><div><label>Template</label><select id="b-template"><option value="naming">The Naming Post (370K pattern)</option><option value="redefine">The Authority Redefine (80K pattern)</option><option value="tribal">The Tribal Identity (165K pattern)</option><option value="framework">The Framework Explainer (saves + follows)</option><option value="pullquote">The Pull Quote (reach + shares)</option><option value="editorial">The Layered Editorial (profile visits)</option><option value="conversational">The Conversational List (comments)</option><option value="covercontext">The Cover + Context (funnel-aware)</option></select></div><div><label>Custom Template</label><select id="b-custom-template" onchange="applyCustomTemplate()"><option value="">Use default style</option></select><div style="font-size:10px;color:rgba(59,33,69,.25);margin-top:4px">Made in Templates tab</div></div></div>
       <label>Topic / Hook Idea</label>
       <textarea id="b-topic" style="min-height:70px" placeholder="e.g. The grief and trauma nobody talks about"></textarea>
+
+      <!-- SPIN-OFF FROM ANY VIRAL POST -->
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(59,33,69,.06)">
+        <label>Spin Off a Viral Post (optional)</label>
+        <div style="font-size:11px;color:rgba(59,33,69,.3);margin-bottom:8px">Paste the slide text from any viral carousel. Claude will match the structure and voice but write fresh content on your topic above.</div>
+        <textarea id="spinoff-text" style="min-height:100px;font-size:13px" placeholder="Paste the slide text here. Example:&#10;Slide 1: daughters without mothers have a running list...&#10;Slide 2: the grandchildren she never got to hold...&#10;&#10;Or paste the full caption. Claude will figure out the structure."></textarea>
+        <div id="spinoffStatus" style="font-size:11px;margin-top:4px;display:none"></div>
+      </div>
+
+      <!-- STYLE REFERENCE -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(59,33,69,.06)">
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="document.getElementById('styleRefPanel').style.display=document.getElementById('styleRefPanel').style.display==='none'?'block':'none'">
+          <label style="cursor:pointer;margin-bottom:0">Style Reference (optional)</label>
+          <span style="font-size:10px;color:#90A9EC">click to expand</span>
+        </div>
+        <div id="styleRefPanel" style="display:none;margin-top:10px">
+          <div style="font-size:12px;color:rgba(59,33,69,.4);margin-bottom:8px;line-height:1.5">Paste the text from posts you love. Claude will match the voice, rhythm, and structure. Paste one per box, or put all of them in one box.</div>
+          <div id="styleRefEntries">
+            <div class="style-ref-entry" style="margin-bottom:8px">
+              <div style="display:flex;gap:6px;margin-bottom:4px">
+                <input type="text" class="style-ref-url" placeholder="Instagram URL (optional, for your records)" style="flex:1;font-size:11px;padding:6px 8px">
+                <input type="text" class="style-ref-reach" placeholder="Reach (e.g. 165K)" style="width:90px;font-size:11px;padding:6px 8px">
+              </div>
+              <textarea class="style-ref-text" style="min-height:80px;font-size:12px;line-height:1.6" placeholder="Paste the slide text here. Example:&#10;Slide 1: things daughters without mothers know...&#10;Slide 2: we know how to google what other women just call their mom about.&#10;Slide 3: ..."></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="ghost" style="font-size:11px;padding:4px 10px" onclick="addStyleRef()">+ Add Another Reference</button>
+            <button class="ghost" style="font-size:11px;padding:4px 10px" onclick="clearStyleRefs()">Clear All</button>
+            <span id="styleRefCount" style="font-size:10px;color:rgba(59,33,69,.25);margin-left:auto;align-self:center"></span>
+          </div>
+        </div>
+      </div>
+
       <div class="btns"><button class="btn" onclick="goStep(2)">Next: See What's Viral</button><button class="btn" style="background:#D2C7FF;color:#3B2145" onclick="discoverTopics()">What Should I Post About?</button><button class="btn" style="background:rgba(255,255,255,.6);color:#3B2145;border:1px solid rgba(210,199,255,.4)" onclick="skipToGen()">Skip Scraper, Generate Now</button></div>
       <div id="topicSuggestions" style="display:none;margin-top:18px"></div>
     </div>
@@ -997,7 +1031,50 @@ function doLogin(){var pass=document.getElementById("loginPass").value;fetch(BAC
 function logout(){localStorage.removeItem("ce-auth");authToken=null;location.reload()}
 checkAuth();
 
-var uploadedAssets=[],viralPosts=[],viralSelected=[],carouselSlides=[],captionText="",savedViralContext="",savedAnalysisContext="",savedResearch="",viralHooks=[],currentTemplate="naming",lastTriggerRanking=[];
+var uploadedAssets=[],viralPosts=[],viralSelected=[],carouselSlides=[],captionText="",savedViralContext="",savedAnalysisContext="",savedResearch="",viralHooks=[],currentTemplate="naming",lastTriggerRanking=[],savedStyleRef="";
+
+function addStyleRef(){
+  var container=document.getElementById("styleRefEntries");
+  var entry=document.createElement("div");
+  entry.className="style-ref-entry";
+  entry.style.marginBottom="8px";
+  entry.innerHTML='<div style="display:flex;gap:6px;margin-bottom:4px"><input type="text" class="style-ref-url" placeholder="Instagram URL (optional)" style="flex:1;font-size:11px;padding:6px 8px"><input type="text" class="style-ref-reach" placeholder="Reach (e.g. 165K)" style="width:90px;font-size:11px;padding:6px 8px"><button class="ghost" style="font-size:9px;padding:3px 8px;color:#c45a4a" onclick="this.closest(\'.style-ref-entry\').remove();updateStyleRefCount()">x</button></div><textarea class="style-ref-text" style="min-height:80px;font-size:12px;line-height:1.6" placeholder="Paste the slide text here..."></textarea>';
+  container.appendChild(entry);
+  updateStyleRefCount();
+}
+
+function clearStyleRefs(){
+  var container=document.getElementById("styleRefEntries");
+  container.innerHTML='<div class="style-ref-entry" style="margin-bottom:8px"><div style="display:flex;gap:6px;margin-bottom:4px"><input type="text" class="style-ref-url" placeholder="Instagram URL (optional, for your records)" style="flex:1;font-size:11px;padding:6px 8px"><input type="text" class="style-ref-reach" placeholder="Reach (e.g. 165K)" style="width:90px;font-size:11px;padding:6px 8px"></div><textarea class="style-ref-text" style="min-height:80px;font-size:12px;line-height:1.6" placeholder="Paste the slide text here..."></textarea></div>';
+  updateStyleRefCount();
+}
+
+function updateStyleRefCount(){
+  var texts=document.querySelectorAll(".style-ref-text");
+  var filled=0;
+  texts.forEach(function(t){if(t.value.trim())filled++});
+  var el=document.getElementById("styleRefCount");
+  if(el)el.textContent=filled?filled+" reference"+(filled>1?"s":"")+" loaded":"";
+}
+
+function getStyleRefContext(){
+  var entries=document.querySelectorAll(".style-ref-entry");
+  var refs=[];
+  entries.forEach(function(entry){
+    var text=(entry.querySelector(".style-ref-text")||{}).value||"";
+    var reach=(entry.querySelector(".style-ref-reach")||{}).value||"";
+    var url=(entry.querySelector(".style-ref-url")||{}).value||"";
+    if(text.trim()){
+      var ref="";
+      if(reach)ref+="("+reach+" reach) ";
+      if(url)ref+="["+url+"] ";
+      ref+="\n"+text.trim();
+      refs.push(ref);
+    }
+  });
+  if(!refs.length)return"";
+  return"\n\nSTYLE REFERENCE POSTS (Angela's actual viral content. Match this voice, rhythm, structure, and emotional specificity):\n\n"+refs.join("\n\n---\n\n")+"\n\nCRITICAL: Study the style references above. Match the rhythm. Match the specificity. Match the emotional arc. Do NOT write generic content when you have these examples to learn from.";
+}
 var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
@@ -1018,6 +1095,13 @@ function discoverTopics(){document.getElementById("topicSuggestions").style.disp
 function pickSuggestedTopic(el){document.getElementById("b-topic").value=el.textContent;document.querySelectorAll("#topicSuggestions .hook-pill").forEach(function(p){p.style.background="rgba(255,255,255,.6)";p.style.color="#3B2145";p.style.borderColor="rgba(210,199,255,.3)"});el.style.background="#90A9EC";el.style.color="#fff";el.style.borderColor="#90A9EC";el.textContent="\u2713 "+el.textContent;document.getElementById("topicSuggestions").insertAdjacentHTML("beforeend",'<div style="text-align:center;margin-top:14px;font-family:Cormorant Garamond,serif;font-style:italic;font-size:16px;color:#90A9EC;animation:vb 2s ease-in-out infinite">Searching for this topic...</div>');setTimeout(function(){goStep(2)},1000)}
 function skipToGen(){var t=document.getElementById("b-topic").value.trim();if(!t){alert("Enter a topic first.");return}savedViralContext="";savedAnalysisContext="";viralHooks=[];goStep(3);fetchResearchThenGenerate(t)}
 
+function getSpinoffContext(){
+  var text=(document.getElementById("spinoff-text")||{}).value||"";
+  text=text.trim();
+  if(!text)return"";
+  return"\n\nSPIN-OFF INSTRUCTION:\nBelow is a viral carousel post. Your job is to create a VARIATION of it using the topic Angela entered above. Match the EXACT same structure: same number of slides, same rhythm pattern, same emotional arc, same sentence length patterns, same voice. But write completely fresh content for the new topic. Do NOT copy any lines from the original. Create new lines that feel like they belong in the same series.\n\nORIGINAL VIRAL POST TO SPIN OFF:\n"+text+"\n\nCRITICAL RULES FOR SPIN-OFFS:\n- Count the slides in the original. Use the same number.\n- If the original starts every slide with the same phrase (like 'we know'), use a similar repeated anchor for the new topic.\n- If the original builds from light to devastating, do the same.\n- If the original has one long release slide, put one in the same position.\n- If the original ends with a reframe, end with a reframe.\n- Match the sentence length patterns slide by slide. If slide 3 in the original is 25 words, make your slide 3 roughly 25 words.\n- The reader should feel like this post is part of the same series as the original.\n";
+}
+
 function loadHashtags(){var topic=document.getElementById("b-topic").value.trim()||"grief mother loss attachment";document.getElementById("hashtagLoading").style.display="block";document.getElementById("hashtagInput").style.display="none";document.getElementById("hashtagHint").style.display="none";document.getElementById("hashtagBtns").style.display="none";document.getElementById("scrapeResults").style.display="none";fetch(BACKEND+"/api/recommend-hashtags",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){document.getElementById("hashtagLoading").style.display="none";document.getElementById("hashtagInput").style.display="block";document.getElementById("hashtagHint").style.display="block";document.getElementById("hashtagBtns").style.display="flex";if(d.success&&d.hashtags){document.getElementById("hashtagInput").value=d.hashtags.join("\n")}else{document.getElementById("hashtagInput").value="grief\ntrauma\nhealingjourney\ntherapistsofinstagram"}}).catch(function(){document.getElementById("hashtagLoading").style.display="none";document.getElementById("hashtagInput").style.display="block";document.getElementById("hashtagHint").style.display="block";document.getElementById("hashtagBtns").style.display="flex";document.getElementById("hashtagInput").value="grief\ntrauma\nhealingjourney\ntherapistsofinstagram"})}
 
 function searchWithHashtags(){var topic=document.getElementById("b-topic").value.trim()||"grief mother loss attachment";var raw=document.getElementById("hashtagInput").value.trim();var hashtags=raw.split(/[\n,\s]+/).map(function(h){return h.replace(/^#/,"").trim()}).filter(function(h){return h.length>1});if(!hashtags.length){alert("Add at least one hashtag.");return}viralSelected=[];document.getElementById("selCount").textContent="0 selected";document.getElementById("analyzeBtn").disabled=true;document.getElementById("scrapeResults").style.display="block";document.getElementById("scrapeStatus").textContent="Searching: "+hashtags.slice(0,5).map(function(h){return"#"+h}).join(" ")+"...";document.getElementById("feedGrid").innerHTML='<div class="v-loader"><p>Searching Reddit + Instagram...</p></div>';fetch(BACKEND+"/api/scrape",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic,hashtags:hashtags})}).then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts&&d.posts.length>0){viralPosts=d.posts;viralHooks=d.hooks||[];renderFG();var rd=d.posts.filter(function(p){return p.src==="reddit"}).length;var ig=d.posts.filter(function(p){return p.src==="instagram"}).length;document.getElementById("scrapeStatus").textContent=d.posts.length+" posts ("+rd+" Reddit, "+ig+" Instagram)"}else{document.getElementById("scrapeStatus").textContent="No results.";document.getElementById("feedGrid").innerHTML='<div class="v-err">No posts found. Try broader hashtags.</div>'}}).catch(function(e){document.getElementById("scrapeStatus").textContent="Error: "+e.message;document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not reach scraper.</div>'})}
@@ -1026,7 +1110,7 @@ function runAnalysis(){var b=document.getElementById("analyzeBtn");b.textContent
 function fetchResearchThenGenerate(topic){if(document.getElementById("b-research").value==="no"){savedResearch="";genSlidesCopy(topic);return}document.getElementById("editLoader").style.display="block";document.getElementById("editLoader").querySelector("p").textContent="Finding clinical research...";fetch(BACKEND+"/api/research",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){if(d.success&&d.data&&d.data.findings){savedResearch=d.data.findings.join("\n");var h='<div class="research-card"><h3>Clinical Research Found</h3><ul>';d.data.findings.forEach(function(f){h+='<li>'+f+'</li>'});h+='</ul></div>';document.getElementById("researchDisplay").innerHTML=h;document.getElementById("editLoader").querySelector("p").textContent="Writing slides..."}else{savedResearch="";document.getElementById("researchDisplay").innerHTML=""}genSlidesCopy(topic)}).catch(function(){savedResearch="";document.getElementById("researchDisplay").innerHTML="";genSlidesCopy(topic)})}
 function getTriggerInfo(){var sel=document.getElementById("b-cta-trigger");if(!sel||!sel.value)return{trigger_keyword:"",trigger_label:"",trigger_description:""};var kw=sel.value;var optText=sel.options[sel.selectedIndex].text;var label=optText.indexOf(" - ")>-1?optText.split(" - ").slice(1).join(" - "):optText;var desc=triggerOffers[kw]||label;return{trigger_keyword:kw,trigger_label:label,trigger_description:desc}}
 function getAllTriggers(){var sel=document.getElementById("b-cta-trigger");var trigs=[];for(var i=0;i<sel.options.length;i++){var o=sel.options[i];if(!o.value)continue;var parts=o.text.split(" - ");var kw=o.value;var label=parts.length>1?parts.slice(1).join(" - "):o.text;trigs.push({keyword:kw,label:label,description:triggerOffers[kw]||label})}return trigs}
-function genSlidesCopy(topic){document.getElementById("editLoader").style.display="block";document.getElementById("slideEditors").innerHTML="";document.getElementById("editActions").style.display="none";document.getElementById("hookOptions").innerHTML="";var sc=parseInt(document.getElementById("b-slides").value)||10;var tpl=document.getElementById("b-template").value||"naming";var ti=getTriggerInfo();fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic,viral_context:savedViralContext,analysis_context:savedAnalysisContext,research_context:savedResearch,pillar:document.getElementById("b-pillar").value,tone:document.getElementById("b-tone").value,slide_count:sc,template_type:tpl,trigger_keyword:ti.trigger_keyword,trigger_label:ti.trigger_label,trigger_description:ti.trigger_description,all_triggers:getAllTriggers()})}).then(function(r){return r.json()}).then(function(d){document.getElementById("editLoader").style.display="none";if(d.success&&!d.raw&&d.data&&d.data.slides){carouselSlides=d.data.slides;captionText=d.data.caption||"";currentTemplate=d.data.template||tpl;if(d.data.trigger_ranking)lastTriggerRanking=d.data.trigger_ranking;buildEditors()}else{document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not parse. Try again.</div><div class="btns"><button class="btn" onclick="genSlidesCopy(\''+topic.replace(/'/g,"\\'")+'\')">Retry</button></div>'}}).catch(function(e){document.getElementById("editLoader").style.display="none";document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+"</div>"})}
+function genSlidesCopy(topic){document.getElementById("editLoader").style.display="block";document.getElementById("slideEditors").innerHTML="";document.getElementById("editActions").style.display="none";document.getElementById("hookOptions").innerHTML="";var sc=parseInt(document.getElementById("b-slides").value)||10;var tpl=document.getElementById("b-template").value||"naming";var ti=getTriggerInfo();var spinoff=getSpinoffContext();fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic,viral_context:savedViralContext,analysis_context:savedAnalysisContext+spinoff,research_context:savedResearch,pillar:document.getElementById("b-pillar").value,tone:document.getElementById("b-tone").value,slide_count:sc,template_type:tpl,trigger_keyword:ti.trigger_keyword,trigger_label:ti.trigger_label,trigger_description:ti.trigger_description,all_triggers:getAllTriggers()})}).then(function(r){return r.json()}).then(function(d){document.getElementById("editLoader").style.display="none";if(d.success&&!d.raw&&d.data&&d.data.slides){carouselSlides=d.data.slides;captionText=d.data.caption||"";currentTemplate=d.data.template||tpl;if(d.data.trigger_ranking)lastTriggerRanking=d.data.trigger_ranking;buildEditors()}else{document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not parse. Try again.</div><div class="btns"><button class="btn" onclick="genSlidesCopy(\''+topic.replace(/'/g,"\\'")+'\')">Retry</button></div>'}}).catch(function(e){document.getElementById("editLoader").style.display="none";document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+"</div>"})}
 function regenWithFeedback(){var feedback=document.getElementById("regenFeedback").value.trim();if(!feedback){alert("Type what you want changed.");return}var currentSlides=[];carouselSlides.forEach(function(s,i){var v=document.getElementById("se-"+i).value;if(s.type==="hook")currentSlides.push("Slide "+(i+1)+" (hook): "+v);else if(s.type==="cta")currentSlides.push("Slide "+(i+1)+" (cta): "+v);else currentSlides.push("Slide "+(i+1)+": "+v)});document.getElementById("editLoader").style.display="block";document.getElementById("editLoader").querySelector("p").textContent="Rewriting with your feedback...";document.getElementById("slideEditors").innerHTML="";document.getElementById("editActions").style.display="none";var sc=parseInt(document.getElementById("b-slides").value)||10;var tpl=document.getElementById("b-template").value||"naming";var ti=getTriggerInfo();fetch(BACKEND+"/api/carousel",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:document.getElementById("b-topic").value||"grief",viral_context:savedViralContext,analysis_context:savedAnalysisContext+"\n\nCURRENT SLIDES:\n"+currentSlides.join("\n")+"\n\nFEEDBACK FROM ANGELA (apply these changes):\n"+feedback,research_context:savedResearch,pillar:document.getElementById("b-pillar").value,tone:document.getElementById("b-tone").value,slide_count:sc,template_type:tpl,trigger_keyword:ti.trigger_keyword,trigger_label:ti.trigger_label,trigger_description:ti.trigger_description,all_triggers:getAllTriggers()})}).then(function(r){return r.json()}).then(function(d){document.getElementById("editLoader").style.display="none";if(d.success&&!d.raw&&d.data&&d.data.slides){carouselSlides=d.data.slides;captionText=d.data.caption||"";if(d.data.trigger_ranking)lastTriggerRanking=d.data.trigger_ranking;document.getElementById("regenFeedback").value="";buildEditors()}else{document.getElementById("slideEditors").innerHTML='<div class="v-err">Could not regenerate.</div>';document.getElementById("editActions").style.display="block"}}).catch(function(e){document.getElementById("editLoader").style.display="none";document.getElementById("slideEditors").innerHTML='<div class="v-err">Error: '+e.message+'</div>';document.getElementById("editActions").style.display="block"})}
 function cleanHtml(text){return text.replace(/<br\s*\/?>/gi,"\n").replace(/<em>/gi,"*").replace(/<\/em>/gi,"*").replace(/<strong>/gi,"**").replace(/<\/strong>/gi,"**").replace(/<[^>]+>/g,"")}
 function buildEditors(){if(viralHooks&&viralHooks.length>0){var hh='<div class="hook-options"><div class="hook-options-label">Viral Hook Options (click to use for Slide 1)</div>';viralHooks.forEach(function(hook){hh+='<span class="hook-pill" onclick="useHook(this)">'+hook+'</span>'});hh+='</div>';document.getElementById("hookOptions").innerHTML=hh}var h="";carouselSlides.forEach(function(s,i){var tl=s.type==="hook"?"Hook":s.type==="close"?"Close":s.type==="cta"?"CTA":"Body";var c="";if(s.type==="hook")c=(s.upper||"")+"\n"+(s.italic||"");else if(s.type==="cta")c=(s.top||"")+"\n"+(s.bottom||"");else if(s.type==="close")c=s.text||"";else c=cleanHtml(s.html||s.text||"");h+='<div class="slide-editor"><div class="slide-editor-header"><span class="slide-editor-num">Slide '+(i+1)+'</span><span class="slide-editor-type">'+tl+'</span></div><textarea id="se-'+i+'">'+c+'</textarea></div>'});document.getElementById("slideEditors").innerHTML=h;document.getElementById("editActions").style.display="block"}
