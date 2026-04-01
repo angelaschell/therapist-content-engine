@@ -336,22 +336,12 @@ async def generate_carousel(req: Request):
         cta_instruction = "- Do NOT include any Comment CTA line. No ManyChat triggers."
         trigger_json = ""
 
-    # Build trigger ranking instruction
-    trigger_ranking_instruction = ""
-    if all_triggers:
-        trigger_list = "\n".join([f"  - {t['keyword']}: {t['label']} ({t.get('description', '')})" for t in all_triggers])
-        trigger_ranking_instruction = f"""
-
-TRIGGER RANKING:
-Here are all available ManyChat triggers. Rank the top 3 that best fit this specific carousel content. Consider which product/service most naturally extends what the reader just learned.
-{trigger_list}
-
-Include a "trigger_ranking" array in your JSON with exactly 3 objects, each with "keyword", "label", and "reason" (one sentence explaining why this trigger fits this post).
-"""
+    # Build JSON example (clean, no inline conditionals)
+    json_example = f'{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "{trigger_json}", "template": "{template_type}"}}'
 
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=2500,
+        max_tokens=4000,
         system=ANGELA_SYSTEM,
         messages=[{"role": "user", "content": f"""Generate a {slide_count}-slide Instagram carousel using this template:
 
@@ -372,20 +362,53 @@ FORMATTING RULES:
 - Would a shame-sensitive woman feel steadied, not activated?
 
 Return ONLY valid JSON, no backticks:
-{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "{trigger_json}", "template": "{template_type}"{', "trigger_ranking": [' + '{"keyword":"KEYWORD","label":"Label","reason":"Why"}' + ']' if all_triggers else ''}}}
-{trigger_ranking_instruction}
+{json_example}
+
 CAPTION RULES:
 - Write the caption in Angela's voice. Short punchy lines. Line breaks between thoughts.
 - If clinical research was provided above, cite 1-2 findings naturally in the caption (e.g. "Research from Dr. Mary Frances O'Connor shows grief literally reshapes the brain."). This is important. The research must appear in the caption.
 - Include exactly 5 highly relevant hashtags at the end. Quality over quantity.
 {cta_instruction}
-- No em dashes in the caption either."""}}]
+- No em dashes in the caption either."""}]
     )
     try:
         clean = response.content[0].text.strip()
         if clean.startswith("```"):
             clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        return JSONResponse({"success": True, "data": json.loads(clean)})
+        result = json.loads(clean)
+
+        # Trigger ranking as a separate fast call
+        if all_triggers and len(all_triggers) > 0:
+            try:
+                trigger_list = ", ".join([f"{t['keyword']} ({t['label']})" for t in all_triggers])
+                slide_summary = ""
+                for s in result.get("slides", []):
+                    if s.get("type") == "hook":
+                        slide_summary += s.get("upper", "") + " "
+                    elif s.get("type") == "close":
+                        slide_summary += s.get("text", "") + " "
+                    else:
+                        slide_summary += s.get("html", s.get("text", "")) + " "
+
+                rank_resp = claude_client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=500,
+                    messages=[{"role": "user", "content": f"""Given this carousel about: {topic}
+Slide content: {slide_summary[:500]}
+
+Available ManyChat triggers: {trigger_list}
+
+Pick the top 3 triggers that best fit this specific post. Return ONLY valid JSON, no backticks:
+[{{"keyword":"KEYWORD","label":"Label","reason":"One sentence why this fits"}}]"""}]
+                )
+                rank_clean = rank_resp.content[0].text.strip()
+                if rank_clean.startswith("```"):
+                    rank_clean = rank_clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+                result["trigger_ranking"] = json.loads(rank_clean)
+            except Exception:
+                result["trigger_ranking"] = []
+
+        return JSONResponse({"success": True, "data": result})
     except:
         return JSONResponse({"success": True, "data": response.content[0].text, "raw": True})
 
