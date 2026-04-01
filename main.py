@@ -309,6 +309,9 @@ async def generate_carousel(req: Request):
     tone = data.get("tone", "clinical-but-warm")
     slide_count = data.get("slide_count", 10)
     template_type = data.get("template_type", "naming")
+    trigger_keyword = data.get("trigger_keyword", "")
+    trigger_label = data.get("trigger_label", "")
+    trigger_description = data.get("trigger_description", "")
 
     template = TEMPLATE_RULES.get(template_type, TEMPLATE_RULES["naming"])
     template_rules = template["rules"]
@@ -320,6 +323,17 @@ async def generate_carousel(req: Request):
         context_block += f"\n\nANALYSIS:\n{analysis_context}"
     if research_context:
         context_block += f"\n\nCLINICAL RESEARCH (weave 1-2 naturally into slides, cite the researcher):\n{research_context}"
+
+    # Build CTA instruction based on selected trigger
+    if trigger_keyword and trigger_keyword.strip():
+        cta_instruction = f"""- End the caption with EXACTLY ONE CTA line starting with "Comment {trigger_keyword}".
+- The product/service for this trigger is: {trigger_label} ({trigger_description}).
+- Write the CTA so it directly connects this product to the carousel topic. Do NOT use generic "I'll send you a free resource." Instead, tie what they will receive to what they just read. Example: if the carousel is about nervous system dysregulation and the trigger is EMDR, write "Comment EMDR and I'll walk you through how bilateral stimulation helps your nervous system process what your body has been holding."
+- Only ONE CTA line. No other Comment triggers."""
+        trigger_json = trigger_keyword
+    else:
+        cta_instruction = "- Do NOT include any Comment CTA line. No ManyChat triggers."
+        trigger_json = ""
 
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -344,14 +358,14 @@ FORMATTING RULES:
 - Would a shame-sensitive woman feel steadied, not activated?
 
 Return ONLY valid JSON, no backticks:
-{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "WORTHY", "template": "{template_type}"}}
+{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "{trigger_json}", "template": "{template_type}"}}
 
 CAPTION RULES:
 - Write the caption in Angela's voice. Short punchy lines. Line breaks between thoughts.
 - If clinical research was provided above, cite 1-2 findings naturally in the caption (e.g. "Research from Dr. Mary Frances O'Connor shows grief literally reshapes the brain."). This is important. The research must appear in the caption.
 - Include 15-20 relevant hashtags at the end.
-- End with: Comment WORTHY and I'll send you my free Emotional Starter Kit.
-- No em dashes in the caption either."""}]
+{cta_instruction}
+- No em dashes in the caption either."""}}]
     )
     try:
         clean = response.content[0].text.strip()
