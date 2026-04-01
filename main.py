@@ -1,3 +1,4 @@
+# Content Engine v2.1 - April 2026
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
