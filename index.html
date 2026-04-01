@@ -900,36 +900,39 @@ function analyzeTpl(){if(!tplImages.length){alert("Upload images first.");return
 
 function renderTplResult(data){
 var fontMap={"serif-bold":"Cormorant Garamond,serif;font-weight:700","serif-regular":"Cormorant Garamond,serif;font-weight:400","serif-italic":"Cormorant Garamond,serif;font-weight:400;font-style:italic","sans-bold":"Jost,sans-serif;font-weight:600","sans-light":"Jost,sans-serif;font-weight:300","sans-medium":"Jost,sans-serif;font-weight:500","sans-regular":"Jost,sans-serif;font-weight:400","italic-serif":"Playfair Display,serif;font-style:italic;font-weight:400","italic-sans":"Jost,sans-serif;font-style:italic;font-weight:400","uppercase-sans":"Jost,sans-serif;font-weight:600;text-transform:uppercase","uppercase-serif":"Cormorant Garamond,serif;font-weight:700;text-transform:uppercase"};
-var sizeMap={"small":"16px","medium":"20px","large":"26px","xlarge":"32px"};
-var bodySize={"small":"12px","medium":"14px","large":"16px","xlarge":"18px"};
+var sizeMap={"small":"20px","medium":"26px","large":"32px","xlarge":"40px"};
+var bodySize={"small":"14px","medium":"16px","large":"19px","xlarge":"22px"};
+var closeSize={"small":"15px","medium":"18px","large":"21px","xlarge":"25px"};
 var titleFont=fontMap[data.title_style]||fontMap["serif-bold"];
 var bodyFont=fontMap[data.body_style]||fontMap["serif-regular"];
-var tSize=sizeMap[data.text_size]||"26px";
-var bSize=bodySize[data.text_size]||"14px";
+var tSize=sizeMap[data.text_size]||"32px";
+var bSize=bodySize[data.text_size]||"16px";
+var cSize=closeSize[data.text_size]||"18px";
 var align=data.text_align||"center";
 var h='<div class="tpl-bubble system"><div class="tpl-bubble-label">Style Extracted</div>';
 h+='<div style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:600;color:#3B2145;margin-bottom:6px">'+(data.suggested_name||"Custom Template")+'</div>';
 h+='<div style="font-size:13px;color:rgba(59,33,69,.5);margin-bottom:16px;line-height:1.5">'+(data.description||"")+'</div>';
-// VISUAL PREVIEW: 3 mini slides
-h+='<div style="display:flex;gap:10px;margin-bottom:18px;overflow-x:auto">';
+// TEMPLATE PREVIEW: 3 full-size slides
+h+='<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Template Preview</div>';
+h+='<div style="display:flex;gap:12px;margin-bottom:18px;overflow-x:auto">';
 // Hook slide
-h+='<div style="width:140px;height:175px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:16px;position:relative;background:'+(data.hook_bg||"#3B2145")+';text-align:'+align+'">';
+h+='<div style="width:180px;height:225px;border-radius:10px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:20px;position:relative;background:'+(data.hook_bg||"#3B2145")+';text-align:'+align+';box-shadow:0 4px 20px rgba(59,33,69,.1)">';
 h+='<div style="font-family:'+titleFont+';font-size:'+tSize+';color:'+(data.hook_text||"#F7EBE0")+';line-height:1.15">THIS IS YOUR HOOK</div>';
-h+='<div style="font-family:'+bodyFont+';font-size:11px;color:'+(data.hook_text||"#F7EBE0")+';opacity:.6;margin-top:6px;font-style:italic">the subtitle goes here</div>';
-if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:5px;letter-spacing:2px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.4">@angelaschellenberg</div>';
-h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.35">Hook</div>';
+h+='<div style="font-family:'+bodyFont+';font-size:12px;color:'+(data.hook_text||"#F7EBE0")+';opacity:.6;margin-top:8px;font-style:italic">the subtitle goes here</div>';
+if(data.watermark)h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:6px;letter-spacing:2.5px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.35">@angelaschellenberg</div>';
+h+='<div style="position:absolute;top:8px;left:12px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.3">Hook</div>';
 h+='</div>';
 // Body slide
-h+='<div style="width:140px;height:175px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:16px;position:relative;background:'+(data.bg_color||"#F7EBE0")+';text-align:'+align+'">';
+h+='<div style="width:180px;height:225px;border-radius:10px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:20px;position:relative;background:'+(data.bg_color||"#F7EBE0")+';text-align:'+align+';box-shadow:0 4px 20px rgba(59,33,69,.1)">';
 h+='<div style="font-family:'+bodyFont+';font-size:'+bSize+';color:'+(data.text_color||"#3B2145")+';line-height:1.5">The body slide text would appear here with your extracted styling.</div>';
-if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:5px;letter-spacing:2px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.35">@angelaschellenberg</div>';
-h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.35">Body</div>';
+if(data.watermark)h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:6px;letter-spacing:2.5px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.3">@angelaschellenberg</div>';
+h+='<div style="position:absolute;top:8px;left:12px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.3">Body</div>';
 h+='</div>';
 // Close slide
-h+='<div style="width:140px;height:175px;border-radius:8px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:16px;position:relative;background:'+(data.close_bg||"#90A9EC")+';text-align:'+align+'">';
-h+='<div style="font-family:'+titleFont+';font-size:13px;color:'+(data.close_text||"#F7EBE0")+';line-height:1.5;font-style:italic">What would it mean to let yourself feel this?</div>';
-if(data.watermark)h+='<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:5px;letter-spacing:2px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.4">@angelaschellenberg</div>';
-h+='<div style="position:absolute;top:6px;left:10px;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.35">Close</div>';
+h+='<div style="width:180px;height:225px;border-radius:10px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:20px;position:relative;background:'+(data.close_bg||"#90A9EC")+';text-align:'+align+';box-shadow:0 4px 20px rgba(59,33,69,.1)">';
+h+='<div style="font-family:'+titleFont+';font-size:'+cSize+';color:'+(data.close_text||"#F7EBE0")+';line-height:1.5;font-style:italic">What would it mean to let yourself feel this?</div>';
+if(data.watermark)h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:6px;letter-spacing:2.5px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.35">@angelaschellenberg</div>';
+h+='<div style="position:absolute;top:8px;left:12px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.3">Close</div>';
 h+='</div>';
 h+='</div>';
 // Color pickers
@@ -942,19 +945,9 @@ h+='<div style="font-size:11px;color:rgba(59,33,69,.4);line-height:1.8">';
 h+='<strong style="color:#3B2145">Title:</strong> '+(data.title_style||"")+' · <strong style="color:#3B2145">Body:</strong> '+(data.body_style||"")+' · <strong style="color:#3B2145">Size:</strong> '+(data.text_size||"")+' · <strong style="color:#3B2145">Align:</strong> '+(data.text_align||"")+' · <strong style="color:#3B2145">Spacing:</strong> '+(data.spacing||"");
 h+='</div>';
 h+='</div>';
-// SVG section
-h+='<div id="svgSection" style="margin-top:16px">';
-if(!tplCurrentSvgs){
-h+='<button class="btn" style="width:100%" onclick="generateSvgTemplate()">Build Visual Template</button>';
-h+='<div style="font-size:11px;color:rgba(59,33,69,.3);margin-top:6px;text-align:center">Generates actual slide backgrounds you can see and use in the Carousel Builder</div>';
-}
-h+='<div id="svgLoader" style="display:none" class="v-loader"><p>Building your template slides...</p></div>';
-h+='<div id="svgPreview"></div>';
-h+='</div>';
-h+='<div style="margin-top:12px"><div class="tpl-feedback-row"><textarea id="tplFeedback" placeholder="e.g. Make the hook slide darker, change body text to lavender, add a thin border"></textarea><button class="btn" onclick="regenTpl()">Regen Analysis</button></div></div>';
+h+='<div style="margin-top:12px"><div class="tpl-feedback-row"><textarea id="tplFeedback" placeholder="e.g. Make the hook slide darker, change body text to lavender"></textarea><button class="btn" onclick="regenTpl()">Regen Analysis</button></div></div>';
 h+='<div class="btns" style="margin-top:12px"><button class="btn" style="background:#6fcf97;color:#3B2145" onclick="saveTpl()" id="saveTplBtn">Save Template</button><button class="ghost" onclick="resetTpl()">Start Over</button></div>';
-document.getElementById("tplResult").innerHTML=h;document.getElementById("tplResult").style.display="block";
-if(tplCurrentSvgs){renderSvgPreview(tplCurrentSvgs)}}
+document.getElementById("tplResult").innerHTML=h;document.getElementById("tplResult").style.display="block"}
 
 function regenTpl(){var fb=document.getElementById("tplFeedback").value.trim();if(!fb){alert("Type what you want changed.");return}document.getElementById("tplResult").style.display="none";document.getElementById("tplLoader").style.display="block";document.getElementById("tplLoader").querySelector("p").textContent="Applying your feedback...";fetch(BACKEND+"/api/templates/regenerate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({previous:tplCurrentAnalysis,feedback:fb,image:tplImageData,images:tplImages.map(function(img){return img.data})})}).then(function(r){return r.json()}).then(function(d){document.getElementById("tplLoader").style.display="none";if(d.success&&d.data&&!d.data.error){tplCurrentAnalysis=d.data;tplCurrentSvgs=null;renderTplResult(d.data)}else{document.getElementById("tplResult").style.display="block";alert("Could not regenerate. Try different feedback.")}}).catch(function(e){document.getElementById("tplLoader").style.display="none";document.getElementById("tplResult").style.display="block";alert("Error: "+e.message)})}
 
