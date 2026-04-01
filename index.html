@@ -859,6 +859,64 @@ function refreshToken(){
       <input type="text" id="reel-template" placeholder="Paste template ID from Vizard editor" style="max-width:300px">
       <div style="font-size:10px;color:rgba(59,33,69,.25);margin-top:3px">Find in Vizard editor > Template tab > hover template > copy ID</div>
     </div>
+
+    <!-- BRANDING: FONTS + COLORS -->
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(59,33,69,.06)">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:12px">Reel Branding</div>
+
+      <!-- Font Upload -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:6px">Custom Fonts</div>
+        <div id="reelFontList" style="margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px;align-items:stretch;flex-wrap:wrap">
+          <input type="text" id="reelFontName" placeholder="Font name (e.g. Awesome Serif)" style="flex:1;min-width:160px;padding:8px 10px;font-size:12px">
+          <button class="ghost" style="font-size:11px;white-space:nowrap" onclick="document.getElementById('reel-font-input').click()">Upload Fonts</button>
+        </div>
+        <input type="file" id="reel-font-input" accept=".ttf,.otf,.woff,.woff2" multiple style="display:none" onchange="uploadReelFonts(this.files)">
+        <div id="reelFontUploadStatus" style="font-size:11px;color:rgba(59,33,69,.3);margin-top:6px"></div>
+      </div>
+
+      <!-- Color Pickers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:4px">Subtitle Color</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="reelSubtitleColor" value="#FFFFFF" onchange="updateReelPreview()" oninput="updateReelPreview()" style="width:36px;height:36px;border:1px solid rgba(210,199,255,.3);border-radius:6px;cursor:pointer;padding:2px">
+            <input type="text" id="reelSubtitleHex" value="#FFFFFF" maxlength="7" placeholder="#FFFFFF" style="width:80px;font-size:12px;padding:8px;font-family:monospace" oninput="syncReelColor('subtitle',this.value)">
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:4px">Highlight Color</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="reelHighlightColor" value="#90A9EC" onchange="updateReelPreview()" oninput="updateReelPreview()" style="width:36px;height:36px;border:1px solid rgba(210,199,255,.3);border-radius:6px;cursor:pointer;padding:2px">
+            <input type="text" id="reelHighlightHex" value="#90A9EC" maxlength="7" placeholder="#90A9EC" style="width:80px;font-size:12px;padding:8px;font-family:monospace" oninput="syncReelColor('highlight',this.value)">
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:4px">Headline Color</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="reelHeadlineColor" value="#F7EBE0" onchange="updateReelPreview()" oninput="updateReelPreview()" style="width:36px;height:36px;border:1px solid rgba(210,199,255,.3);border-radius:6px;cursor:pointer;padding:2px">
+            <input type="text" id="reelHeadlineHex" value="#F7EBE0" maxlength="7" placeholder="#F7EBE0" style="width:80px;font-size:12px;padding:8px;font-family:monospace" oninput="syncReelColor('headline',this.value)">
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:4px">Background Overlay</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="reelBgColor" value="#3B2145" onchange="updateReelPreview()" oninput="updateReelPreview()" style="width:36px;height:36px;border:1px solid rgba(210,199,255,.3);border-radius:6px;cursor:pointer;padding:2px">
+            <input type="text" id="reelBgHex" value="#3B2145" maxlength="7" placeholder="#3B2145" style="width:80px;font-size:12px;padding:8px;font-family:monospace" oninput="syncReelColor('bg',this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Preview -->
+      <div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:6px">Preview</div>
+      <div id="reelBrandPreview" style="width:200px;height:356px;border-radius:12px;overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;background:#3B2145">
+        <div id="reelPreviewHeadline" style="font-size:14px;font-weight:700;color:#F7EBE0;margin-bottom:10px;line-height:1.2;font-family:Jost,sans-serif">The grief no one talks about is the grief you carry for a mother who is still alive.</div>
+        <div id="reelPreviewSubtitle" style="font-size:13px;color:#FFFFFF;line-height:1.4;font-family:Jost,sans-serif">Your body remembers what your <span id="reelPreviewHighlight" style="color:#90A9EC;font-weight:700">mind</span> tried to forget.</div>
+        <div style="font-family:Jost,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:12px;text-align:center">@angelaschellenberg</div>
+      </div>
+    </div>
+
     <div class="btns" style="margin-top:16px">
       <button class="btn" id="reelSubmitBtn" onclick="submitReelVideo()">Generate Clips</button>
     </div>
@@ -922,7 +980,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels")loadReelProjects()}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
@@ -1265,6 +1323,117 @@ function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.j
 
 // ── REELS STUDIO ──────────────────────────────────────────────
 var reelCurrentProject=null,reelClips=[],reelPollTimer=null;
+
+// ── Reel Branding: Fonts + Colors ──────────────────────────────
+function loadReelFonts(){
+  fetch(BACKEND+"/api/templates/fonts/list").then(function(r){return r.json()}).then(function(d){
+    var fonts=d.fonts||[];
+    var el=document.getElementById("reelFontList");
+    if(!el)return;
+    if(!fonts.length){el.innerHTML='<div style="font-size:11px;color:rgba(59,33,69,.2)">No custom fonts uploaded yet.</div>';return}
+    el.innerHTML=fonts.map(function(f){
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(59,33,69,.04)"><span style="font-size:12px;color:#3B2145;font-family:\''+f.font_family+'\',serif">'+f.name+'</span><button class="ghost" style="font-size:9px;padding:2px 8px" onclick="deleteReelFont('+f.id+')">Remove</button></div>';
+    }).join("");
+    // Inject @font-face for each
+    fonts.forEach(function(f){
+      var existing=document.getElementById("ff-reel-"+f.id);
+      if(existing)return;
+      var ext=f.file_url.split(".").pop().toLowerCase();
+      var format="truetype";
+      if(ext==="otf")format="opentype";else if(ext==="woff")format="woff";else if(ext==="woff2")format="woff2";
+      var style=document.createElement("style");
+      style.id="ff-reel-"+f.id;
+      style.textContent="@font-face { font-family: '"+f.font_family+"'; src: url('"+f.file_url+"') format('"+format+"'); font-display: swap; }";
+      document.head.appendChild(style);
+    });
+  }).catch(function(){});
+}
+
+function uploadReelFonts(files){
+  if(!files||!files.length)return;
+  var baseName=document.getElementById("reelFontName").value.trim();
+  var queue=Array.from(files);
+  var status=document.getElementById("reelFontUploadStatus");
+  var done=0;var total=queue.length;
+  status.textContent="Uploading "+total+" font file"+(total>1?"s":"")+"...";
+  status.style.color="#90A9EC";
+  function uploadNext(){
+    if(queue.length===0){
+      status.textContent=done+" font"+(done>1?"s":"")+" uploaded!";
+      status.style.color="#6fcf97";
+      document.getElementById("reelFontName").value="";
+      document.getElementById("reel-font-input").value="";
+      loadReelFonts();loadCustomFonts();return;
+    }
+    var file=queue.shift();
+    var name=baseName||file.name.replace(/\.(ttf|otf|woff2?)/i,"").replace(/[-_]/g," ");
+    if(total>1&&!baseName)name=file.name.replace(/\.(ttf|otf|woff2?)/i,"").replace(/[-_]/g," ");
+    var reader=new FileReader();
+    reader.onload=function(e){
+      fetch(BACKEND+"/api/templates/fonts/upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,font_family:name,file:e.target.result,filename:file.name})})
+      .then(function(r){return r.json()})
+      .then(function(d){done++;status.textContent="Uploaded "+done+" of "+total+": "+name;uploadNext()})
+      .catch(function(err){done++;status.textContent="Error on "+name;status.style.color="#c45a4a";uploadNext()});
+    };reader.readAsDataURL(file);
+  }
+  uploadNext();
+}
+
+function deleteReelFont(fontId){
+  if(!confirm("Remove this font?"))return;
+  fetch(BACKEND+"/api/templates/fonts/"+fontId,{method:"DELETE"}).then(function(r){return r.json()}).then(function(d){if(d.success){loadReelFonts();loadCustomFonts()}});
+}
+
+function syncReelColor(type,hexVal){
+  if(!/^#[0-9a-fA-F]{6}$/.test(hexVal))return;
+  if(type==="subtitle"){
+    document.getElementById("reelSubtitleColor").value=hexVal;
+    document.getElementById("reelSubtitleHex").value=hexVal;
+  }else if(type==="highlight"){
+    document.getElementById("reelHighlightColor").value=hexVal;
+    document.getElementById("reelHighlightHex").value=hexVal;
+  }else if(type==="headline"){
+    document.getElementById("reelHeadlineColor").value=hexVal;
+    document.getElementById("reelHeadlineHex").value=hexVal;
+  }else if(type==="bg"){
+    document.getElementById("reelBgColor").value=hexVal;
+    document.getElementById("reelBgHex").value=hexVal;
+  }
+  updateReelPreview();
+}
+
+function updateReelPreview(){
+  var subColor=document.getElementById("reelSubtitleColor").value;
+  var hlColor=document.getElementById("reelHighlightColor").value;
+  var headColor=document.getElementById("reelHeadlineColor").value;
+  var bgColor=document.getElementById("reelBgColor").value;
+
+  document.getElementById("reelSubtitleHex").value=subColor;
+  document.getElementById("reelHighlightHex").value=hlColor;
+  document.getElementById("reelHeadlineHex").value=headColor;
+  document.getElementById("reelBgHex").value=bgColor;
+
+  document.getElementById("reelBrandPreview").style.background=bgColor;
+  document.getElementById("reelPreviewHeadline").style.color=headColor;
+  document.getElementById("reelPreviewSubtitle").style.color=subColor;
+  document.getElementById("reelPreviewHighlight").style.color=hlColor;
+
+  // Save to localStorage so it persists
+  try{localStorage.setItem("ce-reel-brand",JSON.stringify({subtitle:subColor,highlight:hlColor,headline:headColor,bg:bgColor}))}catch(e){}
+}
+
+function loadReelBrandColors(){
+  try{
+    var saved=JSON.parse(localStorage.getItem("ce-reel-brand")||"null");
+    if(saved){
+      if(saved.subtitle){document.getElementById("reelSubtitleColor").value=saved.subtitle;document.getElementById("reelSubtitleHex").value=saved.subtitle}
+      if(saved.highlight){document.getElementById("reelHighlightColor").value=saved.highlight;document.getElementById("reelHighlightHex").value=saved.highlight}
+      if(saved.headline){document.getElementById("reelHeadlineColor").value=saved.headline;document.getElementById("reelHeadlineHex").value=saved.headline}
+      if(saved.bg){document.getElementById("reelBgColor").value=saved.bg;document.getElementById("reelBgHex").value=saved.bg}
+      updateReelPreview();
+    }
+  }catch(e){}
+}
 
 function toggleReelSource(){/* future: toggle between URL input and file upload */}
 
