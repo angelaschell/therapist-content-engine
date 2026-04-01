@@ -312,6 +312,7 @@ async def generate_carousel(req: Request):
     trigger_keyword = data.get("trigger_keyword", "")
     trigger_label = data.get("trigger_label", "")
     trigger_description = data.get("trigger_description", "")
+    all_triggers = data.get("all_triggers", [])
 
     template = TEMPLATE_RULES.get(template_type, TEMPLATE_RULES["naming"])
     template_rules = template["rules"]
@@ -334,6 +335,19 @@ async def generate_carousel(req: Request):
     else:
         cta_instruction = "- Do NOT include any Comment CTA line. No ManyChat triggers."
         trigger_json = ""
+
+    # Build trigger ranking instruction
+    trigger_ranking_instruction = ""
+    if all_triggers:
+        trigger_list = "\n".join([f"  - {t['keyword']}: {t['label']} ({t.get('description', '')})" for t in all_triggers])
+        trigger_ranking_instruction = f"""
+
+TRIGGER RANKING:
+Here are all available ManyChat triggers. Rank the top 3 that best fit this specific carousel content. Consider which product/service most naturally extends what the reader just learned.
+{trigger_list}
+
+Include a "trigger_ranking" array in your JSON with exactly 3 objects, each with "keyword", "label", and "reason" (one sentence explaining why this trigger fits this post).
+"""
 
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -358,12 +372,12 @@ FORMATTING RULES:
 - Would a shame-sensitive woman feel steadied, not activated?
 
 Return ONLY valid JSON, no backticks:
-{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "{trigger_json}", "template": "{template_type}"}}
-
+{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "{trigger_json}", "template": "{template_type}"{', "trigger_ranking": [' + '{"keyword":"KEYWORD","label":"Label","reason":"Why"}' + ']' if all_triggers else ''}}}
+{trigger_ranking_instruction}
 CAPTION RULES:
 - Write the caption in Angela's voice. Short punchy lines. Line breaks between thoughts.
 - If clinical research was provided above, cite 1-2 findings naturally in the caption (e.g. "Research from Dr. Mary Frances O'Connor shows grief literally reshapes the brain."). This is important. The research must appear in the caption.
-- Include 15-20 relevant hashtags at the end.
+- Include exactly 5 highly relevant hashtags at the end. Quality over quantity.
 {cta_instruction}
 - No em dashes in the caption either."""}}]
     )
