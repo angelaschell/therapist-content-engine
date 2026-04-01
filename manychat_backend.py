@@ -919,7 +919,6 @@ async def dismiss_rec(rid:int):
 async def analyze_leads():
     try:
         subs = query("SELECT * FROM manychat_subscribers WHERE do_not_contact=false ORDER BY heat_score DESC LIMIT 100")
-        recent = query("SELECT * FROM subscriber_triggers WHERE fired_at > now() - interval '7 days' ORDER BY fired_at DESC LIMIT 50")
         pending = query("SELECT mc_id, category FROM lead_recommendations WHERE status='pending'")
         existing = set(f"{r['mc_id']}_{r['category']}" for r in pending)
         trigs = query("SELECT keyword, label, description FROM manychat_triggers")
@@ -931,31 +930,67 @@ async def analyze_leads():
             if isinstance(tags, str):
                 try: tags = json.loads(tags)
                 except: tags = []
-            summaries.append({
-                "name":s.get("full_name","Unknown"), "mc_id":s.get("mc_id"), "ig":s.get("ig_username",""),
-                "interest":s.get("interest_level"), "heat":s.get("heat_score"), "funnel":s.get("funnel_stage"),
-                "triggers_fired":s.get("trigger_count",0), "conversations":s.get("conversation_count",0),
-                "subscribed":str(s.get("subscribed_at","")), "last_interaction":str(s.get("last_interaction","")),
-                "tags":[t.get("name",str(t)) if isinstance(t,dict) else str(t) for t in tags][:10],
-                "email":bool(s.get("email")), "flodesk_synced":s.get("flodesk_synced",False)
-            })
 
-        activity = [{"mc_id":t["mc_id"],"keyword":t["keyword"],"when":str(t["fired_at"]),"source":t.get("source","")} for t in recent]
+            # Get ACTUAL trigger keywords this person has fired (not just count)
+            sub_triggers = query("SELECT keyword, fired_at FROM subscriber_triggers WHERE mc_id=%s ORDER BY fired_at DESC", (s["mc_id"],))
+            trigger_keywords = list(set(t["keyword"] for t in sub_triggers))
+            latest_trigger = sub_triggers[0] if sub_triggers else None
+
+            summaries.append({
+                "name": s.get("full_name","Unknown"),
+                "mc_id": s.get("mc_id"),
+                "ig": s.get("ig_username",""),
+                "interest": s.get("interest_level"),
+                "heat": s.get("heat_score"),
+                "funnel": s.get("funnel_stage"),
+                "triggers_they_have": trigger_keywords,
+                "latest_trigger": {"keyword": latest_trigger["keyword"], "when": str(latest_trigger["fired_at"])} if latest_trigger else None,
+                "conversations": s.get("conversation_count",0),
+                "subscribed": str(s.get("subscribed_at","")),
+                "last_interaction": str(s.get("last_interaction","")),
+                "tags": [t.get("name",str(t)) if isinstance(t,dict) else str(t) for t in tags][:10],
+                "email": bool(s.get("email")),
+                "flodesk_synced": s.get("flodesk_synced",False)
+            })
 
         now = datetime.now(timezone.utc)
         prompt = f"""You are Angela Schellenberg's lead intelligence analyst. Today is {now.strftime('%B %d, %Y')}.
 Angela is a licensed trauma therapist in LA with 171K IG followers. Healing with Horses retreat April 30-May 3, 2026, few spots left.
 
-Trigger keywords: {json.dumps({k:v.get('label','')+' - '+v.get('description','') for k,v in tmap.items()}, indent=2)}
+AVAILABLE TRIGGERS (Angela's products):
+{json.dumps({k:v.get('label','')+' - '+v.get('description','') for k,v in tmap.items()}, indent=2)}
 
-Top subscribers: {json.dumps(summaries, indent=2, default=str)}
+SUBSCRIBER DATA:
+{json.dumps(summaries, indent=2, default=str)}
 
-Recent triggers (7 days): {json.dumps(activity, indent=2, default=str)}
+Already pending (skip these mc_id + category combos): {json.dumps(list(existing))}
 
-Already pending (skip these): {json.dumps(list(existing))}
+STRICT RULES:
+1. ONLY reference data I provided above. NEVER invent details about a subscriber. If you don't have info about someone, say "based on their [actual data point]." NEVER make up job titles, locations, or personal details.
+2. NEVER recommend sending a flow/trigger that the subscriber has ALREADY fired. Check their "triggers_they_have" array. If they triggered MALIBURETREAT, do NOT suggest sending MALIBU flow. They already have that info. Instead, suggest a PERSONAL follow-up DM.
+3. For warm/hot leads who already triggered a product keyword, the best action is "personal_dm" with a draft message Angela can send. The DM should feel human, not automated.
+4. Only suggest "send_flow" for triggers the person has NOT already fired.
+5. Every recommendation MUST include the person's ig username so Angela knows who it is.
 
-Generate 5-8 actionable recommendations. Return ONLY a JSON array:
-[{{"mc_id":"...","subscriber_name":"...","priority":1,"category":"follow_up","title":"...","description":"...","suggested_action":"...","suggested_flow":"KEYWORD or empty"}}]
+ACTION TYPES:
+- "personal_dm": Angela sends a custom personal message. Include a "dm_draft" field with a ready-to-send DM in Angela's voice (warm, direct, no em dashes, 2-4 sentences).
+- "send_flow": Send an automated ManyChat flow. Only for triggers they DON'T already have.
+
+Generate 5-8 actionable recommendations. Return ONLY a JSON array, no backticks:
+[{{
+  "mc_id": "their mc_id",
+  "subscriber_name": "Their Name",
+  "ig_username": "their_ig_handle",
+  "priority": 1,
+  "category": "follow_up",
+  "title": "Clear title mentioning their name",
+  "description": "What you know about this person based ONLY on the data above. What they need.",
+  "triggers_they_have": ["KEYWORDS", "THEY", "ALREADY", "FIRED"],
+  "action_type": "personal_dm or send_flow",
+  "suggested_action": "What Angela should do and why",
+  "suggested_flow": "KEYWORD (only if action_type is send_flow, otherwise empty string)",
+  "dm_draft": "Ready-to-send personal DM in Angela's voice (only if action_type is personal_dm, otherwise empty string)"
+}}]
 
 Categories: follow_up, re_engage, retreat, stalled, high_intent, new_lead, flodesk_sync.
 Priority 1=urgent, 5=low."""
@@ -975,9 +1010,20 @@ Priority 1=urgent, 5=low."""
         for rec in recs:
             key = f"{rec.get('mc_id')}_{rec.get('category')}"
             if key in existing: continue
-            execute("INSERT INTO lead_recommendations (mc_id,subscriber_name,priority,category,title,description,suggested_action,suggested_flow,expires_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+
+            # Store extra fields in data_points JSONB
+            data_points = {
+                "ig_username": rec.get("ig_username", ""),
+                "action_type": rec.get("action_type", "send_flow"),
+                "triggers_they_have": rec.get("triggers_they_have", []),
+                "dm_draft": rec.get("dm_draft", ""),
+            }
+
+            execute("INSERT INTO lead_recommendations (mc_id,subscriber_name,priority,category,title,description,suggested_action,suggested_flow,data_points,expires_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (rec.get("mc_id"), rec.get("subscriber_name",""), rec.get("priority",5), rec.get("category","follow_up"),
-                 rec.get("title",""), rec.get("description",""), rec.get("suggested_action",""), rec.get("suggested_flow",""),
+                 rec.get("title",""), rec.get("description",""), rec.get("suggested_action",""),
+                 rec.get("suggested_flow","") if rec.get("action_type") == "send_flow" else "",
+                 json.dumps(data_points),
                  (now+timedelta(days=7)).isoformat()))
             inserted += 1
 
