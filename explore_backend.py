@@ -309,3 +309,103 @@ async def save_to_inspo(req: Request):
         return JSONResponse({"success": True, "post": row})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)})
+
+
+# ── Scrape a single Instagram post caption ────────────────────
+@router.post("/api/explore/scrape-post")
+async def scrape_post(req: Request):
+    """Extract caption text from an Instagram post URL.
+    Tries: 1) oEmbed API with app token, 2) Page meta tags."""
+    try:
+        data = await req.json()
+        url = data.get("url", "").strip()
+
+        if not url or "instagram.com" not in url:
+            return JSONResponse({"success": False, "error": "Invalid Instagram URL"})
+
+        caption = ""
+
+        # Method 1: Facebook oEmbed API (most reliable, needs app credentials)
+        app_id = os.environ.get("FB_APP_ID", "")
+        app_secret = os.environ.get("FB_APP_SECRET", "")
+
+        if app_id and app_secret:
+            try:
+                async with httpx.AsyncClient(timeout=15) as client:
+                    r = await client.get(
+                        f"{GRAPH_API_BASE}/instagram_oembed",
+                        params={
+                            "url": url,
+                            "access_token": f"{app_id}|{app_secret}",
+                            "fields": "author_name,html"
+                        }
+                    )
+                if r.status_code == 200:
+                    oembed = r.json()
+                    html = oembed.get("html", "")
+                    # Extract caption from embed HTML
+                    # The caption sits inside a <p> tag in the embed
+                    import re
+                    p_match = re.search(r'<p[^>]*>(.*?)</p>', html, re.DOTALL)
+                    if p_match:
+                        raw = p_match.group(1)
+                        # Clean HTML entities and tags
+                        raw = re.sub(r'<[^>]+>', '', raw)
+                        raw = raw.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#39;', "'").replace('&quot;', '"')
+                        caption = raw.strip()
+                        if caption:
+                            return JSONResponse({"success": True, "caption": caption, "method": "oembed", "author": oembed.get("author_name", "")})
+            except Exception as e:
+                pass  # Fall through to method 2
+
+        # Method 2: Fetch page and parse og:description meta tag
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                r = await client.get(url, headers=headers)
+
+            if r.status_code == 200:
+                text = r.text
+                import re
+                # Try og:description
+                og_match = re.search(r'<meta\s+(?:property|name)="og:description"\s+content="([^"]*)"', text)
+                if not og_match:
+                    og_match = re.search(r'content="([^"]*)"\s+(?:property|name)="og:description"', text)
+
+                if og_match:
+                    raw = og_match.group(1)
+                    raw = raw.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&#39;', "'").replace('&quot;', '"').replace('\\n', '\n')
+                    # og:description often has format: "LIKES likes, COMMENTS comments - Author (@handle) on Instagram: "CAPTION""
+                    caption_match = re.search(r'on Instagram:\s*["\u201c](.+)["\u201d]?$', raw, re.DOTALL)
+                    if caption_match:
+                        caption = caption_match.group(1).rstrip('"').rstrip('\u201d').strip()
+                    else:
+                        caption = raw.strip()
+
+                    if caption:
+                        return JSONResponse({"success": True, "caption": caption, "method": "meta"})
+
+                # Try JSON-LD or shared data
+                json_match = re.search(r'"caption":\s*\{[^}]*"text":\s*"([^"]+)"', text)
+                if json_match:
+                    caption = json_match.group(1).replace('\\n', '\n').replace('\\"', '"')
+                    if caption:
+                        return JSONResponse({"success": True, "caption": caption, "method": "json"})
+
+        except Exception as e:
+            pass
+
+        if caption:
+            return JSONResponse({"success": True, "caption": caption, "method": "fallback"})
+
+        return JSONResponse({
+            "success": False,
+            "error": "Could not extract caption. The post may be private, or Instagram blocked the request. Try pasting the text manually."
+        })
+
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)})
