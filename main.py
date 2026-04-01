@@ -12,6 +12,7 @@ from instagram_publisher import router as publisher_router, start_scheduler
 from templates import router as templates_router
 from comments_backend import router as comments_router
 from manychat_backend import router as manychat_router
+from vizard_backend import router as vizard_router
 
 app = FastAPI()
 
@@ -29,6 +30,7 @@ app.include_router(publisher_router)
 app.include_router(templates_router)
 app.include_router(comments_router)
 app.include_router(manychat_router)
+app.include_router(vizard_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
