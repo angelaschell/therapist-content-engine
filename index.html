@@ -188,6 +188,27 @@ option{background:#F7EBE0}
 .rank-kw{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#90A9EC;font-weight:600}
 .rank-label{font-size:13px;color:rgba(59,33,69,.7);margin-top:2px}
 .rank-reason{font-size:12px;color:rgba(59,33,69,.5);margin-top:4px;font-style:italic;line-height:1.4}
+.reel-card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.2);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.reel-card:hover{border-color:rgba(144,169,236,.35)}
+.reel-card.starred{border-color:#F3DA8B}
+.reel-video{width:100%;aspect-ratio:9/16;max-height:280px;object-fit:cover;background:#1a1a2e;border-radius:0}
+.reel-info{padding:14px}
+.reel-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:#3B2145;line-height:1.3;margin-bottom:8px}
+.reel-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.reel-score{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:#fff}
+.reel-score.high{background:#6fcf97}.reel-score.mid{background:#F3DA8B;color:#3B2145}.reel-score.low{background:#e87070}
+.reel-dur{font-size:11px;color:rgba(59,33,69,.4);letter-spacing:.5px}
+.reel-reason{font-size:11px;color:rgba(59,33,69,.4);line-height:1.4;margin-bottom:8px}
+.reel-transcript{font-size:11px;color:rgba(59,33,69,.35);line-height:1.5;max-height:60px;overflow:hidden;margin-bottom:8px;cursor:pointer}
+.reel-transcript.expanded{max-height:none}
+.reel-caption-box{background:rgba(210,199,255,.08);border-radius:8px;padding:10px;margin-bottom:8px}
+.reel-caption-box textarea{min-height:80px;font-size:12px;line-height:1.6}
+.reel-actions{display:flex;gap:6px;flex-wrap:wrap}
+.reel-actions button{font-size:10px;padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid rgba(210,199,255,.25);background:rgba(255,255,255,.5);color:#3B2145;transition:all .15s}
+.reel-actions button:hover{border-color:#90A9EC;background:rgba(144,169,236,.08)}
+.reel-actions button.star-active{border-color:#F3DA8B;background:rgba(243,218,139,.15);color:#3B2145}
+.reel-project-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.1);margin-bottom:6px;cursor:pointer;transition:all .15s}
+.reel-project-item:hover{border-color:rgba(144,169,236,.3);background:rgba(255,255,255,.6)}
 .cost-bar{display:flex;gap:18px;flex-wrap:wrap;padding:14px 20px;background:rgba(255,255,255,.3);border:1px solid rgba(210,199,255,.15);border-radius:8px;margin-top:22px}
 .cost-item{font-size:11px;color:rgba(59,33,69,.3)}.cost-item strong{color:#3B2145;font-weight:500}
 .v-loader{text-align:center;padding:40px 0}
@@ -291,7 +312,7 @@ option{background:#F7EBE0}
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
   <button class="tab" onclick="showTab('templates',this)">Templates</button>
   <button class="tab active" onclick="showTab('builder',this)">Carousel Builder</button>
-  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
+  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('reels',this)">Reels Studio</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
 </div>
 <div class="main">
 
@@ -789,6 +810,101 @@ function refreshToken(){
   <div class="btns" style="margin-top:10px"><button class="ghost" onclick="if(confirm('Clear all saved carousels?')){localStorage.removeItem('ce-recent');renderRecentList()}">Clear All</button></div>
 </div>
 
+<!-- REELS STUDIO TAB -->
+<div id="reels" class="tab-panel" style="display:none">
+  <p class="desc">Upload a podcast episode or video. Vizard AI clips it into reels, you review and publish.</p>
+
+  <!-- SECTION 1: UPLOAD + SETTINGS -->
+  <div class="card" id="reelsUpload">
+    <div class="vault-head" style="color:#90A9EC">Upload Video</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select id="reel-source" style="flex:1;min-width:150px" onchange="toggleReelSource()">
+        <option value="youtube">YouTube URL</option>
+        <option value="vimeo">Vimeo URL</option>
+        <option value="gdrive">Google Drive Link</option>
+        <option value="url">Direct Video URL</option>
+      </select>
+    </div>
+    <input type="text" id="reel-url" placeholder="Paste video URL here..." style="margin-bottom:12px">
+    <input type="text" id="reel-name" placeholder="Project name (e.g. EP01 - Claire Bidwell Smith)" style="margin-bottom:14px">
+
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Clip Settings</div>
+    <div class="grid2">
+      <div><label>Clip Length</label><select id="reel-length">
+        <option value="0">Let AI decide</option>
+        <option value="1">Under 30s</option>
+        <option value="2">30-60s</option>
+        <option value="3">60-90s</option>
+      </select></div>
+      <div><label>Aspect Ratio</label><select id="reel-ratio">
+        <option value="1">9:16 Vertical (Reels/TikTok)</option>
+        <option value="2">1:1 Square</option>
+        <option value="3">4:5 Portrait</option>
+      </select></div>
+    </div>
+    <div class="grid2">
+      <div><label>Max Clips</label><input type="number" id="reel-max" value="15" min="1" max="50"></div>
+      <div><label>Topic Filter (optional)</label><input type="text" id="reel-keywords" placeholder="e.g. frozen grief, EMDR"></div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:rgba(59,33,69,.6)">
+      <label><input type="checkbox" id="reel-silence"> Remove silence</label>
+      <label><input type="checkbox" id="reel-subtitles" checked> Subtitles</label>
+      <label><input type="checkbox" id="reel-headline" checked> AI headline hook</label>
+      <label><input type="checkbox" id="reel-broll"> Auto B-roll</label>
+      <label><input type="checkbox" id="reel-emoji"> Auto emoji</label>
+      <label><input type="checkbox" id="reel-highlight"> Highlight keywords</label>
+    </div>
+    <div style="margin-top:14px">
+      <label>Vizard Template ID (optional)</label>
+      <input type="text" id="reel-template" placeholder="Paste template ID from Vizard editor" style="max-width:300px">
+      <div style="font-size:10px;color:rgba(59,33,69,.25);margin-top:3px">Find in Vizard editor > Template tab > hover template > copy ID</div>
+    </div>
+    <div class="btns" style="margin-top:16px">
+      <button class="btn" id="reelSubmitBtn" onclick="submitReelVideo()">Generate Clips</button>
+    </div>
+    <div id="reelSubmitStatus" style="display:none;margin-top:12px;padding:14px;border-radius:10px;font-size:13px"></div>
+  </div>
+
+  <!-- SECTION 2: PROCESSING STATUS -->
+  <div id="reelProcessing" style="display:none" class="card">
+    <div class="v-loader"><p id="reelProcessingText">Processing video... This usually takes 5-15 minutes.</p></div>
+    <div style="font-size:11px;color:rgba(59,33,69,.3);text-align:center;margin-top:8px">Polling every 30 seconds. You can leave this tab open.</div>
+  </div>
+
+  <!-- SECTION 3: CLIP REVIEW DASHBOARD -->
+  <div id="reelDashboard" style="display:none">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div class="vault-head" style="color:#90A9EC;margin-bottom:0">Clip Dashboard</div>
+        <div style="display:flex;gap:12px;font-size:12px;color:rgba(59,33,69,.5)">
+          <span id="reelStatTotal">0 clips</span>
+          <span id="reelStatAvg">Avg score: 0</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <select id="reelSort" onchange="renderReelClips()" style="font-size:12px;padding:6px 10px">
+        <option value="score">Sort: Viral Score</option>
+        <option value="duration">Sort: Duration</option>
+        <option value="chrono">Sort: Chronological</option>
+      </select>
+      <select id="reelFilter" onchange="renderReelClips()" style="font-size:12px;padding:6px 10px">
+        <option value="all">All Clips</option>
+        <option value="top">Score 7+ Only</option>
+        <option value="starred">Starred Only</option>
+      </select>
+      <button class="ghost" style="font-size:11px;margin-left:auto" onclick="batchCaptionReels()">Write All Captions</button>
+    </div>
+    <div id="reelClipGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+  </div>
+
+  <!-- SECTION 4: PAST PROJECTS -->
+  <div class="card" style="margin-top:20px">
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Past Projects</div>
+    <div id="reelProjectList"></div>
+  </div>
+</div>
+
 <div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved. <span style="cursor:pointer;color:#90A9EC;margin-left:12px" onclick="logout()">Log Out</span></p></div>
 </div>
 </div>
@@ -806,7 +922,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers()}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels")loadReelProjects()}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
@@ -1146,6 +1262,275 @@ function loadManyChatCTAs(){
 }
 
 function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;viralHooks=d.hooks||[]}}).catch(function(){})}
+
+// ── REELS STUDIO ──────────────────────────────────────────────
+var reelCurrentProject=null,reelClips=[],reelPollTimer=null;
+
+function toggleReelSource(){/* future: toggle between URL input and file upload */}
+
+function submitReelVideo(){
+  var url=document.getElementById("reel-url").value.trim();
+  if(!url){alert("Paste a video URL.");return}
+  var btn=document.getElementById("reelSubmitBtn");
+  btn.textContent="Submitting...";btn.disabled=true;
+
+  var sourceMap={youtube:2,vimeo:4,gdrive:3,url:1};
+  var src=document.getElementById("reel-source").value;
+  var lengthVal=parseInt(document.getElementById("reel-length").value);
+
+  var payload={
+    video_url:url,
+    project_name:document.getElementById("reel-name").value.trim()||"Untitled",
+    video_type:sourceMap[src]||2,
+    prefer_length:[lengthVal],
+    ratio:parseInt(document.getElementById("reel-ratio").value),
+    max_clips:parseInt(document.getElementById("reel-max").value)||15,
+    remove_silence:document.getElementById("reel-silence").checked,
+    subtitles:document.getElementById("reel-subtitles").checked,
+    headline:document.getElementById("reel-headline").checked,
+    auto_broll:document.getElementById("reel-broll").checked,
+    emoji:document.getElementById("reel-emoji").checked,
+    highlight_keywords:document.getElementById("reel-highlight").checked,
+    keywords:document.getElementById("reel-keywords").value.trim()||"",
+    template_id:document.getElementById("reel-template").value.trim()||""
+  };
+
+  fetch(BACKEND+"/api/vizard/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    btn.textContent="Generate Clips";btn.disabled=false;
+    if(d.success&&d.project){
+      reelCurrentProject=d.project;
+      showReelStatus("Submitted! Processing video...", "loading");
+      document.getElementById("reelProcessing").style.display="block";
+      startReelPolling(d.project.id);
+    }else{
+      showReelStatus("Error: "+(d.error||"Unknown"),"error");
+    }
+  }).catch(function(e){
+    btn.textContent="Generate Clips";btn.disabled=false;
+    showReelStatus("Error: "+e.message,"error");
+  });
+}
+
+function showReelStatus(msg,type){
+  var el=document.getElementById("reelSubmitStatus");
+  el.style.display="block";
+  el.textContent=msg;
+  el.style.background=type==="error"?"rgba(232,112,112,.1)":type==="success"?"rgba(111,207,151,.1)":"rgba(144,169,236,.1)";
+  el.style.color=type==="error"?"#c45a4a":type==="success"?"#2d8a54":"#5a7bbf";
+}
+
+function startReelPolling(projectId){
+  if(reelPollTimer)clearInterval(reelPollTimer);
+  var attempts=0;
+  document.getElementById("reelProcessing").style.display="block";
+
+  reelPollTimer=setInterval(function(){
+    attempts++;
+    document.getElementById("reelProcessingText").textContent="Processing video... (check "+attempts+", polling every 30s)";
+
+    fetch(BACKEND+"/api/vizard/status/"+projectId)
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.status==="complete"){
+        clearInterval(reelPollTimer);
+        reelPollTimer=null;
+        document.getElementById("reelProcessing").style.display="none";
+        showReelStatus(d.clip_count+" clips generated!","success");
+        loadReelClips(projectId);
+      }else if(d.status==="failed"){
+        clearInterval(reelPollTimer);
+        reelPollTimer=null;
+        document.getElementById("reelProcessing").style.display="none";
+        showReelStatus("Processing failed: "+(d.error||"Unknown"),"error");
+      }
+    }).catch(function(){});
+
+    if(attempts>60){
+      clearInterval(reelPollTimer);
+      reelPollTimer=null;
+      document.getElementById("reelProcessing").style.display="none";
+      showReelStatus("Timed out after 30 minutes. Check Vizard dashboard.","error");
+    }
+  },30000);
+}
+
+function loadReelClips(projectId){
+  fetch(BACKEND+"/api/vizard/clips/"+projectId)
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){
+      reelClips=d.clips||[];
+      reelCurrentProject=d.project;
+      document.getElementById("reelDashboard").style.display="block";
+      renderReelClips();
+    }
+  }).catch(function(){});
+}
+
+function renderReelClips(){
+  var clips=reelClips.filter(function(c){return!c.hidden});
+  var filter=document.getElementById("reelFilter").value;
+  if(filter==="top")clips=clips.filter(function(c){return c.viral_score>=7});
+  if(filter==="starred")clips=clips.filter(function(c){return c.starred});
+
+  var sort=document.getElementById("reelSort").value;
+  if(sort==="score")clips.sort(function(a,b){return b.viral_score-a.viral_score});
+  if(sort==="duration")clips.sort(function(a,b){return a.duration_ms-b.duration_ms});
+
+  // Stats
+  var total=clips.length;
+  var avg=total?Math.round(clips.reduce(function(s,c){return s+c.viral_score},0)/total*10)/10:0;
+  document.getElementById("reelStatTotal").textContent=total+" clips";
+  document.getElementById("reelStatAvg").textContent="Avg score: "+avg;
+
+  var grid=document.getElementById("reelClipGrid");
+  if(!clips.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:rgba(59,33,69,.3)">No clips match this filter.</div>';return}
+
+  grid.innerHTML=clips.map(function(c){
+    var dur=Math.round(c.duration_ms/1000);
+    var mins=Math.floor(dur/60);
+    var secs=dur%60;
+    var durStr=mins+":"+(secs<10?"0":"")+secs;
+    var scoreClass=c.viral_score>=7?"high":c.viral_score>=4?"mid":"low";
+    var starClass=c.starred?"star-active":"";
+
+    var h='<div class="reel-card'+(c.starred?" starred":"")+'" id="reel-card-'+c.id+'">';
+    if(c.video_url)h+='<video class="reel-video" src="'+c.video_url+'" preload="metadata" onclick="this.paused?this.play():this.pause()" muted playsinline></video>';
+    h+='<div class="reel-info">';
+    h+='<div class="reel-title">'+escHtml(c.title)+'</div>';
+    h+='<div class="reel-meta"><span class="reel-score '+scoreClass+'">'+c.viral_score+'/10</span><span class="reel-dur">'+durStr+'</span></div>';
+    if(c.viral_reason)h+='<div class="reel-reason">'+escHtml(c.viral_reason)+'</div>';
+    if(c.transcript)h+='<div class="reel-transcript" onclick="this.classList.toggle(\'expanded\')">'+escHtml(c.transcript.substring(0,200))+(c.transcript.length>200?"...":"")+'</div>';
+
+    // Caption area
+    if(c.caption){
+      h+='<div class="reel-caption-box"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#90A9EC;margin-bottom:4px">Caption</div><div style="font-size:12px;color:rgba(59,33,69,.6);line-height:1.5;white-space:pre-wrap">'+escHtml(c.caption)+'</div></div>';
+    }
+
+    h+='<div class="reel-actions">';
+    h+='<button class="'+starClass+'" onclick="toggleReelStar('+c.id+')">'+(c.starred?'Starred':'Star')+'</button>';
+    h+='<button onclick="writeReelCaption('+c.id+')">Write Caption</button>';
+    if(c.video_url)h+='<a href="'+c.video_url+'" download style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid rgba(210,199,255,.25);background:rgba(255,255,255,.5);color:#3B2145;text-decoration:none">Download</a>';
+    if(c.editor_url)h+='<a href="'+c.editor_url+'" target="_blank" style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid rgba(210,199,255,.25);background:rgba(255,255,255,.5);color:#90A9EC;text-decoration:none">Edit in Vizard</a>';
+    h+='<button onclick="hideReelClip('+c.id+')">Hide</button>';
+    h+='</div></div></div>';
+    return h;
+  }).join("");
+}
+
+function escHtml(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+function toggleReelStar(clipId){
+  fetch(BACKEND+"/api/vizard/clips/"+clipId+"/star",{method:"PATCH"})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success&&d.clip){
+      var idx=reelClips.findIndex(function(c){return c.id===clipId});
+      if(idx>-1)reelClips[idx].starred=d.clip.starred;
+      renderReelClips();
+    }
+  });
+}
+
+function hideReelClip(clipId){
+  fetch(BACKEND+"/api/vizard/clips/"+clipId+"/hide",{method:"PATCH"})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){
+      var idx=reelClips.findIndex(function(c){return c.id===clipId});
+      if(idx>-1)reelClips[idx].hidden=true;
+      renderReelClips();
+    }
+  });
+}
+
+function writeReelCaption(clipId){
+  var card=document.getElementById("reel-card-"+clipId);
+  if(!card)return;
+  var btn=card.querySelector('.reel-actions button:nth-child(2)');
+  if(btn){btn.textContent="Writing...";btn.disabled=true}
+
+  // Get trigger from carousel builder CTA dropdown
+  var ti=getTriggerInfo();
+
+  fetch(BACKEND+"/api/vizard/caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    clip_id:clipId,
+    trigger:ti.trigger_keyword,
+    trigger_label:ti.trigger_label,
+    trigger_description:ti.trigger_description
+  })}).then(function(r){return r.json()})
+  .then(function(d){
+    if(btn){btn.textContent="Write Caption";btn.disabled=false}
+    if(d.success){
+      var idx=reelClips.findIndex(function(c){return c.id===clipId});
+      if(idx>-1)reelClips[idx].caption=d.caption;
+      renderReelClips();
+    }
+  }).catch(function(){
+    if(btn){btn.textContent="Write Caption";btn.disabled=false}
+  });
+}
+
+function batchCaptionReels(){
+  var visible=reelClips.filter(function(c){return!c.hidden});
+  if(!visible.length){alert("No clips to caption.");return}
+  var ids=visible.map(function(c){return c.id});
+  var ti=getTriggerInfo();
+
+  showReelStatus("Writing captions for "+ids.length+" clips... This may take a minute.","loading");
+
+  fetch(BACKEND+"/api/vizard/batch-caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    clip_ids:ids,
+    trigger:ti.trigger_keyword,
+    trigger_label:ti.trigger_label,
+    trigger_description:ti.trigger_description
+  })}).then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){
+      (d.results||[]).forEach(function(r){
+        if(r.success){
+          var idx=reelClips.findIndex(function(c){return c.id===r.clip_id});
+          if(idx>-1)reelClips[idx].caption=r.caption;
+        }
+      });
+      var ok=d.results.filter(function(r){return r.success}).length;
+      showReelStatus(ok+" captions written!","success");
+      renderReelClips();
+    }
+  }).catch(function(e){showReelStatus("Error: "+e.message,"error")});
+}
+
+function loadReelProjects(){
+  fetch(BACKEND+"/api/vizard/projects").then(function(r){return r.json()})
+  .then(function(d){
+    var el=document.getElementById("reelProjectList");
+    var projects=d.projects||[];
+    if(!projects.length){el.innerHTML='<div style="font-size:13px;color:rgba(59,33,69,.3);padding:12px 0">No projects yet. Submit a video above.</div>';return}
+    el.innerHTML=projects.map(function(p){
+      var date=new Date(p.created_at).toLocaleDateString();
+      var statusColor=p.status==="complete"?"#6fcf97":p.status==="processing"?"#F3DA8B":"#e87070";
+      return'<div class="reel-project-item" onclick="openReelProject('+p.id+',\''+p.status+'\')"><div><div style="font-size:14px;font-weight:500;color:#3B2145">'+escHtml(p.project_name)+'</div><div style="font-size:11px;color:rgba(59,33,69,.35)">'+date+' . '+p.clip_count+' clips . <span style="color:'+statusColor+'">'+p.status+'</span></div></div><div style="display:flex;gap:6px"><button class="ghost" style="font-size:10px;padding:4px 8px" onclick="event.stopPropagation();deleteReelProject('+p.id+')">Delete</button></div></div>';
+    }).join("");
+  }).catch(function(){});
+}
+
+function openReelProject(projectId, status){
+  if(status==="processing"){
+    startReelPolling(projectId);
+    document.getElementById("reelProcessing").style.display="block";
+    return;
+  }
+  loadReelClips(projectId);
+}
+
+function deleteReelProject(projectId){
+  if(!confirm("Delete this project and all its clips?"))return;
+  fetch(BACKEND+"/api/vizard/projects/"+projectId,{method:"DELETE"})
+  .then(function(r){return r.json()})
+  .then(function(d){if(d.success)loadReelProjects()});
+}
 </script>
 </body>
 </html>
