@@ -1168,9 +1168,11 @@ function loadSpinoffUrl(){
   if(!url){alert("Paste an Instagram URL first.");return}
   if(!url.includes("instagram.com")){alert("That doesn't look like an Instagram URL.");return}
   var status=document.getElementById("spinoffStatus");
+  var btn=document.querySelector('[onclick="loadSpinoffUrl()"]');
   status.style.display="block";
-  status.textContent="Loading post...";
+  status.textContent="Loading post... (may take up to 30 seconds)";
   status.style.color="#90A9EC";
+  if(btn){btn.disabled=true;btn.textContent="Loading..."}
 
   fetch(BACKEND+"/api/load-instagram-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url})})
   .then(function(r){
@@ -1189,6 +1191,8 @@ function loadSpinoffUrl(){
   }).catch(function(e){
     status.textContent="Could not load: "+e.message+". Try pasting the text manually.";
     status.style.color="#c45a4a";
+  }).finally(function(){
+    if(btn){btn.disabled=false;btn.textContent="Load Post"}
   });
 }
 
