@@ -209,6 +209,30 @@ option{background:#F7EBE0}
 .reel-actions button.star-active{border-color:#F3DA8B;background:rgba(243,218,139,.15);color:#3B2145}
 .reel-project-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.1);margin-bottom:6px;cursor:pointer;transition:all .15s}
 .reel-project-item:hover{border-color:rgba(144,169,236,.3);background:rgba(255,255,255,.6)}
+.explore-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+@media(max-width:700px){.explore-grid{grid-template-columns:repeat(2,1fr)}}
+.explore-cell{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:4px;cursor:pointer;background:#f0ede8}
+.explore-cell img{width:100%;height:100%;object-fit:cover;transition:opacity .2s}
+.explore-cell:hover img{opacity:.85}
+.explore-cell .ex-overlay{position:absolute;inset:0;background:rgba(59,33,69,.7);opacity:0;transition:opacity .2s;display:flex;flex-direction:column;justify-content:flex-end;padding:10px}
+.explore-cell:hover .ex-overlay{opacity:1}
+.explore-cell .ex-stats{color:#fff;font-size:11px;display:flex;gap:12px;margin-bottom:6px}
+.explore-cell .ex-caption{color:rgba(255,255,255,.8);font-size:10px;line-height:1.4;max-height:60px;overflow:hidden}
+.explore-cell .ex-type{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.4);color:#fff;font-size:8px;padding:2px 6px;border-radius:3px;letter-spacing:.5px}
+.explore-cell .ex-carousel-nav{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:2}
+.explore-cell .ex-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:background .2s}
+.explore-cell .ex-dot.active{background:#fff}
+.explore-cell .ex-arrows{position:absolute;top:50%;width:100%;display:flex;justify-content:space-between;padding:0 4px;transform:translateY(-50%);z-index:2;pointer-events:none}
+.explore-cell .ex-arr{pointer-events:all;background:rgba(0,0,0,.25);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.explore-cell:hover .ex-arr{opacity:1}
+.explore-modal{position:fixed;inset:0;background:rgba(59,33,69,.85);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.explore-modal-card{background:#fff;border-radius:16px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+.explore-modal-card .em-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;color:rgba(59,33,69,.4);cursor:pointer;z-index:3}
+.explore-modal-card .em-slides{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;border-radius:16px 16px 0 0}
+.explore-modal-card .em-slides img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+.explore-modal-card .em-slides img.active{opacity:1}
+.explore-modal-card .em-body{padding:16px}
+.explore-modal-card .em-caption{font-size:13px;color:#3B2145;line-height:1.6;white-space:pre-wrap;margin-bottom:12px;max-height:200px;overflow-y:auto}
 .cost-bar{display:flex;gap:18px;flex-wrap:wrap;padding:14px 20px;background:rgba(255,255,255,.3);border:1px solid rgba(210,199,255,.15);border-radius:8px;margin-top:22px}
 .cost-item{font-size:11px;color:rgba(59,33,69,.3)}.cost-item strong{color:#3B2145;font-weight:500}
 .v-loader{text-align:center;padding:40px 0}
@@ -306,15 +330,48 @@ option{background:#F7EBE0}
 </div></div>
 
 <div class="tabs">
+  <button class="tab active" onclick="showTab('explore',this)">Explore</button>
   <button class="tab" onclick="showTab('content',this)">Content Studio</button>
   <button class="tab" onclick="showTab('dm',this)">DM Engine</button>
   <button class="tab" onclick="showTab('flows',this)">ManyChat Flows</button>
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
   <button class="tab" onclick="showTab('templates',this)">Templates</button>
-  <button class="tab active" onclick="showTab('builder',this)">Carousel Builder</button>
+  <button class="tab" onclick="showTab('builder',this)">Carousel Builder</button>
   <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('reels',this)">Reels Studio</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
 </div>
 <div class="main">
+
+<!-- EXPLORE FEED -->
+<div id="explore" class="tab-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div>
+      <div class="vault-head" style="color:#90A9EC;margin-bottom:2px">Explore</div>
+      <div style="font-size:12px;color:rgba(59,33,69,.35)">Top carousels from Instagram. Swipe through slides. Hit Spin Off to create your version.</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="ghost" style="font-size:11px" onclick="refreshExplore()">Pull Fresh Posts</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <select id="exploreFilter" onchange="renderExploreGrid()" style="font-size:12px;padding:6px 10px">
+      <option value="all">All Types</option>
+      <option value="carousel">Carousels Only</option>
+      <option value="image">Images Only</option>
+      <option value="video">Videos Only</option>
+    </select>
+    <select id="exploreHashtag" onchange="renderExploreGrid()" style="font-size:12px;padding:6px 10px">
+      <option value="">All Hashtags</option>
+    </select>
+    <select id="exploreSort" onchange="renderExploreGrid()" style="font-size:12px;padding:6px 10px">
+      <option value="likes">Most Liked</option>
+      <option value="comments">Most Comments</option>
+      <option value="recent">Most Recent</option>
+    </select>
+    <span id="exploreCount" style="font-size:11px;color:rgba(59,33,69,.3);margin-left:auto"></span>
+  </div>
+  <div id="exploreStatus" style="display:none;padding:12px;border-radius:10px;font-size:13px;margin-bottom:12px"></div>
+  <div id="exploreGrid" class="explore-grid"></div>
+</div>
 
 <div id="content" class="tab-panel" style="display:none">
   <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
@@ -405,7 +462,7 @@ option{background:#F7EBE0}
 </div>
 
 <!-- CAROUSEL BUILDER (original) -->
-<div id="builder" class="tab-panel">
+<div id="builder" class="tab-panel" style="display:none">
   <div class="step-bar" id="stepBar">
     <span class="step-pill current" id="sp1">1. Topic</span><span class="step-arrow">&#8594;</span>
     <span class="step-pill" id="sp2">2. Scraper</span><span class="step-arrow">&#8594;</span>
@@ -1079,7 +1136,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
@@ -1426,6 +1483,205 @@ function loadManyChatCTAs(){
 }
 
 function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;viralHooks=d.hooks||[]}}).catch(function(){})}
+
+// ── EXPLORE FEED ──────────────────────────────────────────────
+var explorePosts=[];
+
+function loadExploreFeed(){
+  fetch(BACKEND+"/api/explore/feed?type="+
+    (document.getElementById("exploreFilter")||{}).value||"all"+
+    "&sort="+(document.getElementById("exploreSort")||{}).value||"likes"+
+    "&hashtag="+(document.getElementById("exploreHashtag")||{}).value||""+
+    "&limit=90")
+  .then(function(r){return r.json()})
+  .then(function(d){
+    explorePosts=d.posts||[];
+    renderExploreGrid();
+    loadExploreHashtags();
+  }).catch(function(){
+    document.getElementById("exploreGrid").innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(59,33,69,.25);font-family:Cormorant Garamond,serif;font-size:18px">No posts yet. Hit "Pull Fresh Posts" to load content from Instagram.</div>';
+  });
+}
+
+function renderExploreGrid(){
+  var filter=(document.getElementById("exploreFilter")||{}).value||"all";
+  var hashtag=(document.getElementById("exploreHashtag")||{}).value||"";
+  var sort=(document.getElementById("exploreSort")||{}).value||"likes";
+
+  var posts=explorePosts.slice();
+  if(filter==="carousel")posts=posts.filter(function(p){return p.media_type==="CAROUSEL_ALBUM"});
+  if(filter==="image")posts=posts.filter(function(p){return p.media_type==="IMAGE"});
+  if(filter==="video")posts=posts.filter(function(p){return p.media_type==="VIDEO"});
+  if(hashtag)posts=posts.filter(function(p){return p.hashtag===hashtag});
+
+  if(sort==="likes")posts.sort(function(a,b){return(b.like_count||0)-(a.like_count||0)});
+  if(sort==="comments")posts.sort(function(a,b){return(b.comments_count||0)-(a.comments_count||0)});
+  if(sort==="recent")posts.sort(function(a,b){return(b.timestamp||"").localeCompare(a.timestamp||"")});
+
+  document.getElementById("exploreCount").textContent=posts.length+" posts";
+
+  var grid=document.getElementById("exploreGrid");
+  if(!posts.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(59,33,69,.25);font-family:Cormorant Garamond,serif;font-size:18px">No posts match this filter.</div>';return}
+
+  grid.innerHTML=posts.map(function(p,idx){
+    var slides=[];
+    try{slides=typeof p.slide_urls==="string"?JSON.parse(p.slide_urls):p.slide_urls||[]}catch(e){}
+    var isCarousel=slides.length>1;
+    var thumb=p.thumbnail_url||"";
+    var typeLabel=p.media_type==="CAROUSEL_ALBUM"?"carousel":p.media_type==="VIDEO"?"reel":"photo";
+    var caption=(p.caption||"").substring(0,120);
+    var likes=p.like_count||0;
+    var comments=p.comments_count||0;
+    var likesStr=likes>=1000?(likes/1000).toFixed(1)+"K":likes;
+    var commStr=comments>=1000?(comments/1000).toFixed(1)+"K":comments;
+
+    var h='<div class="explore-cell" onclick="openExplorePost('+idx+')" data-idx="'+idx+'">';
+
+    if(isCarousel){
+      h+='<img src="'+slides[0].url+'" id="ex-img-'+idx+'" alt="">';
+      h+='<div class="ex-arrows"><button class="ex-arr" onclick="event.stopPropagation();slideExplore('+idx+',-1)">&#8249;</button><button class="ex-arr" onclick="event.stopPropagation();slideExplore('+idx+',1)">&#8250;</button></div>';
+      h+='<div class="ex-carousel-nav">';
+      slides.forEach(function(s,si){h+='<div class="ex-dot'+(si===0?" active":"")+'"></div>'});
+      h+='</div>';
+    }else if(thumb){
+      h+='<img src="'+thumb+'" alt="">';
+    }else{
+      h+='<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:16px;font-size:11px;color:rgba(59,33,69,.3);line-height:1.4;text-align:center">'+caption+'</div>';
+    }
+
+    h+='<div class="ex-type">'+typeLabel+'</div>';
+    h+='<div class="ex-overlay"><div class="ex-stats"><span>'+likesStr+' likes</span><span>'+commStr+' comments</span></div>';
+    if(caption)h+='<div class="ex-caption">'+escHtml(caption)+'</div>';
+    h+='</div></div>';
+    return h;
+  }).join("");
+}
+
+// Slide through carousel in grid cell
+var exploreSlideIdx={};
+function slideExplore(postIdx,dir){
+  var post=explorePosts[postIdx];if(!post)return;
+  var slides=[];try{slides=typeof post.slide_urls==="string"?JSON.parse(post.slide_urls):post.slide_urls||[]}catch(e){}
+  if(slides.length<2)return;
+  var cur=exploreSlideIdx[postIdx]||0;
+  cur+=dir;
+  if(cur<0)cur=slides.length-1;
+  if(cur>=slides.length)cur=0;
+  exploreSlideIdx[postIdx]=cur;
+  var img=document.getElementById("ex-img-"+postIdx);
+  if(img)img.src=slides[cur].url;
+  // Update dots
+  var cell=img?img.closest(".explore-cell"):null;
+  if(cell){cell.querySelectorAll(".ex-dot").forEach(function(d,i){d.classList.toggle("active",i===cur)})}
+}
+
+// Open full post modal
+function openExplorePost(idx){
+  var post=explorePosts[idx];if(!post)return;
+  var slides=[];try{slides=typeof post.slide_urls==="string"?JSON.parse(post.slide_urls):post.slide_urls||[]}catch(e){}
+  var caption=post.caption||"";
+
+  var h='<div class="explore-modal" onclick="if(event.target===this)this.remove()">';
+  h+='<div class="explore-modal-card">';
+  h+='<button class="em-close" onclick="this.closest(\'.explore-modal\').remove()">&times;</button>';
+
+  // Slides viewer
+  if(slides.length>0){
+    h+='<div class="em-slides" id="em-slides-'+idx+'">';
+    slides.forEach(function(s,i){
+      h+='<img src="'+s.url+'" class="'+(i===0?"active":"")+'" data-si="'+i+'">';
+    });
+    if(slides.length>1){
+      h+='<div class="ex-arrows" style="position:absolute;top:50%;width:100%;padding:0 8px"><button class="ex-arr" style="opacity:1;width:30px;height:30px;font-size:16px" onclick="slideModal('+idx+',-1)">&#8249;</button><button class="ex-arr" style="opacity:1;width:30px;height:30px;font-size:16px" onclick="slideModal('+idx+',1)">&#8250;</button></div>';
+      h+='<div class="ex-carousel-nav" style="bottom:12px">';
+      slides.forEach(function(s,i){h+='<div class="ex-dot'+(i===0?" active":"")+'"></div>'});
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+
+  h+='<div class="em-body">';
+  h+='<div style="display:flex;gap:10px;margin-bottom:10px;font-size:11px;color:rgba(59,33,69,.4)">';
+  h+='<span>'+(post.like_count||0)+' likes</span><span>'+(post.comments_count||0)+' comments</span><span>#'+post.hashtag+'</span>';
+  h+='</div>';
+  h+='<div class="em-caption">'+escHtml(caption)+'</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  h+='<button class="btn" onclick="spinOffExplorePost('+idx+')">Spin Off This Post</button>';
+  if(post.permalink)h+='<a href="'+post.permalink+'" target="_blank" class="ghost" style="text-decoration:none;text-align:center">View on Instagram</a>';
+  h+='</div></div></div></div>';
+
+  document.body.insertAdjacentHTML("beforeend",h);
+}
+
+var modalSlideIdx={};
+function slideModal(postIdx,dir){
+  var post=explorePosts[postIdx];if(!post)return;
+  var slides=[];try{slides=typeof post.slide_urls==="string"?JSON.parse(post.slide_urls):post.slide_urls||[]}catch(e){}
+  var cur=modalSlideIdx[postIdx]||0;
+  cur+=dir;
+  if(cur<0)cur=slides.length-1;
+  if(cur>=slides.length)cur=0;
+  modalSlideIdx[postIdx]=cur;
+  var container=document.getElementById("em-slides-"+postIdx);
+  if(!container)return;
+  container.querySelectorAll("img").forEach(function(img,i){img.classList.toggle("active",i===cur)});
+  var modal=container.closest(".explore-modal-card");
+  if(modal)modal.querySelectorAll(".ex-dot").forEach(function(d,i){d.classList.toggle("active",i===cur)});
+}
+
+function spinOffExplorePost(idx){
+  var post=explorePosts[idx];if(!post)return;
+  // Close modal
+  var modal=document.querySelector(".explore-modal");if(modal)modal.remove();
+  // Switch to builder tab
+  showTab("builder");document.querySelectorAll(".tab").forEach(function(t){if(t.textContent.trim()==="Carousel Builder")t.classList.add("active")});
+  // Fill in the spinoff text
+  var caption=post.caption||"";
+  var spinoff=document.getElementById("spinoff-text");
+  if(spinoff)spinoff.value=caption;
+  // Focus topic
+  document.getElementById("b-topic").focus();
+  window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});
+}
+
+function refreshExplore(){
+  var status=document.getElementById("exploreStatus");
+  status.style.display="block";
+  status.textContent="Pulling top posts from Instagram hashtags... This takes about 30 seconds.";
+  status.style.background="rgba(144,169,236,.1)";status.style.color="#5a7bbf";
+
+  fetch(BACKEND+"/api/explore/refresh",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success){
+      status.textContent=d.saved+" posts saved from "+d.hashtags_searched+" hashtags!";
+      status.style.background="rgba(111,207,151,.1)";status.style.color="#2d8a54";
+      loadExploreFeed();
+      if(d.errors&&d.errors.length){
+        status.textContent+="\nSome issues: "+d.errors.join(", ");
+      }
+    }else{
+      status.textContent="Error: "+(d.error||"Unknown");
+      status.style.background="rgba(232,112,112,.1)";status.style.color="#c45a4a";
+    }
+  }).catch(function(e){
+    status.textContent="Error: "+e.message;
+    status.style.background="rgba(232,112,112,.1)";status.style.color="#c45a4a";
+  });
+}
+
+function loadExploreHashtags(){
+  fetch(BACKEND+"/api/explore/hashtags").then(function(r){return r.json()}).then(function(d){
+    var sel=document.getElementById("exploreHashtag");
+    if(!sel)return;
+    var tags=d.hashtags||[];
+    sel.innerHTML='<option value="">All Hashtags</option>';
+    tags.forEach(function(t){sel.innerHTML+='<option value="'+t.hashtag+'">#'+t.hashtag+' ('+t.count+')</option>'});
+  }).catch(function(){});
+}
+
+// Auto-load explore on startup
+setTimeout(function(){if(document.getElementById("explore").style.display!=="none")loadExploreFeed()},500);
 
 // ── REELS STUDIO ──────────────────────────────────────────────
 var reelCurrentProject=null,reelClips=[],reelPollTimer=null;
