@@ -473,17 +473,66 @@ function loadRecommendations() {
     }
     var catLabels = { follow_up: "Follow Up", re_engage: "Re-engage", retreat: "Retreat Lead", stalled: "Stalled", high_intent: "High Intent", new_lead: "New Lead", flodesk_sync: "Flodesk Sync" };
     document.getElementById("recList").innerHTML = recs.map(function(r) {
-      return '<div class="rec-card">' +
-        '<div class="rec-priority p' + r.priority + '">P' + r.priority + '</div>' +
-        '<div class="rec-cat">' + (catLabels[r.category] || r.category) + '</div>' +
-        '<div class="rec-title">' + esc(r.title) + '</div>' +
-        '<div class="rec-desc">' + esc(r.description) + '</div>' +
-        (r.suggested_action ? '<div class="rec-action">' + esc(r.suggested_action) + '</div>' : '') +
-        '<div class="rec-btns">' +
-          (r.suggested_flow ? '<button class="btn btn-sm" onclick="executeRec(' + r.id + ',\'' + esc(r.mc_id || '') + '\',\'' + esc(r.suggested_flow) + '\')">Send ' + esc(r.suggested_flow) + ' Flow</button>' : '') +
-          '<button class="ghost" onclick="completeRec(' + r.id + ')">Mark Done</button>' +
-          '<button class="btn-danger" onclick="dismissRec(' + r.id + ')">Dismiss</button>' +
-        '</div></div>';
+      var dp = r.data_points || {};
+      if (typeof dp === "string") { try { dp = JSON.parse(dp); } catch(e) { dp = {}; } }
+      var ig = dp.ig_username || "";
+      var actionType = dp.action_type || (r.suggested_flow ? "send_flow" : "personal_dm");
+      var triggersHave = dp.triggers_they_have || [];
+      var dmDraft = dp.dm_draft || "";
+
+      var html = '<div class="rec-card">';
+      html += '<div class="rec-priority p' + r.priority + '">P' + r.priority + '</div>';
+      html += '<div class="rec-cat">' + (catLabels[r.category] || r.category) + '</div>';
+
+      // Identity line
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+      html += '<div class="rec-title" style="margin-bottom:0;padding-right:0">' + esc(r.subscriber_name || r.title) + '</div>';
+      if (ig) html += '<span style="font-size:12px;color:#90A9EC;font-weight:500">@' + esc(ig) + '</span>';
+      html += '</div>';
+
+      // Title (if different from name)
+      if (r.subscriber_name && r.title && r.title !== r.subscriber_name) {
+        html += '<div style="font-size:14px;color:#3B2145;font-weight:500;margin-bottom:6px">' + esc(r.title) + '</div>';
+      }
+
+      html += '<div class="rec-desc">' + esc(r.description) + '</div>';
+
+      // Show triggers they already have
+      if (triggersHave.length) {
+        html += '<div style="margin-bottom:10px"><span style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(59,33,69,.3);margin-right:6px">Already triggered:</span>';
+        triggersHave.forEach(function(t) {
+          html += '<span style="display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:4px;background:rgba(210,199,255,.12);color:rgba(59,33,69,.4);margin-right:4px;margin-bottom:2px">' + esc(t) + '</span>';
+        });
+        html += '</div>';
+      }
+
+      if (r.suggested_action) html += '<div class="rec-action">' + esc(r.suggested_action) + '</div>';
+
+      html += '<div class="rec-btns">';
+
+      if (actionType === "personal_dm") {
+        // Personal DM with draft
+        html += '<button class="btn btn-sm" style="background:#FFC696;color:#3B2145" onclick="showDmDraft(' + r.id + ',\'' + esc(r.mc_id || '') + '\',\'' + esc(r.subscriber_name || '') + '\')">Draft & Send DM</button>';
+      }
+      if (actionType === "send_flow" && r.suggested_flow) {
+        html += '<button class="btn btn-sm" onclick="executeRec(' + r.id + ',\'' + esc(r.mc_id || '') + '\',\'' + esc(r.suggested_flow) + '\')">Send ' + esc(r.suggested_flow) + ' Flow</button>';
+      }
+
+      html += '<button class="ghost" onclick="completeRec(' + r.id + ')">Mark Done</button>';
+      html += '<button class="btn-danger" onclick="dismissRec(' + r.id + ')">Dismiss</button>';
+      html += '</div>';
+
+      // Hidden DM draft area
+      html += '<div id="dm-draft-' + r.id + '" style="display:none;margin-top:12px;padding:14px;background:rgba(255,198,150,.06);border:1px solid rgba(255,198,150,.2);border-radius:10px">';
+      html += '<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#FFC696;font-weight:500;margin-bottom:6px">Personal DM</div>';
+      html += '<textarea id="dm-text-' + r.id + '" style="width:100%;min-height:80px;padding:10px 14px;border:1px solid rgba(210,199,255,.3);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;line-height:1.5;resize:vertical;background:rgba(255,255,255,.7);color:#3B2145;outline:none">' + esc(dmDraft) + '</textarea>';
+      html += '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
+      html += '<button class="btn btn-sm" onclick="sendRecDm(' + r.id + ',\'' + esc(r.mc_id || '') + '\')">Send DM</button>';
+      html += '<span id="dm-status-' + r.id + '" style="font-size:11px;display:none"></span>';
+      html += '</div></div>';
+
+      html += '</div>';
+      return html;
     }).join("");
   }).catch(function() {
     document.getElementById("recList").innerHTML = '<div class="empty"><p>Could not load recommendations.</p></div>';
@@ -519,6 +568,51 @@ function executeRec(recId, mcId, flow) {
     }
   }).catch(function(e) {
     showToast("Error: " + e.message, true);
+  });
+}
+
+function showDmDraft(recId, mcId, name) {
+  var el = document.getElementById("dm-draft-" + recId);
+  if (!el) return;
+  var isVisible = el.style.display !== "none";
+  // Toggle visibility
+  document.querySelectorAll("[id^='dm-draft-']").forEach(function(d) { d.style.display = "none"; });
+  if (!isVisible) {
+    el.style.display = "block";
+    var textarea = document.getElementById("dm-text-" + recId);
+    if (textarea) textarea.focus();
+  }
+}
+
+function sendRecDm(recId, mcId) {
+  var msg = document.getElementById("dm-text-" + recId).value.trim();
+  if (!msg) { showToast("Type a message first.", true); return; }
+  if (!mcId) { showToast("No subscriber ID.", true); return; }
+  if (!confirm("Send this DM via Instagram?\n\n" + msg)) return;
+  var status = document.getElementById("dm-status-" + recId);
+  status.style.display = "inline";
+  status.textContent = "Sending...";
+  status.style.color = "#90A9EC";
+  fetch(BACKEND + "/api/manychat/send-dm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mc_id: mcId, message: msg })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) {
+      showToast("DM sent to " + d.sent_to + "!");
+      status.textContent = "Sent!";
+      status.style.color = "#6fcf97";
+      // Mark recommendation as done
+      completeRec(recId);
+    } else {
+      showToast(d.error || "Failed.", true);
+      status.textContent = d.error || "Failed";
+      status.style.color = "#c45a4a";
+    }
+  }).catch(function(e) {
+    showToast("Error: " + e.message, true);
+    status.textContent = "Error";
+    status.style.color = "#c45a4a";
   });
 }
 
