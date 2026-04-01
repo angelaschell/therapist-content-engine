@@ -1172,19 +1172,22 @@ function loadSpinoffUrl(){
   status.textContent="Loading post...";
   status.style.color="#90A9EC";
 
-  fetch(BACKEND+"/api/explore/scrape-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url})})
-  .then(function(r){return r.json()})
+  fetch(BACKEND+"/api/load-instagram-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url})})
+  .then(function(r){
+    if(!r.ok) return r.json().then(function(err){throw new Error(err.detail||"Could not extract caption")});
+    return r.json();
+  })
   .then(function(d){
-    if(d.success&&d.caption){
+    if(d.caption){
       document.getElementById("spinoff-text").value=d.caption;
-      status.textContent="Loaded! "+d.caption.split("\n").length+" lines pulled. Edit if needed, then generate.";
+      status.textContent="Loaded via "+d.method+"! Edit if needed, then generate.";
       status.style.color="#6fcf97";
     }else{
-      status.textContent="Could not load: "+(d.error||"Try pasting the text manually instead.");
+      status.textContent="Could not load caption. Try pasting the text manually.";
       status.style.color="#c45a4a";
     }
   }).catch(function(e){
-    status.textContent="Error: "+e.message+". Try pasting the text manually.";
+    status.textContent="Could not load: "+e.message+". Try pasting the text manually.";
     status.style.color="#c45a4a";
   });
 }
