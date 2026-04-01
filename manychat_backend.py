@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 import httpx
 import os
 import json
+import re
 import psycopg2
 import psycopg2.extras
 from datetime import datetime, timedelta, timezone
@@ -144,6 +145,11 @@ SELECT * FROM (VALUES
 ) AS v(keyword, label, description, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM manychat_triggers LIMIT 1)
 ON CONFLICT (keyword) DO NOTHING;
+UPDATE manychat_subscribers SET
+  first_name = regexp_replace(first_name, '\\{{[^}]+\\}}', '', 'g'),
+  last_name = regexp_replace(last_name, '\\{{[^}]+\\}}', '', 'g'),
+  full_name = regexp_replace(full_name, '\\{{[^}]+\\}}', '', 'g')
+WHERE full_name LIKE '%{{%' OR first_name LIKE '%{{%' OR last_name LIKE '%{{%';
 """
 
 try:
@@ -252,6 +258,15 @@ async def toggle_trigger(tid: int):
 # ================================================================
 #  MANYCHAT SYNC
 # ================================================================
+def clean_template_vars(text):
+    """Strip ManyChat {{template_variables}} from names and other fields."""
+    if not text:
+        return ""
+    cleaned = re.sub(r'\{\{[^}]+\}\}', '', text).strip()
+    # If nothing left after stripping, return empty
+    return cleaned if cleaned else ""
+
+
 def calc_interest(trigger_count, conv_count, tags, triggers_fired):
     kws = [t.upper() if isinstance(t, str) else t.get("keyword","").upper() for t in triggers_fired]
     high = any(k in kws for k in ["MALIBURETREAT","MALIBU RETREAT","HEAL","UNTANGLE","STEADY","EMDR"])
@@ -403,6 +418,14 @@ async def manychat_webhook(request: Request):
                 full_name = f"{first_name} {last_name}".strip() or full_name
         except:
             pass  # API enrichment is best-effort, webhook data is fallback
+
+        # Clean any {{template_variables}} from names
+        first_name = clean_template_vars(first_name)
+        last_name = clean_template_vars(last_name)
+        full_name = clean_template_vars(full_name)
+        # If name is still empty after cleaning, try ig_username
+        if not full_name and ig_username:
+            full_name = ig_username
 
         # Get existing counts
         trig_res = query("SELECT keyword FROM subscriber_triggers WHERE mc_id=%s", (mc_id,))
@@ -796,6 +819,7 @@ async def send_personal_dm(request: Request):
         if not MC_KEY:
             return JSONResponse(content={"error": "MANYCHAT_API_KEY not configured."}, status_code=500)
 
+        # No message_tag — Instagram DMs don't use Facebook Messenger tags
         payload = {
             "subscriber_id": int(mc_id),
             "data": {
@@ -808,14 +832,24 @@ async def send_personal_dm(request: Request):
                         }
                     ]
                 }
-            },
-            "message_tag": "HUMAN_AGENT"
+            }
         }
 
-        result = await mc_post("/fb/sending/sendContent", payload)
+        # Use raw httpx so we can read the error response
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.post(
+                f"{MC_API}/fb/sending/sendContent",
+                headers=mc_headers(),
+                json=payload
+            )
+            result = r.json()
+
+            if r.status_code != 200 or result.get("status") == "error":
+                err = result.get("message", "") or result.get("error", "") or f"ManyChat returned {r.status_code}"
+                return JSONResponse(content={"error": f"ManyChat: {err}"}, status_code=400)
 
         sub = query_one("SELECT full_name FROM manychat_subscribers WHERE mc_id=%s", (mc_id,))
-        name = sub["full_name"] if sub else "Unknown"
+        name = clean_template_vars(sub["full_name"]) if sub else "Unknown"
 
         execute(
             "INSERT INTO subscriber_conversations (mc_id, direction, message_preview, channel, sent_at) VALUES (%s, 'outbound', %s, 'instagram', now())",
