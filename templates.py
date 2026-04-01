@@ -175,32 +175,48 @@ def strip_base64_prefix(image_data):
 
 @router.post("/analyze")
 async def analyze_template(req: Request):
-    """Analyze screenshot and extract style properties."""
+    """Analyze screenshot(s) and extract style properties."""
     try:
         data = await req.json()
         image_data = data.get("image", "")
+        images = data.get("images", [])
         notes = data.get("notes", "")
+        slide_count = data.get("slide_count", 1)
 
-        if not image_data:
+        # Use images array if provided, otherwise fall back to single image
+        if not images and image_data:
+            images = [image_data]
+
+        if not images:
             return JSONResponse({"success": False, "error": "No image provided"}, status_code=400)
 
-        media_type = detect_media_type(image_data)
-        clean_image = strip_base64_prefix(image_data)
-
         prompt = ANALYZE_PROMPT
+        if len(images) > 1:
+            prompt = f"""You are analyzing a COMPLETE Instagram carousel with {len(images)} slides. Look at ALL slides together to understand the full visual style.
+
+{ANALYZE_PROMPT}
+
+Since you can see multiple slides, pay close attention to:
+- How the hook/first slide differs from body slides (different background or text color?)
+- How the closing slide differs from body slides
+- Consistent elements across all slides (fonts, spacing, watermarks, decorative elements)
+- The overall color palette used across the set"""
+
         if notes:
             prompt += f"\n\nAdditional context: {notes}"
+
+        # Build content array with all images
+        messages_content = []
+        for i, img in enumerate(images):
+            media_type = detect_media_type(img)
+            clean_image = strip_base64_prefix(img)
+            messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
+        messages_content.append({"type": "text", "text": prompt})
 
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}},
-                    {"type": "text", "text": prompt}
-                ]
-            }]
+            messages=[{"role": "user", "content": messages_content}]
         )
 
         clean = response.content[0].text.strip()
@@ -217,34 +233,41 @@ async def analyze_template(req: Request):
 
 @router.post("/generate-svg")
 async def generate_svg_templates(req: Request):
-    """Generate three SVG slide templates from screenshot + analysis."""
+    """Generate three SVG slide templates from screenshot(s) + analysis."""
     try:
         data = await req.json()
         image_data = data.get("image", "")
+        images = data.get("images", [])
         analysis = data.get("analysis", {})
         custom_fonts = data.get("custom_fonts", [])
 
-        if not image_data:
+        if not images and image_data:
+            images = [image_data]
+
+        if not images:
             return JSONResponse({"success": False, "error": "No image provided"}, status_code=400)
 
-        media_type = detect_media_type(image_data)
-        clean_image = strip_base64_prefix(image_data)
         prompt = SVG_GENERATE_PROMPT.format(analysis=json.dumps(analysis, indent=2))
+
+        if len(images) > 1:
+            prompt += f"\n\nIMPORTANT: You are looking at {len(images)} slides from the same carousel. Use slide 1 as the hook reference, the middle slides as body references, and the last slide as the close reference. Match each SVG to the actual slide type from the screenshots."
 
         if custom_fonts:
             font_list = ", ".join([f"'{f}'" for f in custom_fonts])
             prompt += f"\n\nADDITIONAL CUSTOM FONTS AVAILABLE (loaded via @font-face, use these if they match the screenshot better than the defaults): {font_list}"
 
+        # Build content with all images
+        messages_content = []
+        for img in images:
+            media_type = detect_media_type(img)
+            clean_image = strip_base64_prefix(img)
+            messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
+        messages_content.append({"type": "text", "text": prompt})
+
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=8000,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}},
-                    {"type": "text", "text": prompt}
-                ]
-            }]
+            messages=[{"role": "user", "content": messages_content}]
         )
 
         clean = response.content[0].text.strip()
@@ -290,9 +313,12 @@ Return ONLY valid JSON:
 {{"svg_hook": "<svg ...>...</svg>", "svg_body": "<svg ...>...</svg>", "svg_close": "<svg ...>...</svg>"}}"""
 
         messages_content = []
-        if image_data:
-            media_type = detect_media_type(image_data)
-            clean_image = strip_base64_prefix(image_data)
+        images = data.get("images", [])
+        if not images and image_data:
+            images = [image_data]
+        for img in images:
+            media_type = detect_media_type(img)
+            clean_image = strip_base64_prefix(img)
             messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
         messages_content.append({"type": "text", "text": prompt})
 
@@ -333,9 +359,12 @@ Changes requested: {feedback}
 Return updated JSON with same structure. ONLY valid JSON, no backticks."""
 
         messages_content = []
-        if image_data:
-            media_type = detect_media_type(image_data)
-            clean_image = strip_base64_prefix(image_data)
+        images = data.get("images", [])
+        if not images and image_data:
+            images = [image_data]
+        for img in images:
+            media_type = detect_media_type(img)
+            clean_image = strip_base64_prefix(img)
             messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
         messages_content.append({"type": "text", "text": prompt})
 
