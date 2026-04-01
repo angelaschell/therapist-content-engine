@@ -485,9 +485,13 @@ option{background:#F7EBE0}
       <!-- SPIN-OFF FROM ANY VIRAL POST -->
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(59,33,69,.06)">
         <label>Spin Off a Viral Post (optional)</label>
-        <div style="font-size:11px;color:rgba(59,33,69,.3);margin-bottom:8px">Paste the slide text from any viral carousel. Claude will match the structure and voice but write fresh content on your topic above.</div>
-        <textarea id="spinoff-text" style="min-height:100px;font-size:13px" placeholder="Paste the slide text here. Example:&#10;Slide 1: daughters without mothers have a running list...&#10;Slide 2: the grandchildren she never got to hold...&#10;&#10;Or paste the full caption. Claude will figure out the structure."></textarea>
-        <div id="spinoffStatus" style="font-size:11px;margin-top:4px;display:none"></div>
+        <div style="font-size:11px;color:rgba(59,33,69,.3);margin-bottom:8px">Paste an Instagram link and we'll pull the caption. Or paste the slide text manually.</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input type="text" id="spinoff-url" placeholder="https://www.instagram.com/p/..." style="flex:1;font-size:13px">
+          <button class="btn" style="white-space:nowrap;font-size:12px;padding:8px 16px" onclick="loadSpinoffUrl()">Load Post</button>
+        </div>
+        <div id="spinoffStatus" style="font-size:11px;margin-top:-4px;margin-bottom:6px;display:none"></div>
+        <textarea id="spinoff-text" style="min-height:80px;font-size:13px" placeholder="Post text will appear here after loading. Or paste slide text manually."></textarea>
       </div>
 
       <!-- STYLE REFERENCE -->
@@ -1159,6 +1163,32 @@ function getSpinoffContext(){
   return"\n\nSPIN-OFF INSTRUCTION:\nBelow is a viral carousel post. Your job is to create a VARIATION of it using the topic Angela entered above. Match the EXACT same structure: same number of slides, same rhythm pattern, same emotional arc, same sentence length patterns, same voice. But write completely fresh content for the new topic. Do NOT copy any lines from the original. Create new lines that feel like they belong in the same series.\n\nORIGINAL VIRAL POST TO SPIN OFF:\n"+text+"\n\nCRITICAL RULES FOR SPIN-OFFS:\n- Count the slides in the original. Use the same number.\n- If the original starts every slide with the same phrase (like 'we know'), use a similar repeated anchor for the new topic.\n- If the original builds from light to devastating, do the same.\n- If the original has one long release slide, put one in the same position.\n- If the original ends with a reframe, end with a reframe.\n- Match the sentence length patterns slide by slide. If slide 3 in the original is 25 words, make your slide 3 roughly 25 words.\n- The reader should feel like this post is part of the same series as the original.\n";
 }
 
+function loadSpinoffUrl(){
+  var url=(document.getElementById("spinoff-url")||{}).value.trim();
+  if(!url){alert("Paste an Instagram URL first.");return}
+  if(!url.includes("instagram.com")){alert("That doesn't look like an Instagram URL.");return}
+  var status=document.getElementById("spinoffStatus");
+  status.style.display="block";
+  status.textContent="Loading post...";
+  status.style.color="#90A9EC";
+
+  fetch(BACKEND+"/api/explore/scrape-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.success&&d.caption){
+      document.getElementById("spinoff-text").value=d.caption;
+      status.textContent="Loaded! "+d.caption.split("\n").length+" lines pulled. Edit if needed, then generate.";
+      status.style.color="#6fcf97";
+    }else{
+      status.textContent="Could not load: "+(d.error||"Try pasting the text manually instead.");
+      status.style.color="#c45a4a";
+    }
+  }).catch(function(e){
+    status.textContent="Error: "+e.message+". Try pasting the text manually.";
+    status.style.color="#c45a4a";
+  });
+}
+
 function loadHashtags(){var topic=document.getElementById("b-topic").value.trim()||"grief mother loss attachment";document.getElementById("hashtagLoading").style.display="block";document.getElementById("hashtagInput").style.display="none";document.getElementById("hashtagHint").style.display="none";document.getElementById("hashtagBtns").style.display="none";document.getElementById("scrapeResults").style.display="none";fetch(BACKEND+"/api/recommend-hashtags",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){document.getElementById("hashtagLoading").style.display="none";document.getElementById("hashtagInput").style.display="block";document.getElementById("hashtagHint").style.display="block";document.getElementById("hashtagBtns").style.display="flex";if(d.success&&d.hashtags){document.getElementById("hashtagInput").value=d.hashtags.join("\n")}else{document.getElementById("hashtagInput").value="grief\ntrauma\nhealingjourney\ntherapistsofinstagram"}}).catch(function(){document.getElementById("hashtagLoading").style.display="none";document.getElementById("hashtagInput").style.display="block";document.getElementById("hashtagHint").style.display="block";document.getElementById("hashtagBtns").style.display="flex";document.getElementById("hashtagInput").value="grief\ntrauma\nhealingjourney\ntherapistsofinstagram"})}
 
 function searchWithHashtags(){var topic=document.getElementById("b-topic").value.trim()||"grief mother loss attachment";var raw=document.getElementById("hashtagInput").value.trim();var hashtags=raw.split(/[\n,\s]+/).map(function(h){return h.replace(/^#/,"").trim()}).filter(function(h){return h.length>1});if(!hashtags.length){alert("Add at least one hashtag.");return}viralSelected=[];document.getElementById("selCount").textContent="0 selected";document.getElementById("analyzeBtn").disabled=true;document.getElementById("scrapeResults").style.display="block";document.getElementById("scrapeStatus").textContent="Searching: "+hashtags.slice(0,5).map(function(h){return"#"+h}).join(" ")+"...";document.getElementById("feedGrid").innerHTML='<div class="v-loader"><p>Searching Reddit + Instagram...</p></div>';fetch(BACKEND+"/api/scrape",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic,hashtags:hashtags})}).then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts&&d.posts.length>0){viralPosts=d.posts;viralHooks=d.hooks||[];renderFG();var rd=d.posts.filter(function(p){return p.src==="reddit"}).length;var ig=d.posts.filter(function(p){return p.src==="instagram"}).length;document.getElementById("scrapeStatus").textContent=d.posts.length+" posts ("+rd+" Reddit, "+ig+" Instagram)"}else{document.getElementById("scrapeStatus").textContent="No results.";document.getElementById("feedGrid").innerHTML='<div class="v-err">No posts found. Try broader hashtags.</div>'}}).catch(function(e){document.getElementById("scrapeStatus").textContent="Error: "+e.message;document.getElementById("feedGrid").innerHTML='<div class="v-err">Could not reach scraper.</div>'})}
@@ -1631,15 +1661,16 @@ function slideModal(postIdx,dir){
 
 function spinOffExplorePost(idx){
   var post=explorePosts[idx];if(!post)return;
-  // Close modal
   var modal=document.querySelector(".explore-modal");if(modal)modal.remove();
-  // Switch to builder tab
   showTab("builder");document.querySelectorAll(".tab").forEach(function(t){if(t.textContent.trim()==="Carousel Builder")t.classList.add("active")});
-  // Fill in the spinoff text
   var caption=post.caption||"";
   var spinoff=document.getElementById("spinoff-text");
   if(spinoff)spinoff.value=caption;
-  // Focus topic
+  var urlField=document.getElementById("spinoff-url");
+  if(urlField&&post.permalink)urlField.value=post.permalink;
+  document.getElementById("b-topic").focus();
+  window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});
+}
   document.getElementById("b-topic").focus();
   window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});
 }
