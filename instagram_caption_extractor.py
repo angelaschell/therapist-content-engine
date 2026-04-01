@@ -1,8 +1,8 @@
 """
-Instagram Caption Extractor — drop-in replacement for Content Engine
-Uses 3 strategies in order:
-  1. Instagram Graph API (your own posts, most reliable)
-  2. Facebook oEmbed API (public posts, no scraping)
+Instagram Caption Extractor — uses existing TokenManager
+Strategies:
+  1. Instagram Graph API via existing token_mgr (your own posts)
+  2. Facebook oEmbed API (public posts)
   3. Enhanced scraping with browser-like headers (fallback)
 """
 
@@ -14,11 +14,8 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-# ── Pull these from your existing env / Supabase config ──────────────
-IG_USER_ID = os.getenv("IG_USER_ID")           # Your Instagram Business account ID
-IG_ACCESS_TOKEN = os.getenv("IG_ACCESS_TOKEN")  # Your long-lived Page token (already in your app)
-FB_APP_ID = os.getenv("FB_APP_ID", "")          # Optional: Facebook App ID
-FB_APP_SECRET = os.getenv("FB_APP_SECRET", "")  # Optional: Facebook App Secret
+FB_APP_ID = os.getenv("FB_APP_ID", "")
+FB_APP_SECRET = os.getenv("FB_APP_SECRET", "")
 
 
 class LoadPostRequest(BaseModel):
@@ -27,11 +24,10 @@ class LoadPostRequest(BaseModel):
 
 class LoadPostResponse(BaseModel):
     caption: str
-    method: str  # which strategy worked
+    method: str
 
 
 def extract_shortcode(url: str) -> str | None:
-    """Pull the shortcode from any Instagram post/reel URL."""
     patterns = [
         r"instagram\.com/p/([A-Za-z0-9_-]+)",
         r"instagram\.com/reel/([A-Za-z0-9_-]+)",
@@ -44,24 +40,24 @@ def extract_shortcode(url: str) -> str | None:
     return None
 
 
-# ── Strategy 1: Instagram Graph API (your own posts) ─────────────────
+# ── Strategy 1: Graph API via existing TokenManager ──────────
 async def try_graph_api(shortcode: str) -> str | None:
-    """
-    Search your own media by permalink to find the caption.
-    This is the most reliable method for your own content.
-    """
-    if not IG_USER_ID or not IG_ACCESS_TOKEN:
-        return None
-
     try:
+        from instagram_analytics import token_mgr
+
+        page_token = await token_mgr.get_page_token()
+        ig_id = token_mgr.ig_account_id
+
+        if not page_token or not ig_id:
+            return None
+
         async with httpx.AsyncClient(timeout=15) as client:
-            # Fetch recent media (up to 100) and match by shortcode in permalink
             resp = await client.get(
-                f"https://graph.facebook.com/v21.0/{IG_USER_ID}/media",
+                f"https://graph.facebook.com/v21.0/{ig_id}/media",
                 params={
-                    "fields": "caption,permalink,shortcode,timestamp",
+                    "fields": "caption,permalink,timestamp",
                     "limit": 100,
-                    "access_token": IG_ACCESS_TOKEN,
+                    "access_token": page_token,
                 },
             )
             if resp.status_code != 200:
@@ -70,11 +66,9 @@ async def try_graph_api(shortcode: str) -> str | None:
             data = resp.json()
             for post in data.get("data", []):
                 permalink = post.get("permalink", "")
-                # Match shortcode in the permalink
                 if shortcode in permalink:
                     return post.get("caption")
 
-            # If not in first 100, try pagination (up to 2 more pages)
             next_url = data.get("paging", {}).get("next")
             for _ in range(2):
                 if not next_url:
@@ -94,12 +88,8 @@ async def try_graph_api(shortcode: str) -> str | None:
     return None
 
 
-# ── Strategy 2: Facebook oEmbed API ──────────────────────────────────
+# ── Strategy 2: Facebook oEmbed API ──────────────────────────
 async def try_oembed(url: str) -> str | None:
-    """
-    Use Facebook's oEmbed endpoint. Works for public posts.
-    Requires FB_APP_ID + FB_APP_SECRET (app token).
-    """
     if not FB_APP_ID or not FB_APP_SECRET:
         return None
 
@@ -116,15 +106,12 @@ async def try_oembed(url: str) -> str | None:
             )
             if resp.status_code == 200:
                 data = resp.json()
-                # oEmbed returns HTML; extract caption from it
                 html = data.get("html", "")
-                # The caption is in the <p> tag of the embed
                 caption_match = re.search(
                     r'<p[^>]*>(.*?)</p>', html, re.DOTALL
                 )
                 if caption_match:
                     caption = caption_match.group(1)
-                    # Clean HTML entities
                     caption = (
                         caption.replace("&amp;", "&")
                         .replace("&lt;", "<")
@@ -134,7 +121,6 @@ async def try_oembed(url: str) -> str | None:
                         .replace("<br>", "\n")
                         .replace("<br/>", "\n")
                     )
-                    # Strip remaining HTML tags
                     caption = re.sub(r"<[^>]+>", "", caption).strip()
                     if caption:
                         return caption
@@ -144,12 +130,8 @@ async def try_oembed(url: str) -> str | None:
     return None
 
 
-# ── Strategy 3: Enhanced scraping with browser headers ───────────────
+# ── Strategy 3: Enhanced scraping ────────────────────────────
 async def try_scrape(url: str) -> str | None:
-    """
-    Fetch the Instagram page with browser-like headers and extract
-    the caption from meta tags or embedded JSON.
-    """
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -174,7 +156,6 @@ async def try_scrape(url: str) -> str | None:
             resp = await client.get(url, headers=headers)
             html = resp.text
 
-            # Method A: og:description meta tag (most common)
             og_match = re.search(
                 r'<meta\s+(?:property|name)=["\']og:description["\']\s+content=["\'](.+?)["\']',
                 html,
@@ -190,15 +171,12 @@ async def try_scrape(url: str) -> str | None:
                     .replace("&quot;", '"')
                     .replace("\\n", "\n")
                 )
-                # og:description often has format: "N Likes, N Comments - @user on ...: "caption""
-                # Try to extract just the caption part after the colon
                 colon_split = caption.split(": ", 1)
                 if len(colon_split) > 1:
-                    caption = colon_split[1].strip().strip('"').strip(""").strip(""")
+                    caption = colon_split[1].strip().strip('"').strip("\u201c").strip("\u201d")
                 if caption and len(caption) > 10:
                     return caption
 
-            # Method B: Look for caption in the JSON data embedded in the page
             json_match = re.search(
                 r'"caption"\s*:\s*\{[^}]*"text"\s*:\s*"(.*?)"',
                 html,
@@ -210,7 +188,6 @@ async def try_scrape(url: str) -> str | None:
                 if caption:
                     return caption
 
-            # Method C: twitter:description meta tag
             tw_match = re.search(
                 r'<meta\s+(?:property|name)=["\']twitter:description["\']\s+content=["\'](.+?)["\']',
                 html,
@@ -227,7 +204,7 @@ async def try_scrape(url: str) -> str | None:
     return None
 
 
-# ── Main endpoint ────────────────────────────────────────────────────
+# ── Main endpoint ────────────────────────────────────────────
 @router.post("/api/load-instagram-post", response_model=LoadPostResponse)
 async def load_instagram_post(req: LoadPostRequest):
     url = req.url.strip()
@@ -239,17 +216,14 @@ async def load_instagram_post(req: LoadPostRequest):
     if not shortcode:
         raise HTTPException(400, "Could not extract shortcode from URL")
 
-    # Strategy 1: Graph API (your own posts)
     caption = await try_graph_api(shortcode)
     if caption:
         return LoadPostResponse(caption=caption, method="graph_api")
 
-    # Strategy 2: oEmbed
     caption = await try_oembed(url)
     if caption:
         return LoadPostResponse(caption=caption, method="oembed")
 
-    # Strategy 3: Enhanced scraping
     caption = await try_scrape(url)
     if caption:
         return LoadPostResponse(caption=caption, method="scrape")
