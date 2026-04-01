@@ -781,6 +781,73 @@ async def smart_send(request:Request):
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+@router.post("/api/manychat/send-dm")
+async def send_personal_dm(request: Request):
+    """Send a custom personal DM to a subscriber via ManyChat sendContent API."""
+    try:
+        body = await request.json()
+        mc_id = body.get("mc_id", "")
+        message = body.get("message", "").strip()
+
+        if not mc_id:
+            return JSONResponse(content={"error": "No subscriber specified."}, status_code=400)
+        if not message:
+            return JSONResponse(content={"error": "Message cannot be empty."}, status_code=400)
+        if not MC_KEY:
+            return JSONResponse(content={"error": "MANYCHAT_API_KEY not configured."}, status_code=500)
+
+        payload = {
+            "subscriber_id": int(mc_id),
+            "data": {
+                "version": "v2",
+                "content": {
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": message
+                        }
+                    ]
+                }
+            },
+            "message_tag": "HUMAN_AGENT"
+        }
+
+        result = await mc_post("/fb/sending/sendContent", payload)
+
+        sub = query_one("SELECT full_name FROM manychat_subscribers WHERE mc_id=%s", (mc_id,))
+        name = sub["full_name"] if sub else "Unknown"
+
+        execute(
+            "INSERT INTO subscriber_conversations (mc_id, direction, message_preview, channel, sent_at) VALUES (%s, 'outbound', %s, 'instagram', now())",
+            (mc_id, message[:200])
+        )
+
+        execute(
+            "UPDATE manychat_subscribers SET conversation_count = conversation_count + 1, last_interaction = now(), updated_at = now() WHERE mc_id = %s",
+            (mc_id,)
+        )
+
+        execute(
+            "INSERT INTO completed_actions (mc_id, subscriber_name, action_type, action_detail) VALUES (%s, %s, 'manual_message', %s)",
+            (mc_id, name, "Sent DM: " + message[:100])
+        )
+
+        return JSONResponse(content={
+            "success": True,
+            "sent_to": name,
+            "mc_id": mc_id,
+            "message_preview": message[:100]
+        })
+
+    except Exception as e:
+        error_msg = str(e)
+        if hasattr(e, 'response'):
+            try:
+                error_msg = e.response.json().get("message", error_msg)
+            except:
+                pass
+        return JSONResponse(content={"error": error_msg}, status_code=500)
+
 @router.post("/api/manychat/add-tag")
 async def add_tag(request:Request):
     try:
