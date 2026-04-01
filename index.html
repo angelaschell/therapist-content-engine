@@ -560,7 +560,23 @@ option{background:#F7EBE0}
   <!-- STEP 4 -->
   <div class="step" id="step4">
     <div class="step-title">Your carousel</div>
-    <div class="step-sub">Scroll through. Download individual slides or all at once.</div>
+    <div class="step-sub">Scroll through. Switch templates without regenerating. Download individual slides or all at once.</div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <label style="margin-bottom:0;white-space:nowrap">Template</label>
+      <select id="preview-template" onchange="switchTemplate(this.value)" style="max-width:280px;padding:8px 12px;font-size:12px">
+        <option value="naming">The Naming Post (370K)</option>
+        <option value="redefine">The Authority Redefine (80K)</option>
+        <option value="tribal">The Tribal Identity (165K)</option>
+        <option value="framework">The Framework Explainer</option>
+        <option value="pullquote">The Pull Quote</option>
+        <option value="editorial">The Layered Editorial</option>
+        <option value="conversational">The Conversational List</option>
+        <option value="covercontext">The Cover + Context</option>
+      </select>
+      <select id="preview-custom-template" onchange="switchCustomTemplate(this.value)" style="max-width:200px;padding:8px 12px;font-size:12px">
+        <option value="">No custom style</option>
+      </select>
+    </div>
     <div id="renderedSlides"></div>
     <div class="btns"><button class="btn" onclick="downloadAllSlides()">Download All Slides</button><button class="btn" onclick="cachedSlideImages=[];captureSlides().then(function(){goStep(5)})">Next: Caption + CTA</button><button class="ghost" onclick="goStep(3)">Back to Edit</button></div>
   </div>
@@ -1150,7 +1166,7 @@ function processFiles(f){Array.from(f).forEach(function(file){if(!file.type.star
 function analyzeStyle(){var u=document.getElementById("insta-urls").value.trim(),n=document.getElementById("style-notes").value.trim();if(!u&&!n&&!uploadedAssets.length){alert("Add something first.");return}var b=document.getElementById("analyze-btn");b.textContent="Analyzing...";b.disabled=true;var p="Analyze carousel style.";if(uploadedAssets.length)p+="\n"+uploadedAssets.length+" examples.";if(u)p+="\nAccounts:\n"+u;if(n)p+="\nNotes:\n"+n;p+="\nWrite a style guide for Rosa.";fetch(BACKEND+"/generate/content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_type:"Style Guide",pillar:"Brand",topic:p,tone:"educational / expert"})}).then(function(r){return r.json()}).then(function(d){document.getElementById("style-guide-out").textContent=d.content||"Error.";document.getElementById("style-guide-out").style.display="block";document.getElementById("copy-style").style.display="inline-block";if(uploadedAssets.length>0){b.textContent="Reading images...";var images=uploadedAssets.map(function(a){return a.url});fetch(BACKEND+"/api/analyze-style",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({images:images,notes:n})}).then(function(r){return r.json()}).then(function(vd){if(vd.success&&vd.data&&vd.data.styles){localStorage.setItem("ce-style-vars",JSON.stringify(vd.data.styles));var extra="\n\n--- SLIDE STYLE VARIATIONS (auto-applied to carousels) ---\n";vd.data.styles.forEach(function(s,i){extra+=(i+1)+". "+s.name+": "+s.description+"\n"});document.getElementById("style-guide-out").textContent+=extra}}).catch(function(){}).finally(function(){b.textContent="Analyze My Style";b.disabled=false})}else{b.textContent="Analyze My Style";b.disabled=false}}).catch(function(){document.getElementById("style-guide-out").textContent="Error.";document.getElementById("style-guide-out").style.display="block";b.textContent="Analyze My Style";b.disabled=false})}
 function copyIt(outId,btnId,orig){navigator.clipboard.writeText(document.getElementById(outId).textContent);var b=document.getElementById(btnId);b.textContent="Copied!";setTimeout(function(){b.textContent=orig},2200)}
 
-function goStep(n){for(var i=1;i<=5;i++){document.getElementById("step"+i).classList.toggle("active",i===n);var p=document.getElementById("sp"+i);p.className="step-pill";if(i<n)p.classList.add("done");if(i===n)p.classList.add("current")}window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});if(n===2)loadHashtags();if(n===5)loadCaption()}
+function goStep(n){for(var i=1;i<=5;i++){document.getElementById("step"+i).classList.toggle("active",i===n);var p=document.getElementById("sp"+i);p.className="step-pill";if(i<n)p.classList.add("done");if(i===n)p.classList.add("current")}window.scrollTo({top:document.getElementById("stepBar").offsetTop-80,behavior:"smooth"});if(n===2)loadHashtags();if(n===4)syncPreviewTemplate();if(n===5)loadCaption()}
 
 function discoverTopics(){document.getElementById("topicSuggestions").style.display="block";document.getElementById("topicSuggestions").innerHTML='<div class="v-loader"><p>Scanning what\'s trending...</p></div>';fetch(BACKEND+"/api/scrape",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:"grief trauma attachment mother loss healing therapy"})}).then(function(r){return r.json()}).then(function(d){if(!d.success||!d.posts||!d.posts.length){document.getElementById("topicSuggestions").innerHTML='<div class="v-err">Could not load trends.</div>';return}viralPosts=d.posts;viralHooks=d.hooks||[];var postsSummary=d.posts.slice(0,12).map(function(p){return p.title+" ("+p.stats+") ["+p.tag+"]"}).join("\n");fetch(BACKEND+"/generate/content",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content_type:"Topic Suggestions",pillar:"All",topic:"Based on what's trending right now in grief/trauma communities, suggest 6 carousel topics Angela should post about THIS WEEK. Each topic should be specific and carousel-ready, not generic.\n\nHere's what's trending:\n"+postsSummary+"\n\nReturn each topic on its own line. No numbers, no bullets. Just the topic. Make them punchy and specific.",tone:"direct / confrontational"})}).then(function(r){return r.json()}).then(function(d2){var topics=(d2.content||"").split("\n").filter(function(t){return t.trim().length>10});var h='<div class="card"><div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;margin-bottom:12px;font-weight:500">Trending Topics This Week</div>';topics.forEach(function(t){var clean=t.trim().replace(/^[\d\.\-\*]+\s*/,"");h+='<div class="hook-pill" onclick="pickSuggestedTopic(this)" style="display:block;margin-bottom:8px">'+clean+'</div>'});h+='<div style="font-size:11px;color:rgba(59,33,69,.3);margin-top:12px">Click a topic to use it.</div></div>';document.getElementById("topicSuggestions").innerHTML=h}).catch(function(){document.getElementById("topicSuggestions").innerHTML='<div class="v-err">Could not generate suggestions.</div>'})}).catch(function(e){document.getElementById("topicSuggestions").innerHTML='<div class="v-err">Error: '+e.message+'</div>'})}
 function pickSuggestedTopic(el){document.getElementById("b-topic").value=el.textContent;document.querySelectorAll("#topicSuggestions .hook-pill").forEach(function(p){p.style.background="rgba(255,255,255,.6)";p.style.color="#3B2145";p.style.borderColor="rgba(210,199,255,.3)"});el.style.background="#90A9EC";el.style.color="#fff";el.style.borderColor="#90A9EC";el.textContent="\u2713 "+el.textContent;document.getElementById("topicSuggestions").insertAdjacentHTML("beforeend",'<div style="text-align:center;margin-top:14px;font-family:Cormorant Garamond,serif;font-style:italic;font-size:16px;color:#90A9EC;animation:vb 2s ease-in-out infinite">Searching for this topic...</div>');setTimeout(function(){goStep(2)},1000)}
@@ -1220,6 +1236,86 @@ function renderSvgSlides(tpl){var h='<div class="cr-scroll" id="slideScroll">';c
 carouselSlides.forEach(function(s,i){var el=document.getElementById("slide-"+i);if(!el)return;var mainZone=el.querySelector(".tz-main");var subZone=el.querySelector(".tz-sub");if(s.type==="hook"){if(mainZone)mainZone.innerHTML=s.upper||"";if(subZone)subZone.innerHTML=s.italic||""}else if(s.type==="cta"){if(mainZone)mainZone.innerHTML=(s.top||"")+"<br>"+(s.bottom||"")}else if(s.type==="close"){if(mainZone)mainZone.innerHTML=s.text||""}else{if(mainZone)mainZone.innerHTML=s.html||s.text||""}})}
 
 function toggleColorEditor(i){var editors=document.querySelectorAll(".sl-color-editor");var slides=document.querySelectorAll(".slide");var target=document.getElementById("ce-"+i);var slide=document.getElementById("slide-"+i);var wasOpen=target.style.display==="block";editors.forEach(function(e){e.style.display="none"});slides.forEach(function(s){s.classList.remove("sl-selected")});if(!wasOpen){target.style.display="block";slide.classList.add("sl-selected")}}
+
+function syncPreviewTemplate(){
+  var sel=document.getElementById("preview-template");
+  if(sel)sel.value=currentTemplate||"naming";
+  // Populate custom template dropdown
+  var csel=document.getElementById("preview-custom-template");
+  if(csel&&savedTemplates){
+    csel.innerHTML='<option value="">No custom style</option>';
+    savedTemplates.forEach(function(t){
+      csel.innerHTML+='<option value="'+t.id+'">'+t.name+'</option>';
+    });
+    if(activeCustomTemplate){
+      var activeId=activeCustomTemplate.id||"";
+      for(var i=0;i<csel.options.length;i++){
+        if(csel.options[i].value===String(activeId)){csel.selectedIndex=i;break}
+      }
+    }
+  }
+}
+
+function switchTemplate(newTpl){
+  var oldTpl=currentTemplate||"naming";
+  currentTemplate=newTpl;
+  // Update Step 1 dropdown too
+  var step1Sel=document.getElementById("b-template");
+  if(step1Sel)step1Sel.value=newTpl;
+  // Clear custom template when switching default templates
+  activeCustomTemplate=null;
+  activeCustomSvgs=null;
+  var csel=document.getElementById("preview-custom-template");
+  if(csel)csel.value="";
+  // Swap CSS classes on all slides
+  var slides=document.querySelectorAll(".slide");
+  slides.forEach(function(sl){
+    sl.classList.remove("tpl-"+oldTpl);
+    sl.classList.add("tpl-"+newTpl);
+    // Clear any inline styles from custom templates so CSS classes take over
+    sl.style.background="";
+    sl.style.padding="";
+    sl.style.textAlign="";
+    var texts=sl.querySelectorAll(".sl-upper,.sl-italic,.sl-text,.sl-cta-top,.sl-cta-bot");
+    texts.forEach(function(t){t.style.color="";t.style.fontFamily="";t.style.fontWeight="";t.style.fontStyle="";t.style.fontSize="";t.style.textTransform=""});
+    var wm=sl.querySelector(".sl-wm");
+    if(wm){wm.style.color="";wm.style.opacity=""}
+  });
+  cachedSlideImages=[];
+  saveCarousel();
+}
+
+function switchCustomTemplate(templateId){
+  if(!templateId){
+    activeCustomTemplate=null;
+    activeCustomSvgs=null;
+    // Re-apply default template
+    switchTemplate(currentTemplate||"naming");
+    return;
+  }
+  // Fetch full template with SVG data
+  fetch(BACKEND+"/api/templates/"+templateId).then(function(r){return r.json()}).then(function(d){
+    if(d.success&&d.template){
+      activeCustomTemplate=d.template;
+      if(d.template.svg_template){
+        try{activeCustomSvgs=JSON.parse(d.template.svg_template)}catch(e){activeCustomSvgs=null}
+      }else{activeCustomSvgs=null}
+      // If SVG template, re-render slides entirely
+      if(activeCustomSvgs&&activeCustomSvgs.svg_hook){
+        renderSvgSlides(currentTemplate);
+      }else{
+        // Apply custom colors to existing slides
+        applyCustomTemplateColors();
+      }
+      cachedSlideImages=[];
+      saveCarousel();
+    }
+  }).catch(function(e){
+    console.log("Could not load custom template:",e);
+    var t=savedTemplates.find(function(x){return x.id==templateId||String(x.id)===templateId});
+    if(t){activeCustomTemplate=t;activeCustomSvgs=null;applyCustomTemplateColors();cachedSlideImages=[]}
+  });
+}
 
 function setSlideColor(i,type,color){var el=document.getElementById("slide-"+i);if(!el)return;if(type==="bg"){el.style.background=color}else{var texts=el.querySelectorAll(".sl-upper,.sl-italic,.sl-text,.sl-cta-top,.sl-cta-bot");texts.forEach(function(t){t.style.color=color});var wm=el.querySelector(".sl-wm");if(wm){wm.style.color=color;wm.style.opacity="0.5"}}}
 function setSlideFont(i,fontFamily,pill){var el=document.getElementById("slide-"+i);if(!el)return;var texts=el.querySelectorAll(".sl-upper,.sl-italic,.sl-text,.sl-cta-top,.sl-cta-bot");texts.forEach(function(t){t.style.fontFamily=fontFamily});var editor=document.getElementById("ce-"+i);if(editor){editor.querySelectorAll(".sl-font-pill").forEach(function(p){p.classList.remove("active")});if(pill)pill.classList.add("active")}cachedSlideImages=[]}
