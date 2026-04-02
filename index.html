@@ -1243,24 +1243,31 @@ function loadSpinoffUrl(){
   var status=document.getElementById("spinoffStatus");
   var btn=document.querySelector('[onclick="loadSpinoffUrl()"]');
   status.style.display="block";
-  status.textContent="Loading post... (may take up to 30 seconds)";
+  status.textContent="Loading post + reading slide text... (may take up to 60 seconds)";
   status.style.color="#90A9EC";
   if(btn){btn.disabled=true;btn.textContent="Loading..."}
 
-  fetch(BACKEND+"/api/load-instagram-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url})})
+  fetch(BACKEND+"/api/load-instagram-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url,extract_slide_text:true})})
   .then(function(r){
     if(!r.ok) return r.json().then(function(err){throw new Error(err.detail||"Could not extract caption")});
     return r.json();
   })
   .then(function(d){
-    if(d.caption){
-      document.getElementById("spinoff-text").value=d.caption;
-      status.textContent="Loaded via "+d.method+"! Edit if needed, then generate.";
+    var output="";
+    if(d.slide_text){
+      output=d.slide_text;
+      if(d.caption)output+="\n\n---CAPTION---\n"+d.caption;
+      status.textContent="Loaded slide text"+(d.caption?" + caption":"")+" via "+d.method+"!";
+      status.style.color="#6fcf97";
+    }else if(d.caption){
+      output=d.caption;
+      status.textContent="Loaded caption via "+d.method+"! (No slide images found for OCR)";
       status.style.color="#6fcf97";
     }else{
-      status.textContent="Could not load caption. Try pasting the text manually.";
+      status.textContent="Could not load content. Try pasting the text manually.";
       status.style.color="#c45a4a";
     }
+    if(output)document.getElementById("spinoff-text").value=output;
   }).catch(function(e){
     status.textContent="Could not load: "+e.message+". Try pasting the text manually.";
     status.style.color="#c45a4a";
