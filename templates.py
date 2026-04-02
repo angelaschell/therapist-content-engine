@@ -421,7 +421,7 @@ async def save_template(req: Request):
             "text_size": template_data.get("text_size", "large"),
             "text_align": template_data.get("text_align", "center"),
             "spacing": template_data.get("spacing", "spacious"),
-            "watermark": template_data.get("watermark", True),
+            "watermark": bool(template_data.get("watermark", True)) if not isinstance(template_data.get("watermark"), bool) else template_data.get("watermark", True),
             "description": template_data.get("description", ""),
             "original_image_url": image_url,
             "full_analysis": json.dumps(template_data),
