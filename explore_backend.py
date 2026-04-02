@@ -115,9 +115,9 @@ except Exception as e:
 # ── Token helper (reuse existing TokenManager) ────────────────
 async def get_ig_credentials():
     """Get the IG account ID and token from the existing TokenManager."""
-    from instagram_analytics import token_manager
-    token = await token_manager.get_page_token()
-    ig_id = token_manager.ig_account_id
+    from instagram_analytics import token_mgr
+    token = await token_mgr.get_page_token()
+    ig_id = token_mgr.ig_account_id
     return token, ig_id
 
 
