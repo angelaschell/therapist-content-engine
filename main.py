@@ -490,10 +490,21 @@ TONE: {tone}
 
 FORMATTING RULES:
 - Do NOT use <br> tags. Each slide is a single flowing sentence or phrase.
-- Slide 1: type "hook" with "upper" (UPPERCASE, short) and "italic" (subtitle, can be empty string).
+- Slide 1: type "hook" with "upper" (UPPERCASE, short, MAX 5 WORDS / 40 CHARACTERS) and "italic" (subtitle, MAX 8 WORDS / 60 CHARACTERS, can be empty string).
 - Body slides: type "body" with "html" field. Use <em> for emphasis on emotional words ONLY. No <br> tags.
-- Last slide: type "close" with "text" field. A reframe or quiet truth, NOT a hard CTA.
-- ASYMMETRICAL RHYTHM IS KEY: Most slides should be short (under 20 words). But ONE slide (usually second-to-last) should be intentionally LONGER (40-60 words) as the emotional release. Do NOT make every slide the same length.
+- Last slide: type "close" with "text" field. A reframe or quiet truth, NOT a hard CTA. MAX 15 WORDS.
+
+*** WORD LIMITS (NON-NEGOTIABLE, WILL BREAK THE DESIGN IF EXCEEDED) ***
+These slides render at large font on a 1080x1350 Instagram image. If you exceed these limits, the text overflows and gets cut off. THIS IS THE MOST IMPORTANT RULE:
+  * BODY SLIDES: MAX 25 WORDS EACH. Most should be 8-15 words. Count the words. If over 25, split into two slides.
+  * Hook upper: MAX 5 WORDS.
+  * Hook subtitle: MAX 8 WORDS.
+  * Close slide: MAX 15 WORDS.
+  * ONE emotional release slide can go up to 30 words. Only ONE. The rest must be under 25.
+  * If a thought needs more than 25 words, SPLIT it across two slides. Add a slide. Never cram.
+*** END WORD LIMITS ***
+
+- ASYMMETRICAL RHYTHM IS KEY: Most slides should be short (8-15 words). ONE slide (usually second-to-last) can be longer (20-25 words max) as the emotional release. Do NOT make every slide the same length.
 - SHOW don't tell. Paint specific images the reader can see, not abstract concepts.
 - No em dashes. No "you're not broken" structures. No outcome promises. No urgency.
 - Would a shame-sensitive woman feel steadied, not activated?
@@ -564,6 +575,56 @@ CAPTION RULES:
             pass
 
     if result and isinstance(result, dict) and "slides" in result and isinstance(result["slides"], list) and len(result["slides"]) > 0:
+        # Enforce WORD limits per slide (words are the real constraint for large fonts)
+        MAX_BODY_WORDS = 30
+        MAX_HOOK_UPPER_WORDS = 6
+        MAX_HOOK_ITALIC_WORDS = 10
+        MAX_CLOSE_WORDS = 18
+        enforced_slides = []
+        for s in result["slides"]:
+            stype = s.get("type", "body")
+            if stype == "hook":
+                upper_words = s.get("upper", "").split()
+                if len(upper_words) > MAX_HOOK_UPPER_WORDS:
+                    s["upper"] = " ".join(upper_words[:MAX_HOOK_UPPER_WORDS])
+                italic_words = s.get("italic", "").split()
+                if len(italic_words) > MAX_HOOK_ITALIC_WORDS:
+                    s["italic"] = " ".join(italic_words[:MAX_HOOK_ITALIC_WORDS])
+                enforced_slides.append(s)
+            elif stype == "close":
+                close_words = s.get("text", "").split()
+                if len(close_words) > MAX_CLOSE_WORDS:
+                    s["text"] = " ".join(close_words[:MAX_CLOSE_WORDS]) + "."
+                enforced_slides.append(s)
+            elif stype == "cta":
+                enforced_slides.append(s)
+            else:
+                text = s.get("html", s.get("text", ""))
+                plain = re.sub(r'<[^>]+>', '', text)
+                words = plain.split()
+                if len(words) > MAX_BODY_WORDS:
+                    # Split into two slides at the nearest sentence boundary
+                    mid_word = len(words) // 2
+                    rejoined = " ".join(words)
+                    # Try to find a sentence break near the middle
+                    mid_char = len(" ".join(words[:mid_word]))
+                    split_at = rejoined.rfind(". ", 0, mid_char + 40)
+                    if split_at == -1:
+                        split_at = rejoined.rfind(", ", 0, mid_char + 40)
+                    if split_at == -1:
+                        split_at = rejoined.rfind(" ", 0, mid_char + 20)
+                    if split_at == -1:
+                        split_at = mid_char
+                    part1 = rejoined[:split_at + 1].strip()
+                    part2 = rejoined[split_at + 1:].strip()
+                    if part1:
+                        enforced_slides.append({"type": "body", "html": part1, "text": part1})
+                    if part2:
+                        enforced_slides.append({"type": "body", "html": part2, "text": part2})
+                else:
+                    enforced_slides.append(s)
+        result["slides"] = enforced_slides
+
         # Trigger ranking as a separate fast call
         if all_triggers and len(all_triggers) > 0:
             try:
