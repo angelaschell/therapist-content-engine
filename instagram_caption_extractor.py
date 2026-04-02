@@ -11,10 +11,13 @@ import re
 import os
 import json
 import httpx
+import base64
 import psycopg2
 import psycopg2.extras
+import anthropic
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional, List
 
 router = APIRouter()
 
@@ -22,15 +25,19 @@ FB_APP_ID = os.getenv("FB_APP_ID", "")
 FB_APP_SECRET = os.getenv("FB_APP_SECRET", "")
 APIFY_TOKEN = os.getenv("APIFY_TOKEN", "")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 
 class LoadPostRequest(BaseModel):
     url: str
+    extract_slide_text: Optional[bool] = False
 
 
 class LoadPostResponse(BaseModel):
     caption: str
     method: str
+    slide_text: Optional[str] = None
+    slide_texts: Optional[List[str]] = None
 
 
 def extract_shortcode(url: str) -> str | None:
@@ -147,7 +154,8 @@ async def try_oembed(url: str) -> str | None:
 
 
 # ── Strategy 4: Apify Instagram Scraper (reliable, 15-30s) ───
-async def try_apify(url: str) -> str | None:
+async def try_apify(url: str) -> dict | None:
+    """Returns dict with 'caption' and 'image_urls' or None."""
     if not APIFY_TOKEN:
         return None
     try:
@@ -165,14 +173,12 @@ async def try_apify(url: str) -> str | None:
                 items = resp.json()
                 if isinstance(items, list) and items:
                     item = items[0]
-                    # Try multiple caption field names
                     caption = (
                         item.get("caption", "")
                         or item.get("text", "")
                         or item.get("alt", "")
                         or ""
                     )
-                    # Fallback: nested caption object
                     if not caption and isinstance(
                         item.get("edge_media_to_caption"), dict
                     ):
@@ -181,14 +187,91 @@ async def try_apify(url: str) -> str | None:
                             caption = (
                                 edges[0].get("node", {}).get("text", "")
                             )
-                    if caption and len(caption.strip()) > 10:
-                        print(f"[Apify] Got caption: {len(caption)} chars")
-                        return caption.strip()
+                    # Extract image URLs for carousel slides
+                    image_urls = []
+                    # Try sidecar (carousel) images
+                    sidecar = item.get("childPosts") or item.get("sidecarPosts") or item.get("images") or []
+                    if sidecar and isinstance(sidecar, list):
+                        for child in sidecar:
+                            img = child.get("displayUrl") or child.get("url") or child.get("display_url") or ""
+                            if img:
+                                image_urls.append(img)
+                    # Try edge_sidecar_to_children for carousel
+                    if not image_urls:
+                        edges = item.get("edge_sidecar_to_children", {}).get("edges", [])
+                        for edge in edges:
+                            node = edge.get("node", {})
+                            img = node.get("display_url", "")
+                            if img:
+                                image_urls.append(img)
+                    # Fallback: single image
+                    if not image_urls:
+                        single = item.get("displayUrl") or item.get("display_url") or item.get("url") or ""
+                        if single and isinstance(single, str) and single.startswith("http"):
+                            image_urls.append(single)
+                    
+                    caption = caption.strip() if caption else ""
+                    if caption and len(caption) > 10:
+                        print(f"[Apify] Got caption: {len(caption)} chars, {len(image_urls)} images")
+                        return {"caption": caption, "image_urls": image_urls}
+                    elif image_urls:
+                        print(f"[Apify] No caption but got {len(image_urls)} images")
+                        return {"caption": "", "image_urls": image_urls}
             else:
                 print(f"[Apify] Error status: {resp.status_code}")
     except Exception as e:
         print(f"[Apify] Error: {e}")
     return None
+
+
+async def ocr_slide_images(image_urls: list) -> list:
+    """Use Claude Vision to read text from carousel slide images."""
+    if not ANTHROPIC_API_KEY or not image_urls:
+        return []
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        slide_texts = []
+        async with httpx.AsyncClient(timeout=30) as http:
+            for i, img_url in enumerate(image_urls[:15]):  # Max 15 slides
+                try:
+                    img_resp = await http.get(img_url)
+                    if img_resp.status_code != 200:
+                        slide_texts.append("")
+                        continue
+                    img_data = base64.b64encode(img_resp.content).decode("utf-8")
+                    content_type = img_resp.headers.get("content-type", "image/jpeg")
+                    if "jpeg" in content_type or "jpg" in content_type:
+                        media_type = "image/jpeg"
+                    elif "png" in content_type:
+                        media_type = "image/png"
+                    elif "webp" in content_type:
+                        media_type = "image/webp"
+                    else:
+                        media_type = "image/jpeg"
+                    
+                    response = client.messages.create(
+                        model="claude-sonnet-4-20250514",
+                        max_tokens=500,
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": img_data}},
+                                {"type": "text", "text": "Read ALL the text on this Instagram carousel slide. Return ONLY the text content, exactly as written. No descriptions, no commentary. If there's no readable text, return EMPTY."}
+                            ]
+                        }]
+                    )
+                    text = response.content[0].text.strip()
+                    if text.upper() == "EMPTY":
+                        text = ""
+                    slide_texts.append(text)
+                    print(f"[OCR] Slide {i+1}: {len(text)} chars")
+                except Exception as e:
+                    print(f"[OCR] Error on slide {i+1}: {e}")
+                    slide_texts.append("")
+        return slide_texts
+    except Exception as e:
+        print(f"[OCR] Error: {e}")
+        return []
 
 
 # ── Strategy 5: Enhanced scraping (fast but often blocked) ───
@@ -276,9 +359,30 @@ async def load_instagram_post(req: LoadPostRequest):
         return LoadPostResponse(caption=caption, method="oembed")
 
     # 4. Apify (reliable, takes 15-30 seconds)
-    caption = await try_apify(url)
-    if caption:
-        return LoadPostResponse(caption=caption, method="apify")
+    apify_result = await try_apify(url)
+    if apify_result and (apify_result.get("caption") or apify_result.get("image_urls")):
+        caption = apify_result.get("caption", "")
+        image_urls = apify_result.get("image_urls", [])
+        
+        # OCR slide images if requested or if we have images
+        slide_texts = []
+        slide_text = None
+        if image_urls and (req.extract_slide_text or not caption):
+            slide_texts = await ocr_slide_images(image_urls)
+            if slide_texts:
+                numbered = []
+                for idx, st in enumerate(slide_texts):
+                    if st:
+                        numbered.append(f"Slide {idx+1}: {st}")
+                slide_text = "\n".join(numbered) if numbered else None
+        
+        if caption or slide_text:
+            return LoadPostResponse(
+                caption=caption or (slide_text or ""),
+                method="apify" + (" + ocr" if slide_text else ""),
+                slide_text=slide_text,
+                slide_texts=slide_texts if slide_texts else None
+            )
 
     # 5. Scraping (fast, often blocked)
     caption = await try_scrape(url)
