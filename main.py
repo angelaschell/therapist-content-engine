@@ -6,6 +6,7 @@ import anthropic
 import httpx
 import os
 import json
+import re
 
 # Import analytics, publisher, and templates
 from instagram_analytics import router as analytics_router, start_refresh_loop
@@ -507,12 +508,62 @@ CAPTION RULES:
 {cta_instruction}
 - No em dashes in the caption either."""}]
     )
-    try:
-        clean = response.content[0].text.strip()
+
+    def extract_json(text):
+        """Try multiple strategies to extract valid JSON from Claude's response."""
+        clean = text.strip()
+        # Strategy 1: Remove ```json or ``` wrappers
         if clean.startswith("```"):
             clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        result = json.loads(clean)
+        try:
+            return json.loads(clean)
+        except Exception:
+            pass
+        # Strategy 2: Find JSON object with regex (handles text before/after)
+        match = re.search(r'\{[\s\S]*"slides"\s*:\s*\[[\s\S]*\]\s*[\s\S]*\}', clean)
+        if match:
+            try:
+                return json.loads(match.group())
+            except Exception:
+                # Strategy 3: Fix trailing commas
+                fixed = re.sub(r',\s*([}\]])', r'\1', match.group())
+                try:
+                    return json.loads(fixed)
+                except Exception:
+                    pass
+        # Strategy 4: Find anything between first { and last }
+        first_brace = clean.find('{')
+        last_brace = clean.rfind('}')
+        if first_brace != -1 and last_brace > first_brace:
+            substr = clean[first_brace:last_brace+1]
+            try:
+                return json.loads(substr)
+            except Exception:
+                fixed = re.sub(r',\s*([}\]])', r'\1', substr)
+                try:
+                    return json.loads(fixed)
+                except Exception:
+                    pass
+        return None
 
+    raw_text = response.content[0].text
+    result = extract_json(raw_text)
+
+    # If parsing failed, ask Claude to fix the JSON (one retry)
+    if result is None:
+        try:
+            fix_resp = claude_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": f"""The following text was supposed to be valid JSON but it has errors. Fix it and return ONLY valid JSON with no backticks, no commentary, no text before or after. Just the raw JSON object:
+
+{raw_text[:6000]}"""}]
+            )
+            result = extract_json(fix_resp.content[0].text)
+        except Exception:
+            pass
+
+    if result and isinstance(result, dict) and "slides" in result and isinstance(result["slides"], list) and len(result["slides"]) > 0:
         # Trigger ranking as a separate fast call
         if all_triggers and len(all_triggers) > 0:
             try:
@@ -545,8 +596,8 @@ Pick the top 3 triggers that best fit this specific post. Return ONLY valid JSON
                 result["trigger_ranking"] = []
 
         return JSONResponse({"success": True, "data": result})
-    except:
-        return JSONResponse({"success": True, "data": response.content[0].text, "raw": True})
+    else:
+        return JSONResponse({"success": True, "data": raw_text, "raw": True})
 
 
 @app.post("/api/login")
