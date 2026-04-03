@@ -22,6 +22,7 @@ from flodesk_sync import router as flodesk_router
 from content_calendar import router as calendar_router
 from ab_testing import router as ab_testing_router
 from repurpose import router as repurpose_router
+from niche_monitor import router as niche_monitor_router
 
 app = FastAPI()
 
@@ -47,6 +48,7 @@ app.include_router(flodesk_router)
 app.include_router(calendar_router)
 app.include_router(ab_testing_router)
 app.include_router(repurpose_router)
+app.include_router(niche_monitor_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")

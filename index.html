@@ -346,7 +346,7 @@ option{background:#F7EBE0}
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
   <button class="tab" onclick="showTab('templates',this)">Templates</button>
   <button class="tab" onclick="showTab('builder',this)">Carousel Builder</button>
-  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('calendar',this)">Calendar</button> <button class="tab" onclick="showTab('reels',this)">Reels Studio</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
+  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('calendar',this)">Calendar</button> <button class="tab" onclick="showTab('monitor',this)">Niche Monitor</button> <button class="tab" onclick="showTab('reels',this)">Reels Studio</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
 </div>
 <div class="main">
 
@@ -1159,6 +1159,64 @@ function deleteCalEvent(){var id=document.getElementById('calEditId').value;if(!
 calInit();
 </script>
 
+<!-- NICHE MONITOR TAB -->
+<div id="monitor" class="tab-panel" style="display:none">
+  <p class="desc">Track accounts in your niche. Discover trending topics before they peak.</p>
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <label style="margin:0">Monitored Accounts</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="monScanBtn" onclick="scanAccounts()">Scan All Accounts</button>
+      </div>
+    </div>
+    <div id="monAccounts" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1;min-width:150px"><label>Add Account</label><input type="text" id="monNewUser" placeholder="@username"></div>
+      <div style="min-width:120px"><label>Category</label><select id="monNewCat"><option value="competitor">Competitor</option><option value="niche_leader">Niche Leader</option><option value="inspiration">Inspiration</option></select></div>
+      <button class="ghost" onclick="addMonAccount()">Add</button>
+    </div>
+  </div>
+
+  <div id="monTrends" style="display:none" class="card" style="margin-bottom:16px"></div>
+  <div id="monPosts" style="margin-top:16px"></div>
+</div>
+
+<script>
+function loadMonitor(){
+  fetch(BACKEND+"/api/monitor/accounts").then(function(r){return r.json()}).then(function(d){
+    var accts=d.accounts||[];
+    var el=document.getElementById("monAccounts");
+    if(!accts.length){el.innerHTML='<div style="color:rgba(59,33,69,.3);font-size:13px">No accounts monitored yet. Add some below.</div>';return}
+    var catColors={competitor:'#FFC696',niche_leader:'#90A9EC',inspiration:'#E5ACD7'};
+    el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px">'+accts.map(function(a){
+      return '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.5);border:1px solid '+(catColors[a.category]||'#D2C7FF')+'33;font-size:12px">'+
+        '<span style="width:6px;height:6px;border-radius:50%;background:'+(catColors[a.category]||'#D2C7FF')+'"></span>'+
+        '<span style="font-weight:500">@'+a.username+'</span>'+
+        (a.display_name?'<span style="color:rgba(59,33,69,.3)">'+a.display_name+'</span>':'')+
+        '<button onclick="removeMonAccount('+a.id+')" style="background:none;border:none;color:rgba(59,33,69,.2);cursor:pointer;font-size:14px;padding:0 2px">&times;</button>'+
+        '</div>'
+    }).join('')+'</div>';
+  }).catch(function(){});
+  // Load existing trends
+  fetch(BACKEND+"/api/monitor/trends").then(function(r){return r.json()}).then(function(d){
+    var trends=d.trends||[];
+    if(!trends.length)return;
+    renderTrends(trends.slice(0,10));
+  }).catch(function(){});
+  // Load recent posts
+  fetch(BACKEND+"/api/monitor/posts?limit=20").then(function(r){return r.json()}).then(function(d){
+    var posts=d.posts||[];
+    if(!posts.length)return;
+    renderMonPosts(posts);
+  }).catch(function(){});
+}
+function addMonAccount(){var u=document.getElementById("monNewUser").value.trim();if(!u)return;fetch(BACKEND+"/api/monitor/accounts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:u.replace(/^@/,""),category:document.getElementById("monNewCat").value})}).then(function(){document.getElementById("monNewUser").value="";loadMonitor()}).catch(function(){})}
+function removeMonAccount(id){if(!confirm("Remove this account?"))return;fetch(BACKEND+"/api/monitor/accounts/"+id,{method:"DELETE"}).then(function(){loadMonitor()}).catch(function(){})}
+function scanAccounts(){var btn=document.getElementById("monScanBtn");btn.textContent="Scanning...";btn.disabled=true;fetch(BACKEND+"/api/monitor/scan",{method:"POST"}).then(function(r){return r.json()}).then(function(d){btn.textContent="Scan All Accounts";btn.disabled=false;if(d.error){alert(d.error);return}if(d.trends&&d.trends.length)renderTrends(d.trends);loadMonitor()}).catch(function(e){btn.textContent="Scan All Accounts";btn.disabled=false;alert("Scan failed: "+(e.message||"error"))})}
+function renderTrends(trends){var el=document.getElementById("monTrends");el.style.display="block";var html='<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:12px">Trending Topics in Your Niche</div>';trends.forEach(function(t,i){var colors=['#90A9EC','#FFC696','#E5ACD7','#6fcf97','#D2C7FF','#e87070','#90A9EC','#FFC696'];var c=colors[i%colors.length];html+='<div style="margin-bottom:12px;padding:14px;border-radius:10px;background:rgba(255,255,255,.4);border-left:4px solid '+c+'">';html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><strong style="font-size:14px;color:#3B2145">'+t.topic+'</strong><span style="font-size:11px;color:rgba(59,33,69,.3)">'+t.frequency+' posts · ~'+Math.round(t.avg_engagement)+' eng</span></div>';if(t.description)html+='<div style="font-size:12px;color:rgba(59,33,69,.5);margin-bottom:4px">'+t.description+'</div>';if(t.content_angle)html+='<div style="font-size:12px;color:#90A9EC;font-style:italic">Angle: '+t.content_angle+'</div>';html+='</div>'});el.innerHTML=html}
+function renderMonPosts(posts){var el=document.getElementById("monPosts");var html='<div class="card"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:12px">Recent Posts from Monitored Accounts</div>';posts.forEach(function(p){html+='<div style="padding:10px 0;border-bottom:1px solid rgba(59,33,69,.04);font-size:13px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><strong>@'+p.account_username+'</strong><span style="font-size:11px;color:rgba(59,33,69,.3)">'+p.like_count+' likes · '+p.comment_count+' comments</span></div><div style="color:rgba(59,33,69,.55);line-height:1.5">'+(p.caption||'').substring(0,200).replace(/</g,"&lt;")+(p.caption&&p.caption.length>200?"...":"")+'</div></div>'});html+='</div>';el.innerHTML=html}
+</script>
+
 <!-- REELS STUDIO TAB -->
 <div id="reels" class="tab-panel" style="display:none">
   <p class="desc">Upload a podcast episode or video. Vizard AI clips it into reels, you review and publish.</p>
@@ -1394,7 +1452,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="calendar")loadCalendar();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="calendar")loadCalendar();if(id==="monitor")loadMonitor();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
