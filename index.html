@@ -346,7 +346,7 @@ option{background:#F7EBE0}
   <button class="tab" onclick="showTab('vault',this)">Brand Vault</button>
   <button class="tab" onclick="showTab('templates',this)">Templates</button>
   <button class="tab" onclick="showTab('builder',this)">Carousel Builder</button>
-  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('reels',this)">Reels Studio</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
+  <button class="tab" onclick="showTab('recent',this)">Recent Carousels</button> <button class="tab" onclick="showTab('calendar',this)">Calendar</button> <button class="tab" onclick="showTab('reels',this)">Reels Studio</button> <button class="tab" onclick="window.location.href='/manychat'">Lead CRM</button> <button class="tab" onclick="showTab('analytics',this)">Analytics</button> <button class="tab" onclick="window.location.href='/comments'">Comments</button>
 </div>
 <div class="main">
 
@@ -998,6 +998,67 @@ function refreshToken(){
   <div class="btns" style="margin-top:10px"><button class="ghost" onclick="if(confirm('Delete ALL saved carousels from server?')){fetch(BACKEND+'/api/carousels',{method:'DELETE'}).then(function(){renderRecentList()})}">Clear All</button></div>
 </div>
 
+<!-- CONTENT CALENDAR TAB -->
+<div id="calendar" class="tab-panel" style="display:none">
+  <p class="desc">Plan and visualize your content schedule. Drag ideas onto dates, see what's coming up.</p>
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="ghost" onclick="calNavMonth(-1)">&larr;</button>
+        <span id="calMonthLabel" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;min-width:180px;text-align:center"></span>
+        <button class="ghost" onclick="calNavMonth(1)">&rarr;</button>
+        <button class="ghost" style="margin-left:8px;font-size:11px" onclick="calToday()">Today</button>
+      </div>
+      <button class="btn" onclick="openCalModal()">+ Add Event</button>
+    </div>
+    <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(59,33,69,.06);border-radius:10px;overflow:hidden"></div>
+  </div>
+  <div id="calUpcoming" style="margin-top:8px"></div>
+</div>
+
+<!-- Calendar Add/Edit Modal -->
+<div id="calModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeCalModal()">
+  <div style="background:#F7EBE0;border-radius:14px;padding:28px;max-width:440px;width:90%;max-height:80vh;overflow-y:auto">
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:16px" id="calModalTitle">Add Event</h3>
+    <input type="hidden" id="calEditId">
+    <div style="margin-bottom:12px"><label>Title</label><input type="text" id="calEvTitle" placeholder="e.g. Motherless Daughters carousel"></div>
+    <div class="grid2">
+      <div><label>Date</label><input type="date" id="calEvDate"></div>
+      <div><label>Time (optional)</label><input type="time" id="calEvTime"></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><label>Type</label><select id="calEvType"><option value="post">Post</option><option value="carousel">Carousel</option><option value="reel">Reel</option><option value="story">Story</option><option value="newsletter">Newsletter</option><option value="idea">Idea</option><option value="reminder">Reminder</option></select></div>
+      <div><label>Status</label><select id="calEvStatus"><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="published">Published</option></select></div>
+    </div>
+    <div style="margin-top:12px"><label>Notes</label><textarea id="calEvNotes" rows="3" placeholder="Any notes..."></textarea></div>
+    <div style="margin-top:12px"><label>Color</label><div style="display:flex;gap:8px" id="calColors"></div></div>
+    <div class="btns" style="margin-top:16px">
+      <button class="btn" onclick="saveCalEvent()">Save</button>
+      <button class="ghost" id="calDeleteBtn" style="display:none;color:#c45a4a" onclick="deleteCalEvent()">Delete</button>
+      <button class="ghost" onclick="closeCalModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var calYear, calMonth, calEvents=[];
+var calColors=['#90A9EC','#D2C7FF','#FFC696','#6fcf97','#e87070','#3B2145'];
+function calInit(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth()}
+function calNavMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++}if(calMonth<0){calMonth=11;calYear--}loadCalendar()}
+function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();loadCalendar()}
+function loadCalendar(){var first=new Date(calYear,calMonth,1);var last=new Date(calYear,calMonth+1,0);var start=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-01';var end=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(last.getDate()).padStart(2,'0');document.getElementById('calMonthLabel').textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});fetch(BACKEND+'/api/calendar?start='+start+'&end='+end).then(function(r){return r.json()}).then(function(d){calEvents=d.events||[];renderCalGrid(first,last);renderUpcoming()}).catch(function(){document.getElementById('calGrid').innerHTML='<div style="grid-column:span 7;padding:20px;text-align:center;color:rgba(59,33,69,.3)">Could not load calendar</div>'})}
+function renderCalGrid(first,last){var g=document.getElementById('calGrid');var html='';var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];days.forEach(function(d){html+='<div style="background:#F7EBE0;padding:8px;text-align:center;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;font-weight:500">'+d+'</div>'});var startDay=first.getDay();var today=new Date();var todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');for(var i=0;i<startDay;i++){html+='<div style="background:rgba(255,255,255,.3);padding:8px;min-height:80px"></div>'}for(var d=1;d<=last.getDate();d++){var dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');var isToday=dateStr===todayStr;var dayEvents=calEvents.filter(function(e){return e.event_date===dateStr});html+='<div style="background:'+(isToday?'rgba(144,169,236,.08)':'rgba(255,255,255,.5)')+';padding:6px;min-height:80px;cursor:pointer" onclick="openCalModal(\''+dateStr+'\')">';html+='<div style="font-size:12px;font-weight:'+(isToday?'700':'400')+';color:'+(isToday?'#90A9EC':'#3B2145')+';margin-bottom:4px">'+d+'</div>';dayEvents.forEach(function(ev){html+='<div onclick="editCalEvent('+ev.id+');event.stopPropagation()" style="font-size:10px;padding:2px 6px;margin-bottom:2px;border-radius:4px;background:'+(ev.color||'#90A9EC')+'22;border-left:3px solid '+(ev.color||'#90A9EC')+';color:#3B2145;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer" title="'+((ev.title||'').replace(/"/g,'&quot;'))+'">'+(ev.event_time?ev.event_time.slice(0,5)+' ':'')+(ev.title||'Event')+'</div>'});html+='</div>'}g.innerHTML=html}
+function renderUpcoming(){var now=new Date();var upcoming=calEvents.filter(function(e){return new Date(e.event_date)>=new Date(now.getFullYear(),now.getMonth(),now.getDate())}).sort(function(a,b){return new Date(a.event_date)-new Date(b.event_date)}).slice(0,5);var el=document.getElementById('calUpcoming');if(!upcoming.length){el.innerHTML='';return}var html='<div class="card"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Upcoming</div>';upcoming.forEach(function(ev){var d=new Date(ev.event_date+'T12:00:00');html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(59,33,69,.04)"><div style="width:6px;height:6px;border-radius:50%;background:'+(ev.color||'#90A9EC')+'"></div><div style="font-size:13px;flex:1"><strong>'+d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+'</strong>'+(ev.event_time?' at '+ev.event_time.slice(0,5):'')+' — '+(ev.title||'Event')+'</div><span style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(59,33,69,.04);color:rgba(59,33,69,.4)">'+(ev.status||'draft')+'</span></div>'});html+='</div>';el.innerHTML=html}
+var calSelectedColor='#90A9EC';
+function openCalModal(dateStr){document.getElementById('calModal').style.display='flex';document.getElementById('calModalTitle').textContent='Add Event';document.getElementById('calEditId').value='';document.getElementById('calEvTitle').value='';document.getElementById('calEvDate').value=dateStr||new Date().toISOString().slice(0,10);document.getElementById('calEvTime').value='';document.getElementById('calEvType').value='carousel';document.getElementById('calEvStatus').value='draft';document.getElementById('calEvNotes').value='';document.getElementById('calDeleteBtn').style.display='none';calSelectedColor='#90A9EC';renderColorPicker()}
+function closeCalModal(){document.getElementById('calModal').style.display='none'}
+function renderColorPicker(){var el=document.getElementById('calColors');el.innerHTML='';calColors.forEach(function(c){el.innerHTML+='<div onclick="calSelectedColor=\''+c+'\';renderColorPicker()" style="width:24px;height:24px;border-radius:50%;background:'+c+';cursor:pointer;border:2px solid '+(calSelectedColor===c?'#3B2145':'transparent')+'"></div>'})}
+function editCalEvent(id){var ev=calEvents.find(function(e){return e.id===id});if(!ev)return;document.getElementById('calModal').style.display='flex';document.getElementById('calModalTitle').textContent='Edit Event';document.getElementById('calEditId').value=id;document.getElementById('calEvTitle').value=ev.title||'';document.getElementById('calEvDate').value=ev.event_date||'';document.getElementById('calEvTime').value=(ev.event_time||'').slice(0,5);document.getElementById('calEvType').value=ev.event_type||'post';document.getElementById('calEvStatus').value=ev.status||'draft';document.getElementById('calEvNotes').value=ev.notes||'';document.getElementById('calDeleteBtn').style.display='inline-block';calSelectedColor=ev.color||'#90A9EC';renderColorPicker()}
+function saveCalEvent(){var id=document.getElementById('calEditId').value;var body={title:document.getElementById('calEvTitle').value||'Untitled',event_date:document.getElementById('calEvDate').value,event_time:document.getElementById('calEvTime').value||null,event_type:document.getElementById('calEvType').value,status:document.getElementById('calEvStatus').value,notes:document.getElementById('calEvNotes').value,color:calSelectedColor};if(!body.event_date)return;var url=BACKEND+'/api/calendar'+(id?'/'+id:'');var method=id?'PATCH':'POST';fetch(url,{method:method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(){closeCalModal();loadCalendar()}).catch(function(){})}
+function deleteCalEvent(){var id=document.getElementById('calEditId').value;if(!id||!confirm('Delete this event?'))return;fetch(BACKEND+'/api/calendar/'+id,{method:'DELETE'}).then(function(){closeCalModal();loadCalendar()}).catch(function(){})}
+calInit();
+</script>
+
 <!-- REELS STUDIO TAB -->
 <div id="reels" class="tab-panel" style="display:none">
   <p class="desc">Upload a podcast episode or video. Vizard AI clips it into reels, you review and publish.</p>
@@ -1233,7 +1294,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="calendar")loadCalendar();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
