@@ -7,19 +7,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#F7EBE0;color:#3B2145;font-family:'Jost',sans-serif;min-height:100vh}
+body{background:linear-gradient(145deg,#FAF3ED 0%,#F3E8DF 35%,#EDE4F0 100%);color:#3B2145;font-family:'Jost',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 30% 20%,rgba(210,199,255,.08) 0%,transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(144,169,236,.06) 0%,transparent 50%);pointer-events:none;z-index:0}
 
 /* ─── HEADER + NAV ─────────────────────────────────────── */
-.hero{background:#F7EBE0;padding:28px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
+.hero{background:linear-gradient(180deg,rgba(255,255,255,.4) 0%,transparent 100%);padding:28px 28px 0;text-align:center;border-bottom:1px solid rgba(210,199,255,.12);position:relative;z-index:1}
 .hero-inner{max-width:700px;margin:0 auto}
-.hero-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:10px}
-.hero-greeting{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:4px;font-weight:500}
+.hero-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.5);margin-bottom:10px;box-shadow:0 4px 20px rgba(59,33,69,.08)}
+.hero-greeting{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:#90A9EC;margin-bottom:4px;font-weight:500}
 .hero h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:#3B2145;margin-bottom:4px}
-.hero-handle{font-size:12px;color:rgba(59,33,69,.3);margin-bottom:14px}
-.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;overflow-x:auto;justify-content:center;gap:2px}
-.tab{background:none;border:none;color:rgba(59,33,69,.35);padding:12px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s;text-decoration:none}
-.tab:hover{color:rgba(59,33,69,.6)}
-.tab.active{color:#3B2145;border-bottom-color:#90A9EC}
+.hero-handle{font-size:12px;color:rgba(59,33,69,.28);margin-bottom:14px}
+.tabs{background:rgba(255,255,255,.35);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(210,199,255,.1);display:flex;padding:0 12px;overflow-x:auto;justify-content:center;gap:1px;position:sticky;top:0;z-index:100}
+.tab{background:none;border:none;color:rgba(59,33,69,.32);padding:12px 12px;font-size:10.5px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.06em;font-weight:500;transition:all .25s;text-decoration:none}
+.tab:hover{color:rgba(59,33,69,.55);background:rgba(144,169,236,.04)}
+.tab.active{color:#3B2145;border-bottom-color:#90A9EC;background:rgba(144,169,236,.06)}
 
 /* ─── LAYOUT ───────────────────────────────────────────── */
 .main{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
@@ -36,34 +37,36 @@ body{background:#F7EBE0;color:#3B2145;font-family:'Jost',sans-serif;min-height:1
 .subtab .badge{display:inline-block;background:rgba(144,169,236,.15);color:#90A9EC;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px;font-weight:600}
 
 /* ─── CARDS ────────────────────────────────────────────── */
-.card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.3);border-radius:14px;padding:22px;margin-bottom:12px;backdrop-filter:blur(8px);transition:all .2s}
-.card:hover{border-color:rgba(144,169,236,.35)}
+.card{background:rgba(255,255,255,.65);border:1px solid rgba(210,199,255,.2);border-radius:16px;padding:22px;margin-bottom:12px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(59,33,69,.03);transition:all .25s}
+.card:hover{border-color:rgba(144,169,236,.3);box-shadow:0 4px 20px rgba(59,33,69,.06)}
 label{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;display:block;margin-bottom:6px;font-weight:500}
-select,textarea,input[type=text],input[type=password]{background:rgba(255,255,255,.7);border:1px solid rgba(210,199,255,.4);border-radius:8px;color:#3B2145;padding:10px 14px;font-size:13px;width:100%;font-family:'Jost',sans-serif;outline:none;transition:border-color .25s}
-select:focus,textarea:focus,input:focus{border-color:#90A9EC}
+select,textarea,input[type=text],input[type=password]{background:rgba(255,255,255,.75);border:1px solid rgba(210,199,255,.3);border-radius:10px;color:#3B2145;padding:10px 14px;font-size:13px;width:100%;font-family:'Jost',sans-serif;outline:none;transition:all .25s;box-shadow:inset 0 1px 3px rgba(59,33,69,.02)}
+select:focus,textarea:focus,input:focus{border-color:#90A9EC;box-shadow:0 0 0 3px rgba(144,169,236,.1),inset 0 1px 3px rgba(59,33,69,.02)}
 textarea{resize:vertical;min-height:70px;line-height:1.6}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}}
 
 /* ─── BUTTONS ──────────────────────────────────────────── */
-.btn{background:#90A9EC;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
-.btn:hover{background:#7d99e0}
-.btn:disabled{opacity:.4;cursor:default}
+.btn{background:linear-gradient(135deg,#90A9EC 0%,#a3b8f0 100%);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s;box-shadow:0 2px 10px rgba(144,169,236,.25)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(144,169,236,.35)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:default;box-shadow:none;transform:none}
 .btn-sm{padding:7px 14px;font-size:11px}
-.ghost{background:rgba(210,199,255,.15);color:#3B2145;border:none;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
-.ghost:hover{background:rgba(210,199,255,.3)}
+.ghost{background:rgba(210,199,255,.12);color:#3B2145;border:1px solid rgba(210,199,255,.15);border-radius:10px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .25s}
+.ghost:hover{background:rgba(210,199,255,.25);border-color:rgba(210,199,255,.3)}
 .btn-danger{background:none;color:rgba(59,33,69,.25);border:1px solid rgba(59,33,69,.08);border-radius:8px;padding:7px 12px;font-size:11px;cursor:pointer;font-family:'Jost',sans-serif;transition:all .2s}
 .btn-danger:hover{color:#c45a4a;border-color:rgba(196,90,74,.2);background:rgba(232,121,110,.04)}
 
 /* ─── STATS ────────────────────────────────────────────── */
 .stats-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.stat{background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:12px;padding:14px 20px;flex:1;min-width:110px;text-align:center}
+.stat{background:rgba(255,255,255,.55);border:1px solid rgba(210,199,255,.15);border-radius:14px;padding:14px 20px;flex:1;min-width:110px;text-align:center;box-shadow:0 2px 8px rgba(59,33,69,.02);transition:all .2s}
+.stat:hover{box-shadow:0 4px 16px rgba(59,33,69,.05);transform:translateY(-1px)}
 .stat-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:#90A9EC}
 .stat-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(59,33,69,.3);margin-top:2px}
 
 /* ─── RECOMMENDATIONS ──────────────────────────────────── */
-.rec-card{background:rgba(255,255,255,.65);border:1px solid rgba(210,199,255,.25);border-radius:14px;padding:20px;margin-bottom:10px;position:relative;transition:all .25s}
-.rec-card:hover{border-color:rgba(144,169,236,.4)}
+.rec-card{background:rgba(255,255,255,.6);border:1px solid rgba(210,199,255,.15);border-radius:16px;padding:20px;margin-bottom:10px;position:relative;transition:all .25s;box-shadow:0 2px 8px rgba(59,33,69,.02)}
+.rec-card:hover{border-color:rgba(144,169,236,.35);box-shadow:0 4px 16px rgba(59,33,69,.06);transform:translateY(-1px)}
 .rec-priority{position:absolute;top:16px;right:16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:5px;font-weight:600}
 .rec-priority.p1{background:rgba(232,121,110,.1);color:#c45a4a}
 .rec-priority.p2{background:rgba(255,198,150,.15);color:#b87a3a}
@@ -183,8 +186,8 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 .detail-actions{padding:16px 28px 24px;border-top:1px solid rgba(59,33,69,.06);display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:640px){.detail-meta{grid-template-columns:repeat(2,1fr)}}
 
-.footer{text-align:center;padding:30px 20px;border-top:1px solid rgba(59,33,69,.05);margin-top:40px}
-.footer p{font-size:11px;color:rgba(59,33,69,.2)}
+.footer{text-align:center;padding:40px 20px;border-top:1px solid rgba(210,199,255,.1);margin-top:40px;background:rgba(255,255,255,.15);position:relative;z-index:1}
+.footer p{font-size:11px;color:rgba(59,33,69,.2);letter-spacing:.12em}
 
 @media(max-width:640px){.sub-table th:nth-child(4),.sub-table td:nth-child(4),.sub-table th:nth-child(5),.sub-table td:nth-child(5){display:none}.trig-card{flex-direction:column;gap:8px}.trig-actions{align-self:flex-end}.search-bar{flex-direction:column}.search-bar input,.search-bar select{max-width:100%}}
 </style>
@@ -231,6 +234,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <button class="subtab" onclick="showSection('triggers',this)">Triggers</button>
   <button class="subtab" onclick="showSection('actions',this)">Completed Actions</button>
   <button class="subtab" onclick="showSection('flodesk',this)">Flodesk Sync</button>
+  <button class="subtab" onclick="showSection('predictions',this)">Predictions</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -391,6 +395,22 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION 6: LEAD PREDICTIONS                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="sec-predictions" class="section" style="display:none">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Lead Predictions</div>
+      <div class="section-sub">AI-scored conversion probability based on behavior signals. Focus your energy on the leads most likely to convert.</div>
+    </div>
+    <button class="btn" onclick="loadPredictions()">Refresh Predictions</button>
+  </div>
+
+  <div id="predStats" style="display:none" class="stats-row"></div>
+  <div id="predList"><div class="card" style="color:rgba(59,33,69,.3);text-align:center;padding:28px">Click "Refresh Predictions" to calculate conversion probabilities for your hottest leads.</div></div>
+</div>
+
 </div>
 
 <div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved.</p></div>
@@ -456,6 +476,7 @@ function showSection(id, el) {
   if (id === "triggers") loadTriggers();
   if (id === "actions") loadActions();
   if (id === "flodesk") loadFlodeskStatus();
+  if (id === "predictions") loadPredictions();
 }
 
 // ─── SYNC ──────────────────────────────────────────────────
@@ -1211,6 +1232,51 @@ function flodeskSync() {
     btn.disabled = false;
     btn.textContent = "Sync to Flodesk";
     showToast("Sync failed: " + e.message, true);
+  });
+}
+
+// ─── PREDICTIONS ──────────────────────────────────────────
+function loadPredictions() {
+  document.getElementById("predList").innerHTML = '<div class="card" style="text-align:center;padding:20px;color:#90A9EC">Loading predictions...</div>';
+  fetch(BACKEND + "/api/predictions/leads").then(function(r) { return r.json(); }).then(function(d) {
+    var s = d.summary || {};
+    document.getElementById("predStats").style.display = "flex";
+    document.getElementById("predStats").innerHTML =
+      '<div class="stat"><div class="stat-num">' + s.total_scored + '</div><div class="stat-label">Scored</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#6fcf97">' + s.high_probability + '</div><div class="stat-label">High Prob</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#e0a060">' + s.medium_probability + '</div><div class="stat-label">Medium</div></div>' +
+      '<div class="stat"><div class="stat-num">' + s.average_probability + '%</div><div class="stat-label">Avg Score</div></div>';
+    var preds = d.predictions || [];
+    if (!preds.length) { document.getElementById("predList").innerHTML = '<div class="card" style="color:rgba(59,33,69,.3);text-align:center;padding:20px">No hot leads to score yet. Subscribers need a heat score of 20+ to appear here.</div>'; return; }
+    var html = '';
+    preds.forEach(function(p) {
+      var color = p.conversion_probability >= 70 ? '#6fcf97' : p.conversion_probability >= 40 ? '#e0a060' : 'rgba(59,33,69,.25)';
+      var tierLabel = p.conversion_probability >= 70 ? 'HIGH' : p.conversion_probability >= 40 ? 'MEDIUM' : 'LOW';
+      var tierClass = p.conversion_probability >= 70 ? 'p1' : p.conversion_probability >= 40 ? 'p2' : 'p4';
+      html += '<div class="rec-card">';
+      html += '<span class="rec-priority ' + tierClass + '">' + tierLabel + ' — ' + p.conversion_probability + '%</span>';
+      html += '<div class="rec-cat">' + (p.funnel_stage || 'subscriber') + '</div>';
+      html += '<div class="rec-title">' + (p.name || 'Unknown') + (p.ig_username ? ' <span style="font-size:13px;color:rgba(59,33,69,.35);font-family:Jost,sans-serif">@' + p.ig_username + '</span>' : '') + '</div>';
+      html += '<div style="display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap">';
+      html += '<span style="font-size:12px;color:rgba(59,33,69,.4)">Heat: <strong style="color:' + color + '">' + p.heat_score + '</strong></span>';
+      html += '<span style="font-size:12px;color:rgba(59,33,69,.4)">Triggers: <strong>' + p.trigger_count + '</strong></span>';
+      html += '<span style="font-size:12px;color:rgba(59,33,69,.4)">Email: <strong>' + (p.email ? 'Yes' : 'No') + '</strong></span>';
+      if (p.last_active) html += '<span style="font-size:12px;color:rgba(59,33,69,.4)">Last active: <strong>' + new Date(p.last_active).toLocaleDateString() + '</strong></span>';
+      html += '</div>';
+      // Probability bar
+      html += '<div style="background:rgba(59,33,69,.06);border-radius:4px;height:8px;width:100%;margin-bottom:8px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + color + ';width:' + p.conversion_probability + '%"></div></div>';
+      // Signals
+      if (p.signals && p.signals.length) {
+        html += '<div style="margin-bottom:8px">';
+        p.signals.forEach(function(sig) { html += '<span style="display:inline-block;font-size:10px;background:rgba(144,169,236,.1);color:#90A9EC;padding:3px 10px;border-radius:5px;margin:2px 4px 2px 0;letter-spacing:.05em">' + sig + '</span>'; });
+        html += '</div>';
+      }
+      html += '<div class="rec-action">' + p.recommended_action + '</div>';
+      html += '</div>';
+    });
+    document.getElementById("predList").innerHTML = html;
+  }).catch(function(e) {
+    document.getElementById("predList").innerHTML = '<div class="card" style="color:#c45a4a">Error loading predictions: ' + e.message + '</div>';
   });
 }
 
