@@ -31,6 +31,7 @@ from stories import router as stories_router
 from hashtag_optimizer import router as hashtag_router
 from lead_predictions import router as lead_pred_router
 from webhook_dashboard import router as webhook_router
+from ad_creative import router as ad_creative_router
 
 app = FastAPI()
 
@@ -65,6 +66,7 @@ app.include_router(stories_router)
 app.include_router(hashtag_router)
 app.include_router(lead_pred_router)
 app.include_router(webhook_router)
+app.include_router(ad_creative_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")

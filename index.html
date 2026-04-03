@@ -360,6 +360,7 @@ option{background:#F7EBE0}
   <button class="tab" onclick="showTab('vault',this)">Vault</button>
   <button class="tab" onclick="showTab('flows',this)">Flows</button>
   <button class="tab" onclick="showTab('webhooks_tab',this)">Webhooks</button>
+  <button class="tab" onclick="showTab('adstudio_tab',this)">Ad Studio</button>
 </div>
 <div class="main">
 
@@ -1348,6 +1349,92 @@ function loadShowNote(id){fetch(BACKEND+"/api/show-notes/"+id).then(function(r){
 </div>
 <script>
 function loadWebhooks(){fetch(BACKEND+"/api/webhooks/dashboard").then(function(r){return r.json()}).then(function(d){var s=d.summary||{};var html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">';html+='<div class="card" style="text-align:center;padding:18px"><label>Events (24h)</label><div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600">'+s.total_24h+'</div></div>';html+='<div class="card" style="text-align:center;padding:18px"><label>Success Rate</label><div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600;color:'+(s.success_rate>=95?'#6fcf97':'#e87070')+'">'+s.success_rate+'%</div></div>';html+='<div class="card" style="text-align:center;padding:18px"><label>Errors</label><div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600;color:'+(s.error_24h>0?'#e87070':'#6fcf97')+'">'+s.error_24h+'</div></div>';html+='<div class="card" style="text-align:center;padding:18px"><label>Avg Latency</label><div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600">'+s.avg_processing_ms+'ms</div></div></div>';html+='<div class="card"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Recent Events</div>';(d.recent_events||[]).slice(0,15).forEach(function(e){var sc=e.status==='success'?'#6fcf97':'#e87070';html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(59,33,69,.04);font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:'+sc+'"></span><span style="color:rgba(59,33,69,.25);min-width:140px">'+new Date(e.created_at).toLocaleString()+'</span><span style="font-weight:500">'+e.event_type+'</span></div>'});html+='</div>';document.getElementById("webhookDash").innerHTML=html}).catch(function(){document.getElementById("webhookDash").innerHTML='<div class="card" style="color:rgba(59,33,69,.3)">Could not load webhook data.</div>'})}
+</script>
+
+<!-- AD CREATIVE STUDIO TAB -->
+<div id="adstudio_tab" class="tab-panel" style="display:none">
+  <p class="desc">Generate scroll-stopping Meta ad creatives tailored to your therapy practice.</p>
+  <div class="card">
+    <div class="grid2">
+      <div><label>Ad Format</label><select id="adFormat"></select></div>
+      <div><label>Goal</label><select id="adGoal"></select></div>
+    </div>
+    <div class="grid2">
+      <div><label>Audience Type</label><select id="adAudience"></select></div>
+      <div><label>Variations</label><select id="adVariations"><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+    </div>
+    <div style="margin-bottom:14px"><label>Offer Name</label><input type="text" id="adOffer" placeholder="e.g. Mother Hunger Course, 1:1 Therapy Sessions"></div>
+    <div style="margin-bottom:14px"><label>Offer Description (optional)</label><textarea id="adOfferDesc" rows="2" placeholder="Brief description of what they get..."></textarea></div>
+    <div class="grid2">
+      <div><label>Target Pain Point (optional)</label><input type="text" id="adPain" placeholder="e.g. feeling disconnected from your mother"></div>
+      <div><label>Price Point (optional)</label><input type="text" id="adPrice" placeholder="e.g. $297, Free"></div>
+    </div>
+    <div class="btns">
+      <button class="btn" id="adGenBtn" onclick="generateAd()">Generate Ad Creatives</button>
+      <button class="ghost" onclick="generateHooks()">Generate 10 Hooks</button>
+      <button class="ghost" onclick="suggestAudiences()">Audience Suggestions</button>
+    </div>
+  </div>
+  <div id="adOutput"></div>
+</div>
+<script>
+(function(){
+  fetch(BACKEND+"/api/ads/formats").then(function(r){return r.json()}).then(function(d){
+    var fs=d.formats||{},gs=d.goals||[],as=d.audience_types||[];
+    var fSel=document.getElementById("adFormat");
+    Object.keys(fs).forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=fs[k].label;fSel.appendChild(o)});
+    var gSel=document.getElementById("adGoal");
+    gs.forEach(function(g){var o=document.createElement("option");o.value=g;o.textContent=g;gSel.appendChild(o)});
+    var aSel=document.getElementById("adAudience");
+    as.forEach(function(a){var o=document.createElement("option");o.value=a;o.textContent=a;aSel.appendChild(o)});
+  });
+})();
+function adPayload(){return{ad_format:document.getElementById("adFormat").value,goal:document.getElementById("adGoal").value,audience_type:document.getElementById("adAudience").value,offer_name:document.getElementById("adOffer").value,offer_description:document.getElementById("adOfferDesc").value,target_pain_point:document.getElementById("adPain").value,price_point:document.getElementById("adPrice").value,variation_count:parseInt(document.getElementById("adVariations").value)}}
+function generateAd(){
+  var btn=document.getElementById("adGenBtn");btn.disabled=true;btn.textContent="Generating...";
+  document.getElementById("adOutput").innerHTML='<div class="card" style="text-align:center;color:rgba(59,33,69,.3);padding:40px">Creating your ad creatives — this takes 15-30 seconds...</div>';
+  fetch(BACKEND+"/api/ads/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(adPayload())}).then(function(r){return r.json()}).then(function(d){
+    btn.disabled=false;btn.textContent="Generate Ad Creatives";
+    if(d.raw){document.getElementById("adOutput").innerHTML='<div class="card"><div class="out">'+d.raw+'</div></div>';return}
+    var html="";
+    (d.variations||[]).forEach(function(v,i){
+      html+='<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:600">'+v.variation_name+'</span><span style="font-size:11px;color:rgba(59,33,69,.3)">Variation '+(i+1)+'</span></div>';
+      html+='<div style="font-size:11px;color:#90A9EC;margin-bottom:10px">Hook strategy: '+v.hook_strategy+'</div>';
+      html+='<div style="margin-bottom:12px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">Primary Text</div><div style="background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:8px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap">'+v.primary_text+'</div></div>';
+      html+='<div class="grid2"><div><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">Headline</div><div style="font-weight:600;font-size:15px">'+v.headline+'</div></div>';
+      html+='<div><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">CTA</div><div style="display:inline-block;background:#90A9EC;color:#fff;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600">'+(v.cta_button||"Learn More")+'</div></div></div>';
+      if(v.description){html+='<div style="margin-top:8px;font-size:13px;color:rgba(59,33,69,.5)">'+v.description+'</div>'}
+      if(v.cards){html+='<div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">';v.cards.forEach(function(c,j){html+='<div style="background:rgba(144,169,236,.06);border:1px solid rgba(144,169,236,.15);border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:#90A9EC;margin-bottom:4px">Card '+(j+1)+'</div><div style="font-weight:600;font-size:13px;margin-bottom:4px">'+c.headline+'</div><div style="font-size:11px;color:rgba(59,33,69,.4)">'+c.description+'</div></div>'});html+='</div>'}
+      if(v.script_beats){html+='<div style="margin-top:12px">';v.script_beats.forEach(function(b){html+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(59,33,69,.04);font-size:12px"><span style="font-weight:600;min-width:50px;color:#90A9EC">'+b.timestamp+'</span><span>'+b.action+'</span></div>'});html+='</div>'}
+      html+='<div style="margin-top:10px;font-size:12px;color:rgba(59,33,69,.35)">Image concept: '+(v.suggested_image_concept||"")+'</div>';
+      html+='</div>';
+    });
+    if(d.audience_targeting_suggestions){var t=d.audience_targeting_suggestions;html+='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Audience Targeting</div><div style="font-size:13px;line-height:1.7;color:rgba(59,33,69,.6)"><strong>Interests:</strong> '+(t.interests||[]).join(", ")+'<br><strong>Behaviors:</strong> '+(t.behaviors||[]).join(", ")+'<br><strong>Demographics:</strong> '+(t.demographics||"")+'</div></div>'}
+    if(d.budget_recommendation){html+='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:6px">Budget Recommendation</div><div style="font-size:14px;color:rgba(59,33,69,.6);line-height:1.6">'+d.budget_recommendation+'</div></div>'}
+    document.getElementById("adOutput").innerHTML=html;
+  }).catch(function(e){btn.disabled=false;btn.textContent="Generate Ad Creatives";document.getElementById("adOutput").innerHTML='<div class="card" style="color:#e87070">Error: '+e.message+'</div>'});
+}
+function generateHooks(){
+  document.getElementById("adOutput").innerHTML='<div class="card" style="text-align:center;color:rgba(59,33,69,.3);padding:40px">Generating hooks...</div>';
+  fetch(BACKEND+"/api/ads/hooks",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(adPayload())}).then(function(r){return r.json()}).then(function(d){
+    if(d.raw){document.getElementById("adOutput").innerHTML='<div class="card"><div class="out">'+d.raw+'</div></div>';return}
+    var html='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:14px">10 Scroll-Stopping Hooks</div>';
+    (d.hooks||[]).forEach(function(h,i){html+='<div style="padding:10px 0;border-bottom:1px solid rgba(59,33,69,.04)"><div style="font-size:11px;color:#90A9EC;font-weight:500;margin-bottom:4px">'+(i+1)+'. '+h.style+'</div><div style="font-size:15px;font-family:Cormorant Garamond,serif;font-weight:600;margin-bottom:4px">"'+h.hook+'"</div><div style="font-size:12px;color:rgba(59,33,69,.35)">'+h.why_it_works+'</div></div>'});
+    html+='</div>';document.getElementById("adOutput").innerHTML=html;
+  }).catch(function(e){document.getElementById("adOutput").innerHTML='<div class="card" style="color:#e87070">Error: '+e.message+'</div>'});
+}
+function suggestAudiences(){
+  document.getElementById("adOutput").innerHTML='<div class="card" style="text-align:center;color:rgba(59,33,69,.3);padding:40px">Analyzing audiences...</div>';
+  fetch(BACKEND+"/api/ads/audience-suggestions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({offer_name:document.getElementById("adOffer").value||"Therapy Services"})}).then(function(r){return r.json()}).then(function(d){
+    if(d.raw){document.getElementById("adOutput").innerHTML='<div class="card"><div class="out">'+d.raw+'</div></div>';return}
+    var html='';
+    if(d.cold_audiences){html+='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Cold Audiences</div>';d.cold_audiences.forEach(function(a){html+='<div style="padding:8px 0;border-bottom:1px solid rgba(59,33,69,.04)"><div style="font-weight:600;font-size:14px;margin-bottom:2px">'+a.name+'</div><div style="font-size:12px;color:rgba(59,33,69,.4)">Interests: '+(a.interests||[]).join(", ")+' | Age: '+(a.age_range||"")+'</div><div style="font-size:12px;color:rgba(59,33,69,.3);margin-top:2px">'+a.notes+'</div></div>'});html+='</div>'}
+    if(d.warm_audiences){html+='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Warm Audiences</div>';d.warm_audiences.forEach(function(a){html+='<div style="padding:8px 0;border-bottom:1px solid rgba(59,33,69,.04)"><div style="font-weight:600;font-size:14px;margin-bottom:2px">'+a.name+'</div><div style="font-size:12px;color:rgba(59,33,69,.4)">Source: '+a.source+'</div><div style="font-size:12px;color:rgba(59,33,69,.3);margin-top:2px">'+a.strategy+'</div></div>'});html+='</div>'}
+    if(d.lookalike_suggestions){html+='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:10px">Lookalike Audiences</div>';d.lookalike_suggestions.forEach(function(a){html+='<div style="padding:8px 0;border-bottom:1px solid rgba(59,33,69,.04)"><div style="font-weight:600;font-size:14px;margin-bottom:2px">Seed: '+a.seed+' ('+a.percentage+')</div><div style="font-size:12px;color:rgba(59,33,69,.3)">'+a.notes+'</div></div>'});html+='</div>'}
+    if(d.budget_split){html+='<div class="card" style="margin-top:14px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:6px">Budget Split</div><div style="font-size:14px;color:rgba(59,33,69,.6);line-height:1.6">'+d.budget_split+'</div></div>'}
+    document.getElementById("adOutput").innerHTML=html;
+  }).catch(function(e){document.getElementById("adOutput").innerHTML='<div class="card" style="color:#e87070">Error: '+e.message+'</div>'});
+}
 </script>
 
 <!-- REELS STUDIO TAB -->
