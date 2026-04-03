@@ -23,6 +23,14 @@ from content_calendar import router as calendar_router
 from ab_testing import router as ab_testing_router
 from repurpose import router as repurpose_router
 from niche_monitor import router as niche_monitor_router
+from weekly_brief import router as brief_router
+from testimonials import router as testimonials_router
+from performance_tags import router as perf_tags_router
+from show_notes import router as show_notes_router
+from stories import router as stories_router
+from hashtag_optimizer import router as hashtag_router
+from lead_predictions import router as lead_pred_router
+from webhook_dashboard import router as webhook_router
 
 app = FastAPI()
 
@@ -49,6 +57,14 @@ app.include_router(calendar_router)
 app.include_router(ab_testing_router)
 app.include_router(repurpose_router)
 app.include_router(niche_monitor_router)
+app.include_router(brief_router)
+app.include_router(testimonials_router)
+app.include_router(perf_tags_router)
+app.include_router(show_notes_router)
+app.include_router(stories_router)
+app.include_router(hashtag_router)
+app.include_router(lead_pred_router)
+app.include_router(webhook_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
