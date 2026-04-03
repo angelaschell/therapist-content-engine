@@ -823,6 +823,23 @@ option{background:#F7EBE0}
       </div>
     </div>
 
+    <!-- Trends & Predictions -->
+    <div class="card" style="margin-bottom:16px">
+      <label>Engagement Trend (Weekly Avg)</label>
+      <div style="font-size:11px;color:rgba(59,33,69,.3);margin-bottom:8px">Shows weekly average engagement with trendline. Green = improving, red = declining.</div>
+      <div style="height:260px"><canvas id="a-trend-chart"></canvas></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card">
+        <label>Growth Indicators</label>
+        <div id="a-growth" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <label>Predictions</label>
+        <div id="a-predictions" style="margin-top:10px;font-size:13px;color:rgba(59,33,69,.55);line-height:1.7"></div>
+      </div>
+    </div>
+
     <!-- Token Status -->
     <div class="card" style="margin-top:16px">
       <label>Token Health</label>
@@ -886,6 +903,8 @@ function loadAnalytics(){
       buildBestDays(s.best_days);
       buildBestHours(s.best_hours);
       buildAnalyticsTable();
+      buildTrendChart();
+      buildGrowthIndicators(s);
     });
   }).catch(function(e){
     document.getElementById('analyticsStatus').textContent='Error: '+e.message;
@@ -970,6 +989,77 @@ function buildAnalyticsTable(){
       '<td style="padding:10px 8px;text-align:right;font-size:12px;color:rgba(59,33,69,.3)">'+afmtD(p.timestamp)+'</td>'+
       '</tr>';
   }).join('');
+}
+
+function buildTrendChart(){
+  aDestroy('trend');
+  if(!aPosts.length)return;
+  var sorted=[].concat(aPosts).sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp)});
+  // Group by week
+  var weeks={};
+  sorted.forEach(function(p){
+    var d=new Date(p.timestamp);
+    var weekStart=new Date(d);weekStart.setDate(d.getDate()-d.getDay());
+    var key=weekStart.toISOString().slice(0,10);
+    if(!weeks[key])weeks[key]={eng:0,count:0,likes:0,comments:0};
+    weeks[key].eng+=(p.like_count||0)+(p.comments_count||0);
+    weeks[key].likes+=(p.like_count||0);
+    weeks[key].comments+=(p.comments_count||0);
+    weeks[key].count++;
+  });
+  var wKeys=Object.keys(weeks).sort();
+  var avgEngs=wKeys.map(function(k){return Math.round(weeks[k].eng/weeks[k].count)});
+  // Simple linear regression for trendline
+  var n=avgEngs.length;var sumX=0,sumY=0,sumXY=0,sumXX=0;
+  avgEngs.forEach(function(y,x){sumX+=x;sumY+=y;sumXY+=x*y;sumXX+=x*x});
+  var slope=(n*sumXY-sumX*sumY)/(n*sumXX-sumX*sumX);
+  var intercept=(sumY-slope*sumX)/n;
+  var trendData=avgEngs.map(function(_,i){return Math.round(slope*i+intercept)});
+  var isGrowing=slope>0;
+  aCharts.trend=new Chart(document.getElementById('a-trend-chart'),{
+    type:'line',data:{labels:wKeys.map(function(k){return new Date(k+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}),datasets:[
+      {label:'Avg Engagement/Post',data:avgEngs,borderColor:'#90A9EC',backgroundColor:'rgba(144,169,236,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#90A9EC'},
+      {label:'Trend',data:trendData,borderColor:isGrowing?'#6fcf97':'#e87070',borderDash:[6,4],borderWidth:2,pointRadius:0,fill:false}
+    ]},options:Object.assign({},aChartOpts,{plugins:{legend:{display:true,position:'top',align:'end',labels:{color:'rgba(59,33,69,.4)',font:{family:'Jost',size:11},boxWidth:12,boxHeight:8,padding:12}},tooltip:aChartOpts.plugins.tooltip}})
+  });
+}
+
+function buildGrowthIndicators(summary){
+  if(!aPosts.length)return;
+  var sorted=[].concat(aPosts).sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp)});
+  var mid=Math.floor(sorted.length/2);
+  var firstHalf=sorted.slice(0,mid);
+  var secondHalf=sorted.slice(mid);
+  function avgEng(posts){if(!posts.length)return 0;var sum=0;posts.forEach(function(p){sum+=(p.like_count||0)+(p.comments_count||0)});return sum/posts.length}
+  var firstAvg=avgEng(firstHalf);
+  var secondAvg=avgEng(secondHalf);
+  var change=firstAvg>0?((secondAvg-firstAvg)/firstAvg*100):0;
+  var isUp=change>0;
+
+  // Content type performance
+  var typePerf={};
+  aPosts.forEach(function(p){var t=p.media_type||'IMAGE';if(!typePerf[t])typePerf[t]={total:0,count:0};typePerf[t].total+=(p.like_count||0)+(p.comments_count||0);typePerf[t].count++});
+  var bestType='';var bestAvg=0;
+  Object.keys(typePerf).forEach(function(t){var avg=typePerf[t].total/typePerf[t].count;if(avg>bestAvg){bestAvg=avg;bestType=t}});
+  var typeNames={IMAGE:'Images',VIDEO:'Videos',CAROUSEL_ALBUM:'Carousels',REEL:'Reels'};
+
+  var gEl=document.getElementById('a-growth');
+  gEl.innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'+
+    '<div style="padding:12px 16px;border-radius:8px;background:'+(isUp?'rgba(111,207,151,.08)':'rgba(232,112,112,.08)')+';border:1px solid '+(isUp?'rgba(111,207,151,.2)':'rgba(232,112,112,.2)')+'"><div style="font-size:20px;font-family:Cormorant Garamond,serif;font-weight:700;color:'+(isUp?'#6fcf97':'#e87070')+'">'+(isUp?'+':'')+change.toFixed(1)+'%</div><div style="font-size:11px;color:rgba(59,33,69,.4)">Engagement change (first half vs second half)</div></div>'+
+    '<div style="padding:12px 16px;border-radius:8px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.15)"><div style="font-size:16px;font-family:Cormorant Garamond,serif;font-weight:600;color:#3B2145">'+(typeNames[bestType]||bestType)+'</div><div style="font-size:11px;color:rgba(59,33,69,.4)">Best performing content type (avg '+afmt(Math.round(bestAvg))+' eng/post)</div></div>'+
+    '<div style="padding:12px 16px;border-radius:8px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.15)"><div style="font-size:16px;font-family:Cormorant Garamond,serif;font-weight:600;color:#3B2145">'+summary.total_posts+' posts</div><div style="font-size:11px;color:rgba(59,33,69,.4)">'+Math.round(summary.total_posts/(parseInt(document.getElementById("a-period").value)/7))+' posts/week average</div></div>'+
+    '</div>';
+
+  // Predictions
+  var pEl=document.getElementById('a-predictions');
+  var weeklyRate=summary.total_posts/(parseInt(document.getElementById("a-period").value)/7);
+  var projectedMonthly=Math.round(weeklyRate*4.3);
+  var projectedEng=Math.round(summary.avg_engagement_per_post*(1+change/100));
+  pEl.innerHTML='Based on current trends:<br>'+
+    '<strong>'+projectedMonthly+'</strong> posts projected next month<br>'+
+    '<strong>'+afmt(projectedEng)+'</strong> projected avg engagement/post<br>'+
+    (isUp?'Engagement is <strong style="color:#6fcf97">trending up</strong>. Keep posting '+(typeNames[bestType]||'this type')+'.':'Engagement is <strong style="color:#e87070">trending down</strong>. Consider more '+(typeNames[bestType]||'high-performing content')+'.')+
+    '<br><br><span style="font-size:11px;color:rgba(59,33,69,.25)">Based on '+summary.total_posts+' posts over '+document.getElementById("a-period").value+' days</span>';
 }
 
 function checkTokenHealth(){
