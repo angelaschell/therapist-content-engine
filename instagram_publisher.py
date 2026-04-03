@@ -18,7 +18,7 @@ logger = logging.getLogger("publisher")
 
 router = APIRouter(prefix="/api/publish", tags=["publisher"])
 
-GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
+GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 STORAGE_BUCKET = "carousel-slides"
@@ -137,9 +137,12 @@ async def get_page_token_and_ig_id():
 
 async def graph_post(endpoint, params):
     async with httpx.AsyncClient(timeout=60.0) as client:
-        r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", data=params)
-        if r.status_code != 200:
-            error = r.json().get("error", {}).get("message", "Unknown error")
+        r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=params)
+        if r.status_code not in (200, 201):
+            try:
+                error = r.json().get("error", {}).get("message", r.text)
+            except Exception:
+                error = r.text
             raise HTTPException(status_code=r.status_code, detail=error)
         return r.json()
 
@@ -147,8 +150,11 @@ async def graph_post(endpoint, params):
 async def graph_get(endpoint, params):
     async with httpx.AsyncClient(timeout=30.0) as client:
         r = await client.get(f"{GRAPH_API_BASE}/{endpoint}", params=params)
-        if r.status_code != 200:
-            error = r.json().get("error", {}).get("message", "Unknown error")
+        if r.status_code not in (200, 201):
+            try:
+                error = r.json().get("error", {}).get("message", r.text)
+            except Exception:
+                error = r.text
             raise HTTPException(status_code=r.status_code, detail=error)
         return r.json()
 
