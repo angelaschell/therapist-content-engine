@@ -183,13 +183,72 @@ async def generate_dm_response(req: Request):
     data = await req.json()
     message = data.get("message", "")
     lead_temp = data.get("lead_temperature", "")
+    ig_username = data.get("ig_username", "").strip().lstrip("@")
+
+    # Pull subscriber context from CRM if username provided
+    subscriber_context = ""
+    if ig_username:
+        try:
+            import psycopg2, psycopg2.extras
+            db_url = os.environ.get("DATABASE_URL", "")
+            if db_url:
+                conn = psycopg2.connect(db_url)
+                conn.autocommit = True
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute("SELECT full_name, ig_username, heat_score, interest_level, funnel_stage, trigger_count, conversation_count, tags FROM manychat_subscribers WHERE ig_username ILIKE %s LIMIT 1", (ig_username,))
+                sub = cur.fetchone()
+                if sub:
+                    cur.execute("SELECT keyword, fired_at FROM subscriber_triggers WHERE mc_id = (SELECT mc_id FROM manychat_subscribers WHERE ig_username ILIKE %s LIMIT 1) ORDER BY fired_at DESC LIMIT 10", (ig_username,))
+                    triggers = cur.fetchall()
+                    trigger_list = ", ".join([t["keyword"] for t in triggers]) if triggers else "none"
+                    tags = sub.get("tags", [])
+                    if isinstance(tags, str):
+                        try: tags = json.loads(tags)
+                        except: tags = []
+                    tag_names = [t.get("name", str(t)) if isinstance(t, dict) else str(t) for t in tags][:10]
+                    subscriber_context = f"""
+CRM DATA FOR @{ig_username}:
+- Name: {sub.get('full_name', 'Unknown')}
+- Heat Score: {sub.get('heat_score', 0)}/100
+- Interest: {sub.get('interest_level', 'new')}
+- Funnel Stage: {sub.get('funnel_stage', 'subscriber')}
+- Triggers fired: {trigger_list}
+- Tags: {', '.join(tag_names) if tag_names else 'none'}
+- Conversations: {sub.get('conversation_count', 0)}
+
+Use this data to personalize your response. Reference what you know about them naturally."""
+                cur.close()
+                conn.close()
+        except Exception:
+            pass
+
+    # Detect if this is a thread (has "them:" or "me:" prefixes)
+    is_thread = "them:" in message.lower() or "me:" in message.lower()
+    thread_instruction = ""
+    if is_thread:
+        thread_instruction = """This is a CONVERSATION THREAD. Read the full context. Your response should:
+- Acknowledge the arc of the conversation, not just the last message
+- Build on what Angela (me:) has already said
+- Feel like a natural continuation, not a fresh start
+- Pick up emotional threads from earlier in the conversation
+"""
+
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=600,
         system=ANGELA_SYSTEM,
-        messages=[{"role": "user", "content": f'DM: "{message}"\nLead temp: {lead_temp}\nWrite Angela\'s response. Human, direct.\n\n---\nSUGGESTED TRIGGER: [keyword]\nREASONING: [one sentence]\nNEXT STEP: [24hr follow-up]'}]
+        messages=[{"role": "user", "content": f"""{thread_instruction}DM conversation: "{message}"
+Lead temp: {lead_temp}
+{subscriber_context}
+
+Write Angela's next DM response. Human, direct. 2-5 sentences.
+
+---
+SUGGESTED TRIGGER: [keyword]
+REASONING: [one sentence]
+NEXT STEP: [24hr follow-up idea]"""}]
     )
-    return {"response": response.content[0].text}
+    return {"response": response.content[0].text, "subscriber_found": bool(subscriber_context)}
 
 
 @app.post("/generate/manychat-flow")
