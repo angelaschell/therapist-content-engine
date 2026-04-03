@@ -17,6 +17,7 @@ from manychat_backend import router as manychat_router
 from vizard_backend import router as vizard_router
 from explore_backend import router as explore_router
 from instagram_caption_extractor import router as caption_router
+from carousel_history import router as carousel_history_router
 
 app = FastAPI()
 
@@ -37,6 +38,7 @@ app.include_router(manychat_router)
 app.include_router(vizard_router)
 app.include_router(explore_router)
 app.include_router(caption_router)
+app.include_router(carousel_history_router)
 
 claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
