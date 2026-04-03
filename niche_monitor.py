@@ -156,6 +156,8 @@ async def remove_account(account_id: int):
 @router.post("/api/monitor/scan")
 async def scan_accounts(req: Request):
     """Fetch recent posts from monitored accounts via Apify and analyze trends."""
+    import asyncio
+
     if not APIFY_TOKEN:
         return JSONResponse({"error": "APIFY_TOKEN not configured. Set the environment variable to enable scanning."}, status_code=400)
 
@@ -166,26 +168,44 @@ async def scan_accounts(req: Request):
     usernames = [a["username"] for a in accounts]
     all_posts = []
 
-    # Use Apify Instagram Profile Scraper
+    # Use Apify Instagram Scraper
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
+        async with httpx.AsyncClient(timeout=300) as client:
+            # Try the current actor name first, fall back to legacy
             run_resp = await client.post(
-                f"https://api.apify.com/v2/acts/apify~instagram-profile-scraper/runs",
+                "https://api.apify.com/v2/acts/apify~instagram-scraper/runs",
                 params={"token": APIFY_TOKEN},
                 json={
-                    "usernames": usernames,
+                    "directUrls": [f"https://www.instagram.com/{u}/" for u in usernames],
                     "resultsLimit": 10,
                     "resultsType": "posts",
+                    "searchType": "user",
                 }
             )
-            run_resp.raise_for_status()
+            # If the new actor doesn't work, try the legacy name
+            if run_resp.status_code in (400, 404):
+                run_resp = await client.post(
+                    "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/runs",
+                    params={"token": APIFY_TOKEN},
+                    json={
+                        "usernames": usernames,
+                        "resultsLimit": 10,
+                        "resultsType": "posts",
+                    }
+                )
+
+            if run_resp.status_code != 201:
+                return JSONResponse({
+                    "error": f"Apify returned status {run_resp.status_code}: {run_resp.text[:300]}"
+                }, status_code=500)
+
             run_data = run_resp.json()
             run_id = run_data["data"]["id"]
             dataset_id = run_data["data"]["defaultDatasetId"]
 
-            # Poll for completion
-            for _ in range(30):
-                import asyncio
+            # Poll for completion (up to ~4 minutes)
+            status = "RUNNING"
+            for _ in range(50):
                 await asyncio.sleep(5)
                 status_resp = await client.get(
                     f"https://api.apify.com/v2/actor-runs/{run_id}",
@@ -195,39 +215,55 @@ async def scan_accounts(req: Request):
                 if status in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
                     break
 
-            if status == "SUCCEEDED":
-                data_resp = await client.get(
-                    f"https://api.apify.com/v2/datasets/{dataset_id}/items",
-                    params={"token": APIFY_TOKEN}
-                )
-                items = data_resp.json()
-                for item in items:
-                    username = item.get("ownerUsername", "")
-                    caption = item.get("caption", "") or ""
-                    likes = item.get("likesCount", 0) or 0
-                    comments = item.get("commentsCount", 0) or 0
-                    post_url = item.get("url", "")
-                    media_type = item.get("type", "Image").upper()
-                    posted_at = item.get("timestamp", "")
+            if status != "SUCCEEDED":
+                return JSONResponse({
+                    "error": f"Apify scan ended with status: {status}. Check your Apify dashboard for details."
+                }, status_code=500)
 
-                    # Store post
+            data_resp = await client.get(
+                f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                params={"token": APIFY_TOKEN}
+            )
+            items = data_resp.json()
+
+            if not items:
+                return JSONResponse({
+                    "error": "Apify returned 0 posts. The accounts may be private or the scraper needs a different configuration.",
+                    "posts_found": 0,
+                    "accounts_scanned": len(usernames)
+                })
+
+            for item in items:
+                username = item.get("ownerUsername", "") or item.get("profileUsername", "") or ""
+                caption = item.get("caption", "") or ""
+                likes = item.get("likesCount", 0) or 0
+                comments = item.get("commentsCount", 0) or 0
+                post_url = item.get("url", "") or item.get("shortCode", "")
+                if post_url and not post_url.startswith("http"):
+                    post_url = f"https://www.instagram.com/p/{post_url}/"
+                media_type = (item.get("type", "") or "Image").upper()
+                posted_at = item.get("timestamp", "") or item.get("takenAtTimestamp", "")
+
+                # Store post
+                try:
                     execute("""
                         INSERT INTO monitored_posts (account_username, post_url, caption, media_type, like_count, comment_count, posted_at, engagement_score)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT DO NOTHING
                     """, (username, post_url, caption[:2000], media_type, likes, comments, posted_at or None, likes + comments * 3))
+                except Exception:
+                    pass
 
-                    all_posts.append({
-                        "username": username,
-                        "caption": caption[:500],
-                        "likes": likes,
-                        "comments": comments,
-                        "url": post_url,
-                    })
+                all_posts.append({
+                    "username": username,
+                    "caption": caption[:500],
+                    "likes": likes,
+                    "comments": comments,
+                    "url": post_url,
+                })
 
-                # Update last_checked
-                for acct in accounts:
-                    execute("UPDATE monitored_accounts SET last_checked = NOW() WHERE id = %s", (acct["id"],))
+            # Update last_checked
+            for acct in accounts:
+                execute("UPDATE monitored_accounts SET last_checked = NOW() WHERE id = %s", (acct["id"],))
 
     except Exception as e:
         return JSONResponse({"error": f"Scan failed: {str(e)[:300]}", "partial_posts": len(all_posts)}, status_code=500)
@@ -286,6 +322,32 @@ Find 5-8 distinct topics. Focus on emotional themes, not generic categories."""
             )
 
         return trends
+
+
+@router.get("/api/monitor/status")
+async def monitor_status():
+    """Quick health check for monitor dependencies."""
+    result = {"database": False, "apify": False, "apify_token_set": bool(APIFY_TOKEN)}
+    if DATABASE_URL:
+        try:
+            query("SELECT 1")
+            result["database"] = True
+            accts = query("SELECT COUNT(*) as cnt FROM monitored_accounts WHERE is_active = TRUE")
+            result["account_count"] = accts[0]["cnt"] if accts else 0
+        except Exception as e:
+            result["database_error"] = str(e)[:200]
+    if APIFY_TOKEN:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.get("https://api.apify.com/v2/users/me", params={"token": APIFY_TOKEN})
+                if r.status_code == 200:
+                    result["apify"] = True
+                    result["apify_user"] = r.json().get("data", {}).get("username", "")
+                else:
+                    result["apify_error"] = f"Status {r.status_code}: {r.text[:200]}"
+        except Exception as e:
+            result["apify_error"] = str(e)[:200]
+    return JSONResponse(result)
 
 
 @router.get("/api/monitor/trends")
