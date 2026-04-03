@@ -1200,6 +1200,7 @@ function loadMonitor(){
   fetch(BACKEND+"/api/monitor/accounts").then(function(r){return r.json()}).then(function(d){
     var accts=d.accounts||[];
     var el=document.getElementById("monAccounts");
+    if(d.error){el.innerHTML='<div style="color:#e87070;font-size:13px">Monitor error: '+d.error+'</div>';return}
     if(!accts.length){el.innerHTML='<div style="color:rgba(59,33,69,.3);font-size:13px">No accounts monitored yet. Add some below.</div>';return}
     var catColors={competitor:'#FFC696',niche_leader:'#90A9EC',inspiration:'#E5ACD7'};
     el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:8px">'+accts.map(function(a){
@@ -1210,7 +1211,7 @@ function loadMonitor(){
         '<button onclick="removeMonAccount('+a.id+')" style="background:none;border:none;color:rgba(59,33,69,.2);cursor:pointer;font-size:14px;padding:0 2px">&times;</button>'+
         '</div>'
     }).join('')+'</div>';
-  }).catch(function(){});
+  }).catch(function(e){document.getElementById("monAccounts").innerHTML='<div style="color:#e87070;font-size:13px">Could not load accounts: '+(e.message||"network error")+'</div>'});
   // Load existing trends
   fetch(BACKEND+"/api/monitor/trends").then(function(r){return r.json()}).then(function(d){
     var trends=d.trends||[];

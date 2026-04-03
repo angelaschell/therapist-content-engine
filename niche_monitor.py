@@ -96,9 +96,10 @@ CREATE INDEX IF NOT EXISTS idx_niche_trends_detected ON niche_trends(detected_at
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[niche_monitor] Schema creation warning: {e}")
 
 # Default accounts to monitor (therapists in the grief/trauma niche)
 DEFAULT_ACCOUNTS = [
@@ -113,19 +114,24 @@ DEFAULT_ACCOUNTS = [
 
 @router.get("/api/monitor/accounts")
 async def list_accounts():
-    accounts = query("SELECT * FROM monitored_accounts WHERE is_active = TRUE ORDER BY category, username")
-    if not accounts:
-        # Seed defaults
-        for acct in DEFAULT_ACCOUNTS:
-            try:
-                execute(
-                    "INSERT INTO monitored_accounts (username, display_name, category) VALUES (%s, %s, %s) ON CONFLICT (username) DO NOTHING",
-                    (acct["username"], acct["display_name"], acct["category"])
-                )
-            except Exception:
-                pass
+    if not DATABASE_URL:
+        return JSONResponse({"accounts": [], "error": "DATABASE_URL not configured"})
+    try:
         accounts = query("SELECT * FROM monitored_accounts WHERE is_active = TRUE ORDER BY category, username")
-    return JSONResponse({"accounts": accounts})
+        if not accounts:
+            # Seed defaults
+            for acct in DEFAULT_ACCOUNTS:
+                try:
+                    execute(
+                        "INSERT INTO monitored_accounts (username, display_name, category) VALUES (%s, %s, %s) ON CONFLICT (username) DO NOTHING",
+                        (acct["username"], acct["display_name"], acct["category"])
+                    )
+                except Exception:
+                    pass
+            accounts = query("SELECT * FROM monitored_accounts WHERE is_active = TRUE ORDER BY category, username")
+        return JSONResponse({"accounts": accounts})
+    except Exception as e:
+        return JSONResponse({"accounts": [], "error": str(e)[:300]})
 
 
 @router.post("/api/monitor/accounts")
