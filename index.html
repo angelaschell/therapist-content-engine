@@ -1378,7 +1378,8 @@ function loadWebhooks(){fetch(BACKEND+"/api/webhooks/dashboard").then(function(r
   <div id="adOutput"></div>
 </div>
 <script>
-(function(){
+function loadAdFormats(){
+  if(typeof BACKEND==="undefined"){setTimeout(loadAdFormats,200);return}
   fetch(BACKEND+"/api/ads/formats").then(function(r){return r.json()}).then(function(d){
     var fs=d.formats||{},gs=d.goals||[],as=d.audience_types||[];
     var fSel=document.getElementById("adFormat");
@@ -1388,7 +1389,8 @@ function loadWebhooks(){fetch(BACKEND+"/api/webhooks/dashboard").then(function(r
     var aSel=document.getElementById("adAudience");
     as.forEach(function(a){var o=document.createElement("option");o.value=a;o.textContent=a;aSel.appendChild(o)});
   });
-})();
+}
+loadAdFormats();
 function adPayload(){return{ad_format:document.getElementById("adFormat").value,goal:document.getElementById("adGoal").value,audience_type:document.getElementById("adAudience").value,offer_name:document.getElementById("adOffer").value,offer_description:document.getElementById("adOfferDesc").value,target_pain_point:document.getElementById("adPain").value,price_point:document.getElementById("adPrice").value,variation_count:parseInt(document.getElementById("adVariations").value)}}
 function generateAd(){
   var btn=document.getElementById("adGenBtn");btn.disabled=true;btn.textContent="Generating...";
