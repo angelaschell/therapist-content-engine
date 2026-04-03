@@ -167,6 +167,7 @@ async def scan_accounts(req: Request):
 
     usernames = [a["username"] for a in accounts]
     all_posts = []
+    debug_info = {"actor_used": "", "raw_item_keys": [], "items_count": 0, "db_errors": []}
 
     # Use Apify Instagram Scraper
     try:
@@ -182,6 +183,8 @@ async def scan_accounts(req: Request):
                     "searchType": "user",
                 }
             )
+            debug_info["actor_used"] = "apify~instagram-scraper"
+
             # If the new actor doesn't work, try the legacy name
             if run_resp.status_code in (400, 404):
                 run_resp = await client.post(
@@ -193,10 +196,11 @@ async def scan_accounts(req: Request):
                         "resultsType": "posts",
                     }
                 )
+                debug_info["actor_used"] = "apify~instagram-profile-scraper"
 
             if run_resp.status_code != 201:
                 return JSONResponse({
-                    "error": f"Apify returned status {run_resp.status_code}: {run_resp.text[:300]}"
+                    "error": f"Apify returned status {run_resp.status_code}: {run_resp.text[:500]}"
                 }, status_code=500)
 
             run_data = run_resp.json()
@@ -225,39 +229,67 @@ async def scan_accounts(req: Request):
                 params={"token": APIFY_TOKEN}
             )
             items = data_resp.json()
+            debug_info["items_count"] = len(items) if isinstance(items, list) else 0
 
-            if not items:
+            if not items or not isinstance(items, list):
                 return JSONResponse({
                     "error": "Apify returned 0 posts. The accounts may be private or the scraper needs a different configuration.",
                     "posts_found": 0,
-                    "accounts_scanned": len(usernames)
+                    "accounts_scanned": len(usernames),
+                    "debug": debug_info
                 })
 
-            for item in items:
-                username = item.get("ownerUsername", "") or item.get("profileUsername", "") or ""
-                caption = item.get("caption", "") or ""
-                likes = item.get("likesCount", 0) or 0
-                comments = item.get("commentsCount", 0) or 0
-                post_url = item.get("url", "") or item.get("shortCode", "")
-                if post_url and not post_url.startswith("http"):
-                    post_url = f"https://www.instagram.com/p/{post_url}/"
-                media_type = (item.get("type", "") or "Image").upper()
-                posted_at = item.get("timestamp", "") or item.get("takenAtTimestamp", "")
+            # Log the keys from the first item so we know the field names
+            if items:
+                debug_info["raw_item_keys"] = list(items[0].keys())[:30]
+                debug_info["sample_item"] = {k: str(v)[:100] for k, v in list(items[0].items())[:15]}
 
-                # Store post
+            for item in items:
+                # Handle multiple possible field names from different Apify actor versions
+                username = (
+                    item.get("ownerUsername")
+                    or item.get("profileUsername")
+                    or item.get("username")
+                    or item.get("owner", {}).get("username", "") if isinstance(item.get("owner"), dict) else ""
+                ) or ""
+                caption = item.get("caption", "") or ""
+                likes = item.get("likesCount") or item.get("likes") or item.get("digg_count") or 0
+                comments = item.get("commentsCount") or item.get("comments") or item.get("comment_count") or 0
+                post_url = item.get("url") or item.get("webLink") or item.get("permalink") or ""
+                shortcode = item.get("shortCode") or item.get("shortcode") or ""
+                if not post_url and shortcode:
+                    post_url = f"https://www.instagram.com/p/{shortcode}/"
+                media_type = (item.get("type") or item.get("mediaType") or "Image").upper()
+                if isinstance(media_type, int):
+                    media_type = {1: "IMAGE", 2: "VIDEO", 8: "CAROUSEL"}.get(media_type, "IMAGE")
+
+                # Handle posted_at — could be ISO string, unix timestamp, or empty
+                posted_at_raw = item.get("timestamp") or item.get("takenAtTimestamp") or item.get("taken_at_timestamp") or None
+                posted_at = None
+                if posted_at_raw:
+                    if isinstance(posted_at_raw, (int, float)):
+                        # Unix timestamp
+                        try:
+                            posted_at = datetime.utcfromtimestamp(posted_at_raw).isoformat()
+                        except Exception:
+                            posted_at = None
+                    elif isinstance(posted_at_raw, str) and posted_at_raw.strip():
+                        posted_at = posted_at_raw
+
+                # Store post in DB
                 try:
                     execute("""
                         INSERT INTO monitored_posts (account_username, post_url, caption, media_type, like_count, comment_count, posted_at, engagement_score)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (username, post_url, caption[:2000], media_type, likes, comments, posted_at or None, likes + comments * 3))
-                except Exception:
-                    pass
+                    """, (username, post_url, caption[:2000], media_type, int(likes), int(comments), posted_at, int(likes) + int(comments) * 3))
+                except Exception as e:
+                    debug_info["db_errors"].append(str(e)[:150])
 
                 all_posts.append({
                     "username": username,
                     "caption": caption[:500],
-                    "likes": likes,
-                    "comments": comments,
+                    "likes": int(likes),
+                    "comments": int(comments),
                     "url": post_url,
                 })
 
@@ -266,7 +298,7 @@ async def scan_accounts(req: Request):
                 execute("UPDATE monitored_accounts SET last_checked = NOW() WHERE id = %s", (acct["id"],))
 
     except Exception as e:
-        return JSONResponse({"error": f"Scan failed: {str(e)[:300]}", "partial_posts": len(all_posts)}, status_code=500)
+        return JSONResponse({"error": f"Scan failed: {str(e)[:300]}", "partial_posts": len(all_posts), "debug": debug_info}, status_code=500)
 
     # Analyze trends with Claude
     trends = []
@@ -280,6 +312,7 @@ async def scan_accounts(req: Request):
         "posts_found": len(all_posts),
         "accounts_scanned": len(usernames),
         "trends": trends,
+        "debug": debug_info,
     })
 
 
