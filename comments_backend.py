@@ -513,6 +513,128 @@ async def bulk_action(req: BulkActionRequest):
     else: raise HTTPException(status_code=400, detail=f"Invalid: {req.action}")
     return {"success": True, "updated": len(req.comment_ids)}
 
+# ═══════════════════════════════════════════════════════
+# BULK REPLY DRAFTING + POSTING
+# ═══════════════════════════════════════════════════════
+
+@router.post("/bulk-draft")
+async def bulk_draft_replies(req: BulkActionRequest):
+    """Generate AI reply drafts for multiple comments at once."""
+    if not req.comment_ids:
+        raise HTTPException(status_code=400, detail="No comments selected")
+
+    placeholders = ",".join(["%s"] * len(req.comment_ids))
+    comments = db_query(
+        f"SELECT * FROM ig_comments WHERE id IN ({placeholders}) AND LOWER(username) != %s",
+        list(req.comment_ids) + [SELF_USERNAME]
+    )
+    if not comments:
+        return {"success": True, "drafted": 0, "results": []}
+
+    # Build a batch prompt with all comments for efficiency
+    comment_lines = []
+    for c in comments:
+        comment_lines.append(
+            f"[ID:{c['id']}] @{c['username']}: {c['comment_text'][:300]} "
+            f"| Category: {c.get('category', '?')} | Lead: {c.get('lead_score', 0)} "
+            f"| Post: {(c.get('media_caption') or '')[:150]}"
+        )
+
+    batch_prompt = f"""Generate reply drafts for these {len(comments)} Instagram comments.
+Return ONLY a JSON array with one object per comment. No backticks, no commentary.
+
+Comments:
+{chr(10).join(comment_lines)}
+
+Return format:
+[{{"id": <comment_db_id>, "reply": "your draft reply"}}]
+
+Rules:
+- You are Angela Schellenberg, licensed trauma/grief therapist
+- Warm, human tone. No em dashes. 1-3 sentences each.
+- If potential client (high lead score), gently guide to DM with relevant keyword (HEAL, UNLEARN, MALIBURETREAT, WORTHY, MOM)
+- For testimonials, express genuine gratitude
+- For questions, give a thoughtful brief answer or invite them to DM
+- For spam/noise, skip (return empty string for reply)"""
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            ai_resp = await client.post("https://api.anthropic.com/v1/messages",
+                headers={"x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                json={"model": "claude-sonnet-4-20250514", "max_tokens": 3000,
+                    "system": "You are Angela Schellenberg, licensed trauma/grief therapist with 171K Instagram followers. Generate warm, authentic comment replies. Return ONLY valid JSON.",
+                    "messages": [{"role": "user", "content": batch_prompt}]})
+            ai_resp.raise_for_status()
+            ai_data = ai_resp.json()
+
+        text = "".join(b["text"] for b in ai_data.get("content", []) if b.get("type") == "text").strip()
+        # Parse JSON, handling potential backtick wrappers
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        import re
+        replies = json.loads(text)
+
+        drafted = 0
+        results = []
+        for item in replies:
+            cid = item.get("id")
+            reply = item.get("reply", "").strip()
+            if cid and reply:
+                db_execute("UPDATE ig_comments SET reply_draft=%s WHERE id=%s", (reply, cid))
+                drafted += 1
+                results.append({"id": cid, "reply_draft": reply})
+            elif cid:
+                results.append({"id": cid, "reply_draft": "", "skipped": True})
+
+        return {"success": True, "drafted": drafted, "results": results}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI draft generation failed: {str(e)}")
+
+
+@router.post("/bulk-reply")
+async def bulk_post_replies(req: BulkActionRequest):
+    """Post reply drafts to Instagram for multiple comments."""
+    if not req.comment_ids:
+        raise HTTPException(status_code=400, detail="No comments selected")
+
+    placeholders = ",".join(["%s"] * len(req.comment_ids))
+    comments = db_query(
+        f"SELECT * FROM ig_comments WHERE id IN ({placeholders}) "
+        f"AND reply_draft IS NOT NULL AND reply_draft != '' "
+        f"AND status != 'replied' AND ig_comment_id IS NOT NULL",
+        list(req.comment_ids)
+    )
+    if not comments:
+        return {"success": True, "posted": 0, "message": "No comments with drafts ready to post"}
+
+    page_token, ig_id, username = await get_page_token_and_ig_id()
+    posted = 0
+    errors = []
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        for c in comments:
+            try:
+                resp = await client.post(
+                    f"{GRAPH_API_BASE}/{c['ig_comment_id']}/replies",
+                    params={"message": c["reply_draft"], "access_token": page_token}
+                )
+                if resp.status_code == 200:
+                    reply_data = resp.json()
+                    db_execute(
+                        "UPDATE ig_comments SET status='replied', replied_at=NOW(), reply_ig_id=%s WHERE id=%s",
+                        (reply_data.get("id"), c["id"])
+                    )
+                    posted += 1
+                else:
+                    error_msg = resp.json().get("error", {}).get("message", "Unknown error")
+                    errors.append({"id": c["id"], "username": c["username"], "error": error_msg})
+            except Exception as e:
+                errors.append({"id": c["id"], "username": c["username"], "error": str(e)})
+
+    return {"success": True, "posted": posted, "total_attempted": len(comments), "errors": errors[:10]}
+
+
 @router.get("/commenters")
 async def list_commenters(
     filter_type: Optional[str] = Query(default=None, regex="^(superfan|potential_client|repeat)$"),
