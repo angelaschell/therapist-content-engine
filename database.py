@@ -13,6 +13,8 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 
 def get_db() -> Client:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise Exception("SUPABASE_URL and SUPABASE_SERVICE_KEY must be configured")
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 

@@ -199,15 +199,17 @@ Keep it concise and actionable. Angela should be able to scan this in 3 minutes 
 
     # Save brief
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(
-        "INSERT INTO weekly_briefs (week_of, brief_text, data_snapshot) VALUES (%s, %s, %s) RETURNING *",
-        (now.strftime("%Y-%m-%d"), text, json.dumps(data, default=str))
-    )
-    row = clean(cur.fetchone())
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(
+            "INSERT INTO weekly_briefs (week_of, brief_text, data_snapshot) VALUES (%s, %s, %s) RETURNING *",
+            (now.strftime("%Y-%m-%d"), text, json.dumps(data, default=str))
+        )
+        row = clean(cur.fetchone())
+        cur.close()
+    finally:
+        conn.close()
 
     return JSONResponse({"brief": text, "record": row})
 

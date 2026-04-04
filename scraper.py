@@ -276,8 +276,8 @@ def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
 
                 for item in items:
                     caption = item.get("caption", "") or item.get("text", "") or item.get("alt", "") or ""
-                    likes = item.get("likesCount", 0) or item.get("likes", 0) or 0
-                    comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
+                    likes = int(item.get("likesCount", 0) or item.get("likes", 0) or 0)
+                    comments = int(item.get("commentsCount", 0) or item.get("comments", 0) or 0)
                     owner = item.get("ownerUsername", "") or item.get("username", "") or ""
 
                     if not owner and isinstance(item.get("owner"), dict):
@@ -287,9 +287,9 @@ def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
                         if edges:
                             caption = edges[0].get("node", {}).get("text", "")
                     if not likes and isinstance(item.get("edge_liked_by"), dict):
-                        likes = item["edge_liked_by"].get("count", 0)
+                        likes = int(item["edge_liked_by"].get("count", 0))
                     if not likes and isinstance(item.get("edge_media_preview_like"), dict):
-                        likes = item["edge_media_preview_like"].get("count", 0)
+                        likes = int(item["edge_media_preview_like"].get("count", 0))
 
                     if likes < min_likes:
                         continue
@@ -318,7 +318,7 @@ def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
             print(f"  Apify error: {resp.status_code}")
             try:
                 print(f"  Apify body: {resp.text[:500]}")
-            except:
+            except Exception:
                 pass
 
         # Fallback to hashtag-scraper with higher limit if nothing found
@@ -339,8 +339,8 @@ def scrape_instagram_top_posts(hashtags, filter_words, min_likes=500):
                     print(f"  Fallback returned {len(items2)} posts")
                     for item in items2:
                         caption = item.get("caption", "") or item.get("text", "") or ""
-                        likes = item.get("likesCount", 0) or item.get("likes", 0) or 0
-                        comments = item.get("commentsCount", 0) or item.get("comments", 0) or 0
+                        likes = int(item.get("likesCount", 0) or item.get("likes", 0) or 0)
+                        comments = int(item.get("commentsCount", 0) or item.get("comments", 0) or 0)
                         owner = item.get("ownerUsername", "") or item.get("username", "") or ""
                         if not owner and isinstance(item.get("owner"), dict):
                             owner = item["owner"].get("username", "")
@@ -459,7 +459,8 @@ def load_cache():
         try:
             with open(CACHE_FILE, "r") as f:
                 return json.load(f)
-        except:
+        except Exception as e:
+            print(f"Cache load error: {e}")
             return None
     return None
 

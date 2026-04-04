@@ -8,7 +8,8 @@ import json
 
 router = APIRouter(prefix="/api/ads", tags=["ad_creative"])
 
-claude = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 MODEL = "claude-sonnet-4-20250514"
 
 AD_FORMATS = {
@@ -150,6 +151,8 @@ Return a JSON object with this structure:
 
 Return ONLY the JSON object, no other text."""
 
+    if not claude:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     try:
         resp = claude.messages.create(
             model=MODEL,
@@ -173,6 +176,8 @@ Return ONLY the JSON object, no other text."""
 
 @router.post("/audience-suggestions")
 async def suggest_audiences(req: AudienceRequest):
+    if not claude:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     try:
         resp = claude.messages.create(
             model=MODEL,
@@ -227,6 +232,8 @@ Return ONLY the JSON."""}]
 @router.post("/hooks")
 async def generate_hooks(req: AdRequest):
     """Generate 10 scroll-stopping hooks for a specific offer and audience."""
+    if not claude:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     try:
         resp = claude.messages.create(
             model=MODEL,

@@ -16,6 +16,8 @@ APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "")
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -250,11 +252,11 @@ async def scan_accounts(req: Request):
                     item.get("ownerUsername")
                     or item.get("profileUsername")
                     or item.get("username")
-                    or item.get("owner", {}).get("username", "") if isinstance(item.get("owner"), dict) else ""
+                    or (item.get("owner", {}).get("username", "") if isinstance(item.get("owner"), dict) else "")
                 ) or ""
                 caption = item.get("caption", "") or ""
-                likes = item.get("likesCount") or item.get("likes") or item.get("digg_count") or 0
-                comments = item.get("commentsCount") or item.get("comments") or item.get("comment_count") or 0
+                likes = int(item.get("likesCount") or item.get("likes") or item.get("digg_count") or 0)
+                comments = int(item.get("commentsCount") or item.get("comments") or item.get("comment_count") or 0)
                 post_url = item.get("url") or item.get("webLink") or item.get("permalink") or ""
                 shortcode = item.get("shortCode") or item.get("shortcode") or ""
                 if not post_url and shortcode:
@@ -318,6 +320,9 @@ async def scan_accounts(req: Request):
 
 async def analyze_trends(posts):
     """Use Claude to identify trending topics from scraped posts."""
+    if not ANTHROPIC_KEY:
+        print("[niche_monitor] ANTHROPIC_API_KEY not configured, skipping trend analysis")
+        return []
     post_summaries = "\n".join([
         f"@{p['username']} ({p['likes']}L, {p['comments']}C): {p['caption'][:200]}"
         for p in posts[:50]

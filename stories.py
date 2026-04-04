@@ -50,6 +50,8 @@ async def generate_story(req: Request):
     if story_type not in STORY_TYPES:
         return JSONResponse({"error": f"Unknown type. Options: {', '.join(STORY_TYPES.keys())}"}, status_code=400)
 
+    if not ANTHROPIC_KEY:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     st = STORY_TYPES[story_type]
     cta_note = f"\nIf relevant, include CTA: 'Comment {trigger_keyword}'" if trigger_keyword else ""
 
@@ -116,8 +118,8 @@ Return ONLY valid JSON with a "type" field set to "{st}"."""
                 result["story_type"] = st
                 result["type_name"] = STORY_TYPES[st]["name"]
                 results.append(result)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[stories] Batch generation error for {st}: {e}")
 
     return JSONResponse({"stories": results})
 

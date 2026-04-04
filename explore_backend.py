@@ -220,7 +220,7 @@ async def refresh_explore(req: Request):
                             (post.get("id", ""), tag, media_type,
                              post.get("caption", "")[:5000], post.get("permalink", ""),
                              thumbnail, json.dumps(slide_urls),
-                             post.get("like_count", 0), post.get("comments_count", 0),
+                             int(post.get("like_count", 0) or 0), int(post.get("comments_count", 0) or 0),
                              post.get("timestamp", None))
                         )
                         total_saved += 1

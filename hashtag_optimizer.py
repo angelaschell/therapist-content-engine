@@ -15,6 +15,8 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -63,9 +65,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_hashtag_unique ON hashtag_performance(hash
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[hashtag_optimizer] Schema setup: {e}")
 
 
 def extract_hashtags(text):

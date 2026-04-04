@@ -17,6 +17,8 @@ FLODESK_API = "https://api.flodesk.com/v1"
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):

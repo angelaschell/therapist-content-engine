@@ -14,6 +14,8 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -61,9 +63,10 @@ CREATE TABLE IF NOT EXISTS show_notes (
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[show_notes] Schema setup: {e}")
 
 
 @router.post("/api/show-notes/generate")
@@ -124,17 +127,19 @@ Return ONLY valid JSON, no backticks:
 
     # Save
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(
-        "INSERT INTO show_notes (project_id, project_name, title, show_notes, timestamps, blog_post, key_quotes) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *",
-        (project_id, project_name, result.get("title", ""), result.get("show_notes", ""),
-         result.get("timestamps", ""), result.get("blog_post", ""),
-         json.dumps(result.get("key_quotes", [])))
-    )
-    row = clean(cur.fetchone())
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(
+            "INSERT INTO show_notes (project_id, project_name, title, show_notes, timestamps, blog_post, key_quotes) VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *",
+            (project_id, project_name, result.get("title", ""), result.get("show_notes", ""),
+             result.get("timestamps", ""), result.get("blog_post", ""),
+             json.dumps(result.get("key_quotes", [])))
+        )
+        row = clean(cur.fetchone())
+        cur.close()
+    finally:
+        conn.close()
 
     return JSONResponse({"result": result, "record": row})
 

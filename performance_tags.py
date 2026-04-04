@@ -14,6 +14,8 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -82,9 +84,10 @@ CREATE INDEX IF NOT EXISTS idx_content_tags_trigger ON content_tags(trigger_keyw
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[performance_tags] Schema setup: {e}")
 
 
 @router.post("/api/tags/auto-tag")
@@ -205,7 +208,7 @@ async def get_correlations():
         themes = t.get("themes", [])
         if isinstance(themes, str):
             try: themes = json.loads(themes)
-            except: themes = []
+            except (json.JSONDecodeError, Exception): themes = []
         eng = (t.get("likes", 0) or 0) + (t.get("comments", 0) or 0)
         for theme in themes:
             if theme not in theme_eng:

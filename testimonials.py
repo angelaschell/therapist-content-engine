@@ -14,6 +14,8 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -72,9 +74,10 @@ CREATE TABLE IF NOT EXISTS testimonials (
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[testimonials] Schema setup: {e}")
 
 
 @router.get("/api/testimonials")

@@ -12,6 +12,8 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -63,9 +65,10 @@ CREATE INDEX IF NOT EXISTS idx_webhook_events_status ON webhook_events(status);
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[webhook_dashboard] Schema setup: {e}")
 
 
 def log_webhook(event_type, source, mc_id="", keyword="", subscriber_name="",
