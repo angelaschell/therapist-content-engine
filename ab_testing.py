@@ -15,6 +15,8 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -88,9 +90,10 @@ CREATE INDEX IF NOT EXISTS idx_ab_variants_test ON ab_variants(test_id);
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[ab_testing] Schema setup: {e}")
 
 
 MODES = {
@@ -120,6 +123,8 @@ async def generate_ab_variants(req: Request):
 
     if not topic:
         return JSONResponse({"error": "Topic required"}, status_code=400)
+    if not ANTHROPIC_KEY:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
 
     # Create the test
     test = insert_returning(

@@ -202,9 +202,11 @@ async def update_event(event_id: int, req: Request):
 @router.delete("/api/calendar/{event_id}")
 async def delete_event(event_id: int):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute("DELETE FROM calendar_events WHERE id = %s", (event_id,))
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("DELETE FROM calendar_events WHERE id = %s", (event_id,))
+        cur.close()
+    finally:
+        conn.close()
     return JSONResponse({"ok": True})
