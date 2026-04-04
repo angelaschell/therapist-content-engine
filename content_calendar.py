@@ -14,6 +14,8 @@ SCHEDULE_FILE = "/tmp/ig_scheduled_posts.json"
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -62,14 +64,15 @@ CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_events(event_date);
 """
 
 try:
-    conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(SCHEMA_SQL)
-    cur.close()
-    conn.close()
-except Exception:
-    pass
+    if DATABASE_URL:
+        conn = get_conn()
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(SCHEMA_SQL)
+        cur.close()
+        conn.close()
+except Exception as e:
+    print(f"[content_calendar] Schema setup: {e}")
 
 
 def load_schedule():
@@ -141,28 +144,30 @@ async def create_event(req: Request):
     """Create a new calendar event (draft/idea/reminder)."""
     data = await req.json()
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("""
-        INSERT INTO calendar_events (title, event_type, event_date, event_time, post_type,
-            caption_preview, template, trigger_keyword, status, notes, color)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *
-    """, (
-        data.get("title", "Untitled"),
-        data.get("event_type", "post"),
-        data.get("event_date"),
-        data.get("event_time") or None,
-        data.get("post_type", "carousel"),
-        data.get("caption_preview", ""),
-        data.get("template", ""),
-        data.get("trigger_keyword", ""),
-        data.get("status", "draft"),
-        data.get("notes", ""),
-        data.get("color", "#90A9EC"),
-    ))
-    row = clean(cur.fetchone())
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            INSERT INTO calendar_events (title, event_type, event_date, event_time, post_type,
+                caption_preview, template, trigger_keyword, status, notes, color)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *
+        """, (
+            data.get("title", "Untitled"),
+            data.get("event_type", "post"),
+            data.get("event_date"),
+            data.get("event_time") or None,
+            data.get("post_type", "carousel"),
+            data.get("caption_preview", ""),
+            data.get("template", ""),
+            data.get("trigger_keyword", ""),
+            data.get("status", "draft"),
+            data.get("notes", ""),
+            data.get("color", "#90A9EC"),
+        ))
+        row = clean(cur.fetchone())
+        cur.close()
+    finally:
+        conn.close()
     return JSONResponse(row)
 
 
@@ -181,12 +186,14 @@ async def update_event(event_id: int, req: Request):
         return JSONResponse({"error": "No fields to update"}, status_code=400)
     params.append(event_id)
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(f"UPDATE calendar_events SET {', '.join(sets)} WHERE id = %s RETURNING *", params)
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(f"UPDATE calendar_events SET {', '.join(sets)} WHERE id = %s RETURNING *", params)
+        row = cur.fetchone()
+        cur.close()
+    finally:
+        conn.close()
     if not row:
         return JSONResponse({"error": "Not found"}, status_code=404)
     return JSONResponse(clean(row))

@@ -13,6 +13,8 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -73,9 +75,10 @@ CREATE INDEX IF NOT EXISTS idx_saved_carousels_favorite ON saved_carousels(is_fa
 """
 
 try:
-    execute(SCHEMA_SQL)
-except Exception:
-    pass
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[carousel_history] Schema setup: {e}")
 
 
 # ── Endpoints ─────────────────────────────────────────────────
