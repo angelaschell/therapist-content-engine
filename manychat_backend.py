@@ -153,9 +153,10 @@ WHERE full_name LIKE '%{{%' OR first_name LIKE '%{{%' OR last_name LIKE '%{{%';
 """
 
 try:
-    execute(SCHEMA_SQL)
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
 except Exception as e:
-    print(f"Schema setup error: {e}")
+    print(f"[manychat] Schema setup warning: {e}")
 
 
 # ── ManyChat API ──────────────────────────────────────────────

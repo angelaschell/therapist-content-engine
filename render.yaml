@@ -7,3 +7,27 @@ services:
     envVars:
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ENGINE_PASSWORD
+        sync: false
+      - key: INSTAGRAM_ACCESS_TOKEN
+        sync: false
+      - key: FB_APP_ID
+        sync: false
+      - key: FB_APP_SECRET
+        sync: false
+      - key: MANYCHAT_API_KEY
+        sync: false
+      - key: FLODESK_API_KEY
+        sync: false
+      - key: APIFY_TOKEN
+        sync: false
+      - key: VIZARD_API_KEY
+        sync: false
+      - key: PERPLEXITY_API_KEY
+        sync: false

@@ -26,7 +26,10 @@ VIZARD_API_KEY = os.environ.get("VIZARD_API_KEY", "")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 VIZARD_BASE = "https://elb-api.vizard.ai/hvizard-server-front/open-api/v1"
 
-claude_client = anthropic.Anthropic(api_key=ANTHROPIC_KEY) if ANTHROPIC_KEY else None
+try:
+    claude_client = anthropic.Anthropic(api_key=ANTHROPIC_KEY) if ANTHROPIC_KEY else None
+except Exception:
+    claude_client = None
 
 ANGELA_REEL_SYSTEM = """You are Angela Schellenberg, a licensed trauma and grief therapist (LMHC, LPC, LPCC, EMDR Certified). You write Instagram Reel captions.
 
@@ -378,6 +381,8 @@ TRANSCRIPT: {transcript[:1500]}
 Include exactly 5 highly relevant hashtags at the end.
 No em dashes. No soft-landing phrases. Angela's voice: direct, clinical but warm."""
 
+        if not claude_client:
+            return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=400)
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=800,
@@ -486,6 +491,9 @@ TRANSCRIPT: {clip.get('transcript','')[:800]}
 5 hashtags. No em dashes. Angela's voice."""
 
             try:
+                if not claude_client:
+                    results.append({"clip_id": clip_id, "error": "ANTHROPIC_API_KEY not configured"})
+                    continue
                 response = claude_client.messages.create(
                     model="claude-sonnet-4-20250514",
                     max_tokens=500,

@@ -226,8 +226,8 @@ def search_reddit(queries, filter_words, limit=15):
                             "combined_score": rel * 10 + vir,
                         })
                 time.sleep(2)
-            except:
-                pass
+            except Exception as e:
+                print(f"  Reddit fallback error for r/{sub}: {e}")
 
     seen = set()
     unique = []
