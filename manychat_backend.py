@@ -27,6 +27,8 @@ ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ── DB Helper ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -43,21 +45,25 @@ def clean(row):
 
 def query(sql, params=None, fetch=True):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    result = [clean(r) for r in cur.fetchall()] if fetch else []
-    cur.close()
-    conn.close()
-    return result
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        result = [clean(r) for r in cur.fetchall()] if fetch else []
+        cur.close()
+        return result
+    finally:
+        conn.close()
 
 def execute(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(sql, params or ())
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        cur.close()
+    finally:
+        conn.close()
 
 def query_one(sql, params=None):
     rows = query(sql, params)
@@ -65,13 +71,15 @@ def query_one(sql, params=None):
 
 def insert_returning(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    row = clean(cur.fetchone())
-    cur.close()
-    conn.close()
-    return row
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        row = clean(cur.fetchone())
+        cur.close()
+        return row
+    finally:
+        conn.close()
 
 
 # ── Auto-setup tables ─────────────────────────────────────────
@@ -184,7 +192,8 @@ async def manychat_page():
     try:
         with open("manychat.html", "r") as f:
             return HTMLResponse(content=f.read())
-    except:
+    except Exception as e:
+        print(f"Could not load manychat.html: {e}")
         return HTMLResponse(content="<h1>manychat.html not found</h1>", status_code=404)
 
 
@@ -298,18 +307,22 @@ async def sync_data():
             raw = d.get("data", {})
             flows = raw.get("flows", []) if isinstance(raw, dict) else raw if isinstance(raw, list) else []
             synced += len(flows)
-        except: pass
+        except Exception as e:
+            print(f"[manychat] Flows sync error: {e}")
         try:
             d = await mc_get("/fb/page/getTags")
             raw = d.get("data", [])
             tags = raw if isinstance(raw, list) else []
             synced += len(tags)
-        except: pass
+        except Exception as e:
+            print(f"[manychat] Tags sync error: {e}")
         try:
             d = await mc_get("/fb/page/getCustomFields")
             raw = d.get("data", [])
             fields = raw if isinstance(raw, list) else []
-        except: fields = []
+        except Exception as e:
+            print(f"[manychat] Custom fields sync error: {e}")
+            fields = []
         info = json.dumps({"flows": len(flows), "tags": len(tags), "fields": len(fields)})
         if log_id:
             execute("UPDATE sync_log SET records_synced=%s, status='success', error_message=%s, completed_at=now() WHERE id=%s",
@@ -417,8 +430,8 @@ async def manychat_webhook(request: Request):
                     custom_fields = api_cf
                 # Update full_name if we got better data
                 full_name = f"{first_name} {last_name}".strip() or full_name
-        except:
-            pass  # API enrichment is best-effort, webhook data is fallback
+        except Exception as e:
+            print(f"[manychat] API enrichment error for {mc_id}: {e}")  # best-effort, webhook data is fallback
 
         # Clean any {{template_variables}} from names
         first_name = clean_template_vars(first_name)
@@ -623,7 +636,7 @@ async def analyze_subscriber(mc_id: str):
         tags = sub.get("tags", "[]")
         if isinstance(tags, str):
             try: tags = json.loads(tags)
-            except: tags = []
+            except (json.JSONDecodeError, Exception): tags = []
 
         now = datetime.now(timezone.utc)
         prompt = f"""You are Angela Schellenberg's lead intelligence analyst. Today is {now.strftime('%B %d, %Y')}.
@@ -879,7 +892,7 @@ async def send_personal_dm(request: Request):
         if hasattr(e, 'response'):
             try:
                 error_msg = e.response.json().get("message", error_msg)
-            except:
+            except Exception:
                 pass
         return JSONResponse(content={"error": error_msg}, status_code=500)
 
@@ -964,7 +977,7 @@ async def analyze_leads():
             tags = s.get("tags","[]")
             if isinstance(tags, str):
                 try: tags = json.loads(tags)
-                except: tags = []
+                except (json.JSONDecodeError, Exception): tags = []
 
             # Get ACTUAL trigger keywords this person has fired (not just count)
             sub_triggers = query("SELECT keyword, fired_at FROM subscriber_triggers WHERE mc_id=%s ORDER BY fired_at DESC", (s["mc_id"],))

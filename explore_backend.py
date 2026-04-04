@@ -44,6 +44,8 @@ DEFAULT_HASHTAGS = [
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -59,31 +61,37 @@ def clean(row):
 
 def query(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    result = [clean(r) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return result
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        result = [clean(r) for r in cur.fetchall()]
+        cur.close()
+        return result
+    finally:
+        conn.close()
 
 def execute(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(sql, params or ())
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        cur.close()
+    finally:
+        conn.close()
 
 def insert_returning(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    row = clean(cur.fetchone())
-    cur.close()
-    conn.close()
-    return row
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        row = clean(cur.fetchone())
+        cur.close()
+        return row
+    finally:
+        conn.close()
 
 
 # ── Auto-setup table ──────────────────────────────────────────
@@ -107,7 +115,8 @@ CREATE INDEX IF NOT EXISTS idx_explore_likes ON explore_posts(like_count DESC);
 """
 
 try:
-    execute(SCHEMA_SQL)
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
 except Exception as e:
     print(f"Explore schema setup: {e}")
 
@@ -215,8 +224,8 @@ async def refresh_explore(req: Request):
                              post.get("timestamp", None))
                         )
                         total_saved += 1
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Explore DB insert error for {tag}: {e}")
 
             except Exception as e:
                 errors.append(f"{tag}: {str(e)[:100]}")
@@ -356,7 +365,7 @@ async def scrape_post(req: Request):
                         if caption:
                             return JSONResponse({"success": True, "caption": caption, "method": "oembed", "author": oembed.get("author_name", "")})
             except Exception as e:
-                pass  # Fall through to method 2
+                print(f"oEmbed extraction error: {e}")  # Fall through to method 2
 
         # Method 2: Fetch page and parse og:description meta tag
         try:
@@ -397,7 +406,7 @@ async def scrape_post(req: Request):
                         return JSONResponse({"success": True, "caption": caption, "method": "json"})
 
         except Exception as e:
-            pass
+            print(f"Meta tag extraction error: {e}")
 
         if caption:
             return JSONResponse({"success": True, "caption": caption, "method": "fallback"})

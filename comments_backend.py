@@ -24,6 +24,8 @@ router = APIRouter(prefix="/api/comments", tags=["Comment Command Center"])
 
 
 def get_db():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
 
 def serialize_row(row):
@@ -54,7 +56,7 @@ def db_execute(sql, params=None):
         conn.commit()
         try:
             return [serialize_row(dict(r)) for r in cur.fetchall()]
-        except:
+        except psycopg2.ProgrammingError:
             return []
     finally:
         conn.close()
@@ -254,6 +256,8 @@ For each comment return: db_id, category (warm_lead|testimonial|engagement_oppor
 
 Return ONLY valid JSON array."""
 
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     async with httpx.AsyncClient(timeout=60) as client:
         ai_resp = await client.post("https://api.anthropic.com/v1/messages",
             headers={"x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
@@ -344,7 +348,8 @@ async def deep_analysis(comment_id: int):
                     ]})
                 if pplx_resp.status_code == 200:
                     perplexity_insights = pplx_resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        except: pass
+        except Exception as e:
+            print(f"Perplexity deep analysis error: {e}")
 
     system_prompt = """You are Angela Schellenberg's AI sales intelligence assistant. Licensed trauma/grief therapist, 171K followers, "Grief, Trauma & Your Mama."
 Product suite: FREE Starter Kit (WORTHY), FREE Community (MOM), $ Grief Relief Videos (GRIEFRELIEF), $ 101 Tools (TOOLS), $ Equine Digital (EQUINE), $$ Mother Hunger course Kelly McDaniel (UNLEARN), $$$ 1:1 Therapy (HEAL/UNTANGLE/STEADY), $$$$ Horses Retreat Malibu Apr 29-May 3 2026 (MALIBURETREAT).
@@ -372,7 +377,7 @@ Return JSON: {{"decoded_message":"2-3 sentences","emotional_state":"plain langua
     ai_text = "".join(b["text"] for b in ai_data.get("content", []) if b.get("type") == "text").strip().strip("`").strip()
     if ai_text.startswith("json"): ai_text = ai_text[4:].strip()
     try: analysis = json.loads(ai_text)
-    except: raise HTTPException(status_code=500, detail="AI returned invalid JSON")
+    except (json.JSONDecodeError, Exception): raise HTTPException(status_code=500, detail="AI returned invalid JSON")
 
     readiness_map = {"cold": 15, "warming": 35, "warm": 55, "hot": 75, "ready_to_buy": 95}
     ns = readiness_map.get(analysis.get("readiness_level", ""))
@@ -386,7 +391,7 @@ Return JSON: {{"decoded_message":"2-3 sentences","emotional_state":"plain langua
             cl = perplexity_insights.strip()
             if cl.startswith("```"): cl = cl.split("\n",1)[1].rsplit("```",1)[0].strip()
             pplx_parsed = json.loads(cl)
-        except: pplx_parsed = {"key_insight": perplexity_insights[:500]}
+        except (json.JSONDecodeError, Exception): pplx_parsed = {"key_insight": perplexity_insights[:500]}
 
     return {"success": True, "analysis": analysis, "perplexity": pplx_parsed,
         "commenter": {"username": comment["username"], "total_comments": cd.get("total_comments", 1),
