@@ -1393,6 +1393,36 @@ function loadAdFormats(){
 }
 loadAdFormats();
 function adPayload(){return{ad_format:document.getElementById("adFormat").value,goal:document.getElementById("adGoal").value,audience_type:document.getElementById("adAudience").value,offer_name:document.getElementById("adOffer").value,offer_description:document.getElementById("adOfferDesc").value,target_pain_point:document.getElementById("adPain").value,price_point:document.getElementById("adPrice").value,variation_count:parseInt(document.getElementById("adVariations").value)}}
+function fbMockup(v){
+  var txt=(v.primary_text||"").replace(/\n/g,"<br>");
+  var hl=v.headline||"";
+  var desc=v.description||"";
+  var cta=v.cta_button||"Learn More";
+  return '<div style="max-width:500px;margin:16px auto 0;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12);border:1px solid #ddd;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;overflow:hidden">'+
+    '<div style="padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#D2C7FF,#90A9EC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px">A</div>'+
+        '<div><div style="display:flex;align-items:center;gap:6px"><span style="font-weight:600;font-size:14px;color:#050505">Angela Schellenberg</span><svg width="14" height="14" viewBox="0 0 20 20" style="flex-shrink:0"><circle cx="10" cy="10" r="10" fill="#1877F2"/><path d="M8 14l-4-4 1.4-1.4L8 11.2l6.6-6.6L16 6l-8 8z" fill="#fff"/></svg></div>'+
+        '<div style="font-size:12px;color:#65676B;display:flex;align-items:center;gap:4px"><span>Sponsored</span><span>·</span><svg width="12" height="12" viewBox="0 0 16 16" fill="#65676B"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zM8 4c1.1 0 2 .9 2 2 0 .8-.5 1.5-1.2 1.8L8 10.5 7.2 7.8C6.5 7.5 6 6.8 6 6c0-1.1.9-2 2-2z"/></svg></div></div>'+
+      '</div>'+
+      '<div style="color:#65676B;font-size:20px;cursor:pointer;padding:0 4px">···</div>'+
+    '</div>'+
+    '<div style="padding:0 16px 12px;font-size:14px;line-height:1.4;color:#050505">'+txt+'</div>'+
+    '<div style="width:100%;height:260px;background:linear-gradient(135deg,#F7EBE0 0%,#E8DCF0 50%,#D2C7FF 100%);display:flex;align-items:center;justify-content:center;color:rgba(59,33,69,.3);font-size:13px;font-style:italic">'+(v.suggested_image_concept||"Your ad image here")+'</div>'+
+    '<div style="padding:12px 16px;border-top:1px solid #E4E6EB;display:flex;justify-content:space-between;align-items:center;background:#f7f8fa">'+
+      '<div style="flex:1"><div style="font-size:12px;color:#65676B;text-transform:uppercase;letter-spacing:.5px">angelaschellenberg.com</div><div style="font-size:15px;font-weight:600;color:#050505;margin-top:2px">'+hl+'</div>'+(desc?'<div style="font-size:13px;color:#65676B;margin-top:1px">'+desc+'</div>':'')+'</div>'+
+      '<div style="background:#1877F2;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:6px;white-space:nowrap;margin-left:12px">'+cta+'</div>'+
+    '</div>'+
+    '<div style="padding:8px 16px;border-top:1px solid #E4E6EB;display:flex;gap:4px;align-items:center;font-size:13px;color:#65676B">'+
+      '<div style="display:flex;margin-right:4px"><div style="width:18px;height:18px;border-radius:50%;background:#1877F2;display:flex;align-items:center;justify-content:center;border:2px solid #fff"><svg width="10" height="10" viewBox="0 0 20 20" fill="#fff"><path d="M2 10l3 3 5-5"/></svg></div><div style="width:18px;height:18px;border-radius:50%;background:#ED4956;display:flex;align-items:center;justify-content:center;margin-left:-4px;border:2px solid #fff"><svg width="10" height="10" viewBox="0 0 20 20" fill="#fff"><path d="M10 18s-7-5.5-7-10a4.5 4.5 0 019 0 4.5 4.5 0 019 0c0 4.5-7 10-7 10z"/></svg></div></div>'+
+    '</div>'+
+    '<div style="display:flex;border-top:1px solid #E4E6EB">'+
+      '<div style="flex:1;text-align:center;padding:10px;font-size:14px;font-weight:600;color:#65676B;cursor:pointer">&#128077; Like</div>'+
+      '<div style="flex:1;text-align:center;padding:10px;font-size:14px;font-weight:600;color:#65676B;cursor:pointer">&#128172; Comment</div>'+
+      '<div style="flex:1;text-align:center;padding:10px;font-size:14px;font-weight:600;color:#65676B;cursor:pointer">&#8618; Share</div>'+
+    '</div>'+
+  '</div>';
+}
 function generateAd(){
   var btn=document.getElementById("adGenBtn");btn.disabled=true;btn.textContent="Generating...";
   document.getElementById("adOutput").innerHTML='<div class="card" style="text-align:center;color:rgba(59,33,69,.3);padding:40px">Creating your ad creatives — this takes 15-30 seconds...</div>';
@@ -1403,7 +1433,8 @@ function generateAd(){
     (d.variations||[]).forEach(function(v,i){
       html+='<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-family:Cormorant Garamond,serif;font-size:20px;font-weight:600">'+v.variation_name+'</span><span style="font-size:11px;color:rgba(59,33,69,.3)">Variation '+(i+1)+'</span></div>';
       html+='<div style="font-size:11px;color:#90A9EC;margin-bottom:10px">Hook strategy: '+v.hook_strategy+'</div>';
-      html+='<div style="margin-bottom:12px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">Primary Text</div><div style="background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:8px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap">'+v.primary_text+'</div></div>';
+      html+=fbMockup(v);
+      html+='<div style="margin-top:16px;margin-bottom:12px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">Primary Text</div><div style="background:rgba(255,255,255,.5);border:1px solid rgba(210,199,255,.2);border-radius:8px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap">'+v.primary_text+'</div></div>';
       html+='<div class="grid2"><div><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">Headline</div><div style="font-weight:600;font-size:15px">'+v.headline+'</div></div>';
       html+='<div><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:4px">CTA</div><div style="display:inline-block;background:#90A9EC;color:#fff;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600">'+(v.cta_button||"Learn More")+'</div></div></div>';
       if(v.description){html+='<div style="margin-top:8px;font-size:13px;color:rgba(59,33,69,.5)">'+v.description+'</div>'}
