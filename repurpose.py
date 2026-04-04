@@ -60,6 +60,8 @@ FORMAT:
 
 
 async def generate_format(topic, slides_text, caption, trigger_keyword, format_key):
+    if not ANTHROPIC_KEY:
+        return "[Error: ANTHROPIC_API_KEY not configured]"
     fmt = FORMATS[format_key]
     prompt = f"""{fmt['instruction']}
 
