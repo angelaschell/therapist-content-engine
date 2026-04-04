@@ -15,6 +15,8 @@ SCHEDULE_FILE = "/tmp/ig_scheduled_posts.json"
 
 
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -50,14 +52,15 @@ CREATE TABLE IF NOT EXISTS weekly_briefs (
 """
 
 try:
-    conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(SCHEMA_SQL)
-    cur.close()
-    conn.close()
-except Exception:
-    pass
+    if DATABASE_URL:
+        conn = get_conn()
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(SCHEMA_SQL)
+        cur.close()
+        conn.close()
+except Exception as e:
+    print(f"[weekly_brief] Schema setup: {e}")
 
 
 def gather_data():
@@ -178,6 +181,8 @@ Generate a WEEKLY CONTENT STRATEGY BRIEF with these sections:
 
 Keep it concise and actionable. Angela should be able to scan this in 3 minutes and know exactly what to do. Use her voice — direct, warm, no fluff."""
 
+    if not ANTHROPIC_KEY:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.post("https://api.anthropic.com/v1/messages",
