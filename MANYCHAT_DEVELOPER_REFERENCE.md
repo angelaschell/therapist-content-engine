@@ -87,106 +87,96 @@ High-intent keywords: `MALIBURETREAT`, `MALIBU RETREAT`, `HEAL`, `UNTANGLE`, `ST
 
 ---
 
-## 4. Database Tables
+## 4. CRM Data Fields
 
-### manychat_subscribers (main CRM record)
+### manychat_subscribers (main CRM record — 28 fields)
 
-```sql
-CREATE TABLE IF NOT EXISTS manychat_subscribers (
-  id BIGSERIAL PRIMARY KEY,
-  mc_id TEXT NOT NULL UNIQUE,
-  first_name TEXT DEFAULT '',
-  last_name TEXT DEFAULT '',
-  full_name TEXT DEFAULT '',
-  email TEXT DEFAULT '',
-  phone TEXT DEFAULT '',
-  ig_username TEXT DEFAULT '',
-  profile_pic TEXT DEFAULT '',
-  gender TEXT DEFAULT '',
-  locale TEXT DEFAULT '',
-  subscribed_at TIMESTAMPTZ,
-  last_interaction TIMESTAMPTZ,
-  last_seen TIMESTAMPTZ,
-  ig_last_interaction TIMESTAMPTZ,
-  opted_in_ig BOOLEAN DEFAULT false,
-  opted_in_email BOOLEAN DEFAULT false,
-  tags JSONB DEFAULT '[]',
-  custom_fields JSONB DEFAULT '{}',
-  trigger_count INT DEFAULT 0,
-  conversation_count INT DEFAULT 0,
-  interest_level TEXT DEFAULT 'new',
-  heat_score INT DEFAULT 0,
-  funnel_stage TEXT DEFAULT 'subscriber',
-  flodesk_synced BOOLEAN DEFAULT false,
-  do_not_contact BOOLEAN DEFAULT false,
-  synced_at TIMESTAMPTZ DEFAULT now(),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
+| Field | Type | Default | What It Stores |
+|---|---|---|---|
+| id | BIGSERIAL | auto | Internal database ID |
+| mc_id | TEXT (unique) | required | ManyChat subscriber ID |
+| first_name | TEXT | '' | First name |
+| last_name | TEXT | '' | Last name |
+| full_name | TEXT | '' | Full name |
+| email | TEXT | '' | Email address |
+| phone | TEXT | '' | Phone number |
+| ig_username | TEXT | '' | Instagram handle |
+| profile_pic | TEXT | '' | Profile picture URL |
+| gender | TEXT | '' | Gender |
+| locale | TEXT | '' | Language/locale |
+| subscribed_at | TIMESTAMP | null | When they first subscribed |
+| last_interaction | TIMESTAMP | null | Last interaction with any flow |
+| last_seen | TIMESTAMP | null | Last time seen active |
+| ig_last_interaction | TIMESTAMP | null | Last Instagram interaction |
+| opted_in_ig | BOOLEAN | false | Opted in to IG messages |
+| opted_in_email | BOOLEAN | false | Opted in to email |
+| tags | JSON array | [] | All ManyChat tags on this contact |
+| custom_fields | JSON object | {} | All ManyChat custom fields |
+| trigger_count | INT | 0 | How many keywords they've triggered total |
+| conversation_count | INT | 0 | How many DM conversations they've had |
+| interest_level | TEXT | 'new' | Auto-scored: new / cold / warm / hot / vip |
+| heat_score | INT | 0 | Auto-scored: 5 / 25 / 50 / 70 / 90 |
+| funnel_stage | TEXT | 'subscriber' | Auto-scored: subscriber / engaged / multi_trigger / conversation / booked |
+| flodesk_synced | BOOLEAN | false | Whether synced to Flodesk email |
+| do_not_contact | BOOLEAN | false | Do-not-contact flag |
+| synced_at | TIMESTAMP | now() | Last time data was synced from ManyChat |
+| created_at | TIMESTAMP | now() | When this record was created |
+| updated_at | TIMESTAMP | now() | When this record was last updated |
 
-### manychat_triggers
+### manychat_triggers (9 fields)
 
-```sql
-CREATE TABLE IF NOT EXISTS manychat_triggers (
-  id BIGSERIAL PRIMARY KEY,
-  keyword TEXT NOT NULL UNIQUE,
-  label TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  product_url TEXT DEFAULT '',
-  is_active BOOLEAN DEFAULT true,
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-```
+| Field | Type | Default | What It Stores |
+|---|---|---|---|
+| id | BIGSERIAL | auto | Internal ID |
+| keyword | TEXT (unique) | required | The trigger keyword (e.g. HEAL) |
+| label | TEXT | required | Display name (e.g. "1:1 Session") |
+| description | TEXT | '' | What this trigger is for |
+| product_url | TEXT | '' | Link to the product/service |
+| is_active | BOOLEAN | true | Whether this trigger is currently active |
+| sort_order | INT | 0 | Display order |
+| created_at | TIMESTAMP | now() | When created |
+| updated_at | TIMESTAMP | now() | When last updated |
 
-### subscriber_triggers (logs every keyword fired)
+### subscriber_triggers — logs every keyword fired (7 fields)
 
-```sql
-CREATE TABLE IF NOT EXISTS subscriber_triggers (
-  id BIGSERIAL PRIMARY KEY,
-  mc_id TEXT NOT NULL,
-  keyword TEXT NOT NULL,
-  source TEXT DEFAULT 'instagram',
-  fired_at TIMESTAMPTZ DEFAULT now(),
-  post_id TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
+| Field | Type | Default | What It Stores |
+|---|---|---|---|
+| id | BIGSERIAL | auto | Internal ID |
+| mc_id | TEXT | required | ManyChat subscriber ID |
+| keyword | TEXT | required | Which keyword they triggered |
+| source | TEXT | 'instagram' | Where it came from (instagram, etc.) |
+| fired_at | TIMESTAMP | now() | When they triggered it |
+| post_id | TEXT | '' | Which post triggered it (if from comments) |
+| created_at | TIMESTAMP | now() | When logged |
 
-### subscriber_conversations
+### subscriber_conversations — DM history (8 fields)
 
-```sql
-CREATE TABLE IF NOT EXISTS subscriber_conversations (
-  id BIGSERIAL PRIMARY KEY,
-  mc_id TEXT NOT NULL,
-  direction TEXT NOT NULL,
-  message_preview TEXT DEFAULT '',
-  flow_name TEXT DEFAULT '',
-  channel TEXT DEFAULT 'instagram',
-  sent_at TIMESTAMPTZ DEFAULT now(),
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
+| Field | Type | Default | What It Stores |
+|---|---|---|---|
+| id | BIGSERIAL | auto | Internal ID |
+| mc_id | TEXT | required | ManyChat subscriber ID |
+| direction | TEXT | required | "inbound" or "outbound" |
+| message_preview | TEXT | '' | First part of the message |
+| flow_name | TEXT | '' | Which ManyChat flow sent it |
+| channel | TEXT | 'instagram' | Channel (instagram, etc.) |
+| sent_at | TIMESTAMP | now() | When message was sent |
+| created_at | TIMESTAMP | now() | When logged |
 
-### webhook_events (health monitoring)
+### webhook_events — health monitoring (11 fields)
 
-```sql
-CREATE TABLE IF NOT EXISTS webhook_events (
-  id BIGSERIAL PRIMARY KEY,
-  event_type TEXT NOT NULL DEFAULT 'trigger',
-  source TEXT DEFAULT 'manychat',
-  mc_id TEXT DEFAULT '',
-  keyword TEXT DEFAULT '',
-  subscriber_name TEXT DEFAULT '',
-  status TEXT DEFAULT 'success',
-  error_message TEXT DEFAULT '',
-  payload_preview TEXT DEFAULT '',
-  processing_ms INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+| Field | Type | Default | What It Stores |
+|---|---|---|---|
+| id | BIGSERIAL | auto | Internal ID |
+| event_type | TEXT | 'trigger' | Type of event |
+| source | TEXT | 'manychat' | Where it came from |
+| mc_id | TEXT | '' | ManyChat subscriber ID |
+| keyword | TEXT | '' | Trigger keyword |
+| subscriber_name | TEXT | '' | Name of subscriber |
+| status | TEXT | 'success' | success or error |
+| error_message | TEXT | '' | Error details if failed |
+| payload_preview | TEXT | '' | First 500 chars of the payload |
+| processing_ms | INT | 0 | How long it took to process |
+| created_at | TIMESTAMP | now() | When event occurred |
 
 ---
 
