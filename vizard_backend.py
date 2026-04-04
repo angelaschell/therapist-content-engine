@@ -47,6 +47,8 @@ VOICE:
 
 # ── DB Helpers ─────────────────────────────────────────────────
 def get_conn():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(DATABASE_URL)
 
 def clean(row):
@@ -62,21 +64,25 @@ def clean(row):
 
 def query(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    result = [clean(r) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return result
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        result = [clean(r) for r in cur.fetchall()]
+        cur.close()
+        return result
+    finally:
+        conn.close()
 
 def execute(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute(sql, params or ())
-    cur.close()
-    conn.close()
+    try:
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(sql, params or ())
+        cur.close()
+    finally:
+        conn.close()
 
 def query_one(sql, params=None):
     rows = query(sql, params)
@@ -84,13 +90,15 @@ def query_one(sql, params=None):
 
 def insert_returning(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    row = clean(cur.fetchone())
-    cur.close()
-    conn.close()
-    return row
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        row = clean(cur.fetchone())
+        cur.close()
+        return row
+    finally:
+        conn.close()
 
 
 # ── Auto-setup tables ─────────────────────────────────────────
@@ -131,7 +139,8 @@ CREATE TABLE IF NOT EXISTS vizard_clips (
 """
 
 try:
-    execute(SCHEMA_SQL)
+    if DATABASE_URL:
+        execute(SCHEMA_SQL)
 except Exception as e:
     print(f"Vizard schema setup: {e}")
 
@@ -492,7 +501,7 @@ TRANSCRIPT: {clip.get('transcript','')[:800]}
 
             try:
                 if not claude_client:
-                    results.append({"clip_id": clip_id, "error": "ANTHROPIC_API_KEY not configured"})
+                    results.append({"clip_id": cid, "error": "ANTHROPIC_API_KEY not configured"})
                     continue
                 response = claude_client.messages.create(
                     model="claude-sonnet-4-20250514",

@@ -33,7 +33,8 @@ def serialize_row(row):
             out[k] = v
     return out
 
-claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
@@ -215,6 +216,8 @@ Since you can see multiple slides, pay close attention to:
             messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
         messages_content.append({"type": "text", "text": prompt})
 
+        if not claude_client:
+            return JSONResponse({"success": False, "error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,
@@ -266,6 +269,8 @@ async def generate_svg_templates(req: Request):
             messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
         messages_content.append({"type": "text", "text": prompt})
 
+        if not claude_client:
+            return JSONResponse({"success": False, "error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=8000,
@@ -324,6 +329,8 @@ Return ONLY valid JSON:
             messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
         messages_content.append({"type": "text", "text": prompt})
 
+        if not claude_client:
+            return JSONResponse({"success": False, "error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=8000,
@@ -370,6 +377,8 @@ Return updated JSON with same structure. ONLY valid JSON, no backticks."""
             messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
         messages_content.append({"type": "text", "text": prompt})
 
+        if not claude_client:
+            return JSONResponse({"success": False, "error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
         response = claude_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,

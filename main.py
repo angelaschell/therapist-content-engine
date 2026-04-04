@@ -68,7 +68,8 @@ app.include_router(lead_pred_router)
 app.include_router(webhook_router)
 app.include_router(ad_creative_router)
 
-claude_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 ENGINE_PASSWORD = os.environ.get("ENGINE_PASSWORD", "")
 
@@ -167,7 +168,8 @@ async def root():
     try:
         with open("index.html", "r") as f:
             return f.read()
-    except:
+    except Exception as e:
+        print(f"Could not load index.html: {e}")
         return HTMLResponse("<h1>Content Engine running</h1>")
 
 
@@ -176,7 +178,8 @@ async def comments_page():
     try:
         with open("comments.html", "r") as f:
             return f.read()
-    except:
+    except Exception as e:
+        print(f"Could not load comments.html: {e}")
         return HTMLResponse("<h1>Comments page not found</h1>")
 
 
@@ -191,6 +194,8 @@ async def generate_content(req: Request):
     research = data.get("research_context", "")
     cta_str = f'\n\nEnd with: "Comment {cta} and I\'ll send it to you."' if cta else ""
     research_str = f'\n\nCLINICAL RESEARCH TO REFERENCE (cite naturally, e.g. "Research from [name] shows..."):\n{research}' if research else ""
+    if not claude_client:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1000,
@@ -226,7 +231,7 @@ async def generate_dm_response(req: Request):
                     tags = sub.get("tags", [])
                     if isinstance(tags, str):
                         try: tags = json.loads(tags)
-                        except: tags = []
+                        except (json.JSONDecodeError, Exception): tags = []
                     tag_names = [t.get("name", str(t)) if isinstance(t, dict) else str(t) for t in tags][:10]
                     subscriber_context = f"""
 CRM DATA FOR @{ig_username}:
@@ -241,8 +246,8 @@ CRM DATA FOR @{ig_username}:
 Use this data to personalize your response. Reference what you know about them naturally."""
                 cur.close()
                 conn.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"CRM lookup error for @{ig_username}: {e}")
 
     # Detect if this is a thread (has "them:" or "me:" prefixes)
     is_thread = "them:" in message.lower() or "me:" in message.lower()
@@ -255,6 +260,8 @@ Use this data to personalize your response. Reference what you know about them n
 - Pick up emotional threads from earlier in the conversation
 """
 
+    if not claude_client:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=600,
@@ -278,6 +285,8 @@ async def generate_manychat_flow(req: Request):
     data = await req.json()
     keyword = data.get("keyword", "")
     offer = data.get("offer", "")
+    if not claude_client:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=800,
@@ -299,7 +308,7 @@ async def recommend_hashtags_endpoint(req: Request):
     try:
         data = await req.json()
         topic = data.get("topic", "grief")
-    except:
+    except Exception:
         topic = "grief"
     try:
         from scraper import recommend_hashtags
@@ -327,7 +336,7 @@ async def trigger_scrape(req: Request):
         data = await req.json()
         topic = data.get("topic", "grief mother loss")
         hashtags = data.get("hashtags", None)
-    except:
+    except Exception:
         topic = "grief mother loss"
         hashtags = None
     try:
@@ -345,6 +354,8 @@ async def analyze_viral(req: Request):
     data = await req.json()
     posts = data.get("posts", [])
     posts_text = "\n\n".join([f"Source: {p.get('sub', '')}\nTitle: {p.get('title', '')}\nEngagement: {p.get('stats', '')}\nExcerpt: {p.get('excerpt', '')}\nPattern: {p.get('tag', '')}" for p in posts])
+    if not claude_client:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1500,
@@ -363,7 +374,8 @@ IMPORTANT: The "hooks" should be ready-to-use slide 1 text. Format each as: UPPE
         if clean.startswith("```"):
             clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         return JSONResponse({"success": True, "data": json.loads(clean)})
-    except:
+    except (json.JSONDecodeError, Exception) as e:
+        print(f"Analyze viral parse error: {e}")
         return JSONResponse({"success": True, "data": response.content[0].text})
 
 
@@ -374,7 +386,7 @@ async def research_topic(req: Request):
     if not PERPLEXITY_KEY:
         return JSONResponse({"success": False, "error": "No PERPLEXITY_API_KEY set"})
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post("https://api.perplexity.ai/chat/completions",
                 headers={"Authorization": f"Bearer {PERPLEXITY_KEY}", "Content-Type": "application/json"},
                 json={"model": "sonar", "messages": [
@@ -388,7 +400,7 @@ async def research_topic(req: Request):
                 if clean.startswith("```"):
                     clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
                 return JSONResponse({"success": True, "data": json.loads(clean)})
-            except:
+            except (json.JSONDecodeError, Exception):
                 return JSONResponse({"success": True, "data": {"findings": [content]}})
         return JSONResponse({"success": False, "error": f"Perplexity returned {resp.status_code}"})
     except Exception as e:
@@ -564,6 +576,8 @@ async def generate_carousel(req: Request):
     # Build JSON example (clean, no inline conditionals)
     json_example = f'{{"slides": [{{"type":"hook","upper":"TEXT","italic":"subtitle or empty"}},{{"type":"body","html":"One truth."}},{{"type":"close","text":"Reflective invitation."}}], "caption": "Full Instagram caption text here", "trigger": "{trigger_json}", "template": "{template_type}"}}'
 
+    if not claude_client:
+        return JSONResponse({"success": False, "error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
     response = claude_client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=4000,
