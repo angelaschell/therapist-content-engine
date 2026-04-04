@@ -1658,7 +1658,8 @@ function doLogin(){var pass=document.getElementById("loginPass").value;fetch(BAC
 function logout(){localStorage.removeItem("ce-auth");authToken=null;location.reload()}
 checkAuth();
 
-var uploadedAssets=[],viralPosts=[],viralSelected=[],carouselSlides=[],captionText="",savedViralContext="",savedAnalysisContext="",savedResearch="",viralHooks=[],currentTemplate="naming",lastTriggerRanking=[],savedStyleRef="";
+var uploadedAssets=[],viralPosts=[],viralSelected=[],carouselSlides=[],captionText="",savedViralContext="",savedAnalysisContext="",savedResearch="",viralHooks=[],currentTemplate="naming",lastTriggerRanking=[],savedStyleRef="",previewSlideIdx=0;
+function renderPreviewSlide(){}
 
 function addStyleRef(){
   var container=document.getElementById("styleRefEntries");
