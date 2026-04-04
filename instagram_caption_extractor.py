@@ -104,17 +104,19 @@ async def try_explore_db(url: str, shortcode: str) -> str | None:
         return None
     try:
         conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = True
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute(
-            "SELECT caption FROM explore_posts WHERE permalink LIKE %s AND caption != '' LIMIT 1",
-            (f"%{shortcode}%",),
-        )
-        row = cur.fetchone()
-        cur.close()
-        conn.close()
-        if row and row.get("caption"):
-            return row["caption"]
+        try:
+            conn.autocommit = True
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute(
+                "SELECT caption FROM explore_posts WHERE permalink LIKE %s AND caption != '' LIMIT 1",
+                (f"%{shortcode}%",),
+            )
+            row = cur.fetchone()
+            cur.close()
+            if row and row.get("caption"):
+                return row["caption"]
+        finally:
+            conn.close()
     except Exception as e:
         print(f"[Explore DB] Error: {e}")
     return None

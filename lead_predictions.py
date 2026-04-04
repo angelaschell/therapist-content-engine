@@ -31,13 +31,15 @@ def clean(row):
 
 def query(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    result = [clean(r) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return result
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        result = [clean(r) for r in cur.fetchall()]
+        cur.close()
+        return result
+    finally:
+        conn.close()
 
 
 @router.get("/api/predictions/leads")

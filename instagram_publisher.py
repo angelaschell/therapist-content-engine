@@ -295,8 +295,8 @@ def load_schedule():
         if os.path.exists(SCHEDULE_FILE):
             with open(SCHEDULE_FILE, 'r') as f:
                 return json.load(f)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[instagram_publisher] Error loading schedule: {e}")
     return []
 
 def save_schedule(schedule):

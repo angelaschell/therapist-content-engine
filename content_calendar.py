@@ -31,13 +31,15 @@ def clean(row):
 
 def query(sql, params=None):
     conn = get_conn()
-    conn.autocommit = True
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params or ())
-    result = [clean(r) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return result
+    try:
+        conn.autocommit = True
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params or ())
+        result = [clean(r) for r in cur.fetchall()]
+        cur.close()
+        return result
+    finally:
+        conn.close()
 
 
 # ── Schema ─────────────────────────────────────────────────────
@@ -66,11 +68,13 @@ CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_events(event_date);
 try:
     if DATABASE_URL:
         conn = get_conn()
-        conn.autocommit = True
-        cur = conn.cursor()
-        cur.execute(SCHEMA_SQL)
-        cur.close()
-        conn.close()
+        try:
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute(SCHEMA_SQL)
+            cur.close()
+        finally:
+            conn.close()
 except Exception as e:
     print(f"[content_calendar] Schema setup: {e}")
 
