@@ -609,12 +609,12 @@ function loadRecommendations() {
 function completeRec(id) {
   fetch(BACKEND + "/api/manychat/recommendations/" + id + "/complete", {
     method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: "" })
-  }).then(function() { showToast("Marked as done."); loadRecommendations(); });
+  }).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); showToast("Marked as done."); loadRecommendations(); }).catch(function(e) { showToast("Error completing: " + e.message, true); });
 }
 
 function dismissRec(id) {
   fetch(BACKEND + "/api/manychat/recommendations/" + id + "/dismiss", { method: "PATCH" })
-    .then(function() { showToast("Dismissed."); loadRecommendations(); });
+    .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); showToast("Dismissed."); loadRecommendations(); }).catch(function(e) { showToast("Error dismissing: " + e.message, true); });
 }
 
 function executeRec(recId, mcId, flow) {
@@ -737,7 +737,9 @@ function loadSubscribers() {
       '<div class="stat"><div class="stat-num" style="color:#b87a3a">' + (bi.warm || 0) + '</div><div class="stat-label">Warm</div></div>' +
       '<div class="stat"><div class="stat-num" style="color:#5a7ab5">' + (bi.cold || 0) + '</div><div class="stat-label">Cold</div></div>' +
       '<div class="stat"><div class="stat-num" style="color:rgba(59,33,69,.3)">' + (bi.new || 0) + '</div><div class="stat-label">New</div></div>';
-  }).catch(function() {});
+  }).catch(function(e) {
+    document.getElementById("subStats").innerHTML = '<div class="stat"><div class="stat-label">Could not load stats</div></div>';
+  });
 }
 
 function goSubPage(p) { currentSubPage = p; loadSubscribers(); }
@@ -863,6 +865,8 @@ function viewSubscriber(mcId) {
       if (s.email && !s.flodesk_synced) html += '<button class="ghost" style="color:#6fcf97;border:1px solid rgba(111,207,151,.3)" onclick="syncOneFlodesk(\'' + mcId + '\')">Sync to Flodesk</button>';
       html += '</div>';
       document.getElementById("detailActions").innerHTML = html;
+    }).catch(function() {
+      document.getElementById("detailActions").innerHTML = '<div style="color:rgba(59,33,69,.3);font-size:12px">Could not load triggers for actions.</div>';
     });
 
     // Claude AI analysis
@@ -910,14 +914,15 @@ function addDetailNote() {
     document.getElementById("detailNoteInput").value = "";
     viewSubscriber(currentDetailMcId);
     showToast("Note added.");
-  });
+  }).catch(function(e) { showToast("Error adding note: " + e.message, true); });
 }
 
 function deleteDetailNote(noteId) {
-  fetch(BACKEND + "/api/manychat/notes/" + noteId, { method: "DELETE" }).then(function() {
+  fetch(BACKEND + "/api/manychat/notes/" + noteId, { method: "DELETE" }).then(function(r) {
+    if (!r.ok) throw new Error("HTTP " + r.status);
     viewSubscriber(currentDetailMcId);
     showToast("Note deleted.");
-  });
+  }).catch(function(e) { showToast("Error deleting note: " + e.message, true); });
 }
 
 function sendFlowToSub(mcId, keyword) {
@@ -932,7 +937,7 @@ function sendFlowToSub(mcId, keyword) {
     } else {
       showToast(d.error || "Failed to send.", true);
     }
-  });
+  }).catch(function(e) { showToast("Error sending flow: " + e.message, true); });
 }
 
 function sendDmToSub(mcId) {
@@ -972,7 +977,7 @@ function toggleDnc(mcId) {
     showToast(d.do_not_contact ? "Marked Do Not Contact." : "Removed Do Not Contact.");
     viewSubscriber(mcId);
     loadSubscribers();
-  });
+  }).catch(function(e) { showToast("Error toggling DNC: " + e.message, true); });
 }
 
 function lookupSubscriber() {
@@ -1016,6 +1021,8 @@ function loadTriggers() {
   fetch(BACKEND + "/api/manychat/triggers").then(function(r) { return r.json(); }).then(function(d) {
     allTriggers = d.triggers || [];
     renderTriggers(allTriggers);
+  }).catch(function(e) {
+    document.getElementById("trigList").innerHTML = '<div class="empty"><p>Error loading triggers: ' + esc(e.message) + '</p></div>';
   });
 }
 
@@ -1072,16 +1079,16 @@ function saveTrigger() {
       if (d.error) { showToast(d.error, true); return; }
       showToast(editingTrigId ? "Updated." : "Added.");
       closeTriggerForm(); loadTriggers();
-    });
+    }).catch(function(e) { showToast("Error saving trigger: " + e.message, true); });
 }
 
 function toggleTrig(id) {
-  fetch(BACKEND + "/api/manychat/triggers/" + id + "/toggle", { method: "PATCH" }).then(function() { showToast("Updated."); loadTriggers(); });
+  fetch(BACKEND + "/api/manychat/triggers/" + id + "/toggle", { method: "PATCH" }).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); showToast("Updated."); loadTriggers(); }).catch(function(e) { showToast("Error toggling trigger: " + e.message, true); });
 }
 
 function deleteTrig(id, kw) {
   if (!confirm('Delete "' + kw + '"?')) return;
-  fetch(BACKEND + "/api/manychat/triggers/" + id, { method: "DELETE" }).then(function() { showToast("Deleted."); loadTriggers(); });
+  fetch(BACKEND + "/api/manychat/triggers/" + id, { method: "DELETE" }).then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); showToast("Deleted."); loadTriggers(); }).catch(function(e) { showToast("Error deleting trigger: " + e.message, true); });
 }
 
 // ─── ACTIONS LOG ───────────────────────────────────────────
@@ -1097,6 +1104,8 @@ function loadActions() {
         '<span class="action-type-tag">' + (typeLabels[a.action_type] || a.action_type) + '</span></div>' +
         '<div class="action-what">' + esc(a.action_detail || '') + '</div></div></div>';
     }).join("") + '</div>';
+  }).catch(function(e) {
+    document.getElementById("actionList").innerHTML = '<div class="empty"><p>Error loading actions: ' + esc(e.message) + '</p></div>';
   });
 }
 
@@ -1130,7 +1139,7 @@ function showToast(msg, isError) {
 function syncOneFlodesk(mcId) {
   if (!confirm("Sync this subscriber to Flodesk?")) return;
   fetch(BACKEND + "/api/flodesk/sync-one/" + mcId, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).then(function(r) { return r.json(); }).then(function(d) {
-    if (d.success) { showToast("Synced " + d.email + " to Flodesk"); openDetail(mcId); }
+    if (d.success) { showToast("Synced " + d.email + " to Flodesk"); viewSubscriber(mcId); }
     else showToast(d.error || "Sync failed", true);
   }).catch(function(e) { showToast("Sync error: " + e.message, true); });
 }
@@ -1236,10 +1245,10 @@ function loadPredictions() {
     var s = d.summary || {};
     document.getElementById("predStats").style.display = "flex";
     document.getElementById("predStats").innerHTML =
-      '<div class="stat"><div class="stat-num">' + s.total_scored + '</div><div class="stat-label">Scored</div></div>' +
-      '<div class="stat"><div class="stat-num" style="color:#6fcf97">' + s.high_probability + '</div><div class="stat-label">High Prob</div></div>' +
-      '<div class="stat"><div class="stat-num" style="color:#e0a060">' + s.medium_probability + '</div><div class="stat-label">Medium</div></div>' +
-      '<div class="stat"><div class="stat-num">' + s.average_probability + '%</div><div class="stat-label">Avg Score</div></div>';
+      '<div class="stat"><div class="stat-num">' + (s.total_scored || 0) + '</div><div class="stat-label">Scored</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#6fcf97">' + (s.high_probability || 0) + '</div><div class="stat-label">High Prob</div></div>' +
+      '<div class="stat"><div class="stat-num" style="color:#e0a060">' + (s.medium_probability || 0) + '</div><div class="stat-label">Medium</div></div>' +
+      '<div class="stat"><div class="stat-num">' + (s.average_probability || 0) + '%</div><div class="stat-label">Avg Score</div></div>';
     var preds = d.predictions || [];
     if (!preds.length) { document.getElementById("predList").innerHTML = '<div class="card" style="color:rgba(59,33,69,.3);text-align:center;padding:20px">No hot leads to score yet.</div>'; return; }
     var html = '';
