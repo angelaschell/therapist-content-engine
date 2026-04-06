@@ -294,8 +294,8 @@ async def publish_carousel(req: Request):
 
     if len(images) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 images")
-    if len(images) > 10:
-        raise HTTPException(status_code=400, detail="Max 10 images")
+    if len(images) > 20:
+        raise HTTPException(status_code=400, detail="Max 20 images per carousel")
 
     # Verify images are publicly accessible before calling Instagram API
     for i, img_url in enumerate(images):
