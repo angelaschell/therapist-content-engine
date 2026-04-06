@@ -137,9 +137,12 @@ async def get_page_token_and_ig_id():
 
 async def graph_post(endpoint, params, retries=3):
     last_error = None
+    # Separate access_token as query param, send rest as form data body
+    form_data = {k: v for k, v in params.items() if k != "access_token"}
+    query = {"access_token": params["access_token"]} if "access_token" in params else {}
     for attempt in range(retries):
         async with httpx.AsyncClient(timeout=60.0) as client:
-            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=params)
+            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=query, data=form_data)
             if r.status_code in (200, 201):
                 return r.json()
             try:
@@ -198,6 +201,64 @@ async def wait_for_container(container_id, token, max_wait=60, interval=3):
     raise HTTPException(status_code=504, detail="Container processing timed out")
 
 
+async def verify_image_url(url: str) -> tuple[bool, str]:
+    """Check if an image URL is publicly accessible (as Instagram would fetch it)."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            r = await client.head(url)
+            if r.status_code == 200:
+                return True, "ok"
+            # Some servers don't support HEAD, try GET with range
+            r = await client.get(url, headers={"Range": "bytes=0-0"})
+            if r.status_code in (200, 206):
+                return True, "ok"
+            return False, f"HTTP {r.status_code}"
+    except Exception as e:
+        return False, str(e)
+
+
+@router.post("/preflight")
+async def preflight_check(req: Request):
+    """Check all prerequisites before publishing. Returns actionable diagnostics."""
+    checks = {"token": False, "permissions": False, "images": []}
+    data = await req.json()
+    images = data.get("images", [])
+
+    # Check token
+    try:
+        page_token, ig_id, username = await get_page_token_and_ig_id()
+        checks["token"] = True
+        checks["username"] = username
+    except Exception as e:
+        checks["token_error"] = str(e)
+        return {"success": False, "checks": checks, "detail": f"Token issue: {e}"}
+
+    # Check publish permission by verifying token info
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(f"{GRAPH_API_BASE}/debug_token", params={
+                "input_token": page_token,
+                "access_token": page_token
+            })
+            if r.status_code == 200:
+                token_data = r.json().get("data", {})
+                scopes = token_data.get("scopes", [])
+                checks["scopes"] = scopes
+                checks["permissions"] = "instagram_content_publish" in scopes or "instagram_basic" in scopes
+                if not checks["permissions"]:
+                    checks["permission_error"] = f"Missing instagram_content_publish scope. Current scopes: {scopes}"
+    except Exception as e:
+        checks["permission_error"] = str(e)
+
+    # Check image accessibility
+    for url in images:
+        ok, msg = await verify_image_url(url)
+        checks["images"].append({"url": url[:80], "accessible": ok, "detail": msg})
+
+    all_ok = checks["token"] and all(img["accessible"] for img in checks["images"])
+    return {"success": all_ok, "checks": checks}
+
+
 # ─────────────────────────────────────────────
 # PUBLISH PHOTO
 # ─────────────────────────────────────────────
@@ -235,6 +296,12 @@ async def publish_carousel(req: Request):
         raise HTTPException(status_code=400, detail="Need at least 2 images")
     if len(images) > 10:
         raise HTTPException(status_code=400, detail="Max 10 images")
+
+    # Verify images are publicly accessible before calling Instagram API
+    for i, img_url in enumerate(images):
+        ok, msg = await verify_image_url(img_url)
+        if not ok:
+            raise HTTPException(status_code=400, detail=f"Slide {i+1} image not accessible ({msg}). Instagram must be able to download the image. Check Supabase bucket is public.")
 
     try:
         page_token, ig_id, username = await get_page_token_and_ig_id()
