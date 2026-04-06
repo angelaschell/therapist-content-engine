@@ -18,7 +18,7 @@ logger = logging.getLogger("publisher")
 
 router = APIRouter(prefix="/api/publish", tags=["publisher"])
 
-GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
+GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 STORAGE_BUCKET = "carousel-slides"
@@ -172,7 +172,7 @@ async def graph_post(endpoint, params, retries=3):
     last_status = 500
     for attempt in range(retries):
         async with httpx.AsyncClient(timeout=60.0) as client:
-            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=params)
+            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", data=params)
             last_status = r.status_code
             if r.status_code in (200, 201):
                 return r.json()
@@ -300,7 +300,7 @@ async def debug_publish(req: Request):
         # Step 3: Try creating a single child container (the actual IG API call)
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
-                r = await client.post(f"{GRAPH_API_BASE}/{ig_id}/media", params={
+                r = await client.post(f"{GRAPH_API_BASE}/{ig_id}/media", data={
                     "image_url": test_url,
                     "is_carousel_item": "true",
                     "access_token": page_token
