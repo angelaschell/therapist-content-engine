@@ -135,28 +135,55 @@ async def get_page_token_and_ig_id():
         raise HTTPException(status_code=404, detail="No IG business account found")
 
 
-async def graph_post(endpoint, params):
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=params)
-        if r.status_code not in (200, 201):
+async def graph_post(endpoint, params, retries=3):
+    last_error = None
+    for attempt in range(retries):
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=params)
+            if r.status_code in (200, 201):
+                return r.json()
             try:
-                error = r.json().get("error", {}).get("message", r.text)
+                err_body = r.json()
+                error = err_body.get("error", {}).get("message", r.text)
+                error_code = err_body.get("error", {}).get("code", 0)
             except Exception:
                 error = r.text
-            raise HTTPException(status_code=r.status_code, detail=error)
-        return r.json()
+                error_code = 0
+            last_error = error
+            # Retry on transient Instagram errors (code 2 = temporary issue)
+            is_transient = error_code == 2 or "unexpected error" in error.lower()
+            if is_transient and attempt < retries - 1:
+                wait = (attempt + 1) * 3
+                logger.warning(f"Transient IG error on {endpoint} (attempt {attempt+1}): {error}. Retrying in {wait}s...")
+                await asyncio.sleep(wait)
+                continue
+            break
+    raise HTTPException(status_code=r.status_code, detail=last_error)
 
 
-async def graph_get(endpoint, params):
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.get(f"{GRAPH_API_BASE}/{endpoint}", params=params)
-        if r.status_code not in (200, 201):
+async def graph_get(endpoint, params, retries=3):
+    last_error = None
+    for attempt in range(retries):
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.get(f"{GRAPH_API_BASE}/{endpoint}", params=params)
+            if r.status_code in (200, 201):
+                return r.json()
             try:
-                error = r.json().get("error", {}).get("message", r.text)
+                err_body = r.json()
+                error = err_body.get("error", {}).get("message", r.text)
+                error_code = err_body.get("error", {}).get("code", 0)
             except Exception:
                 error = r.text
-            raise HTTPException(status_code=r.status_code, detail=error)
-        return r.json()
+                error_code = 0
+            last_error = error
+            is_transient = error_code == 2 or "unexpected error" in error.lower()
+            if is_transient and attempt < retries - 1:
+                wait = (attempt + 1) * 3
+                logger.warning(f"Transient IG error on GET {endpoint} (attempt {attempt+1}): {error}. Retrying in {wait}s...")
+                await asyncio.sleep(wait)
+                continue
+            break
+    raise HTTPException(status_code=r.status_code, detail=last_error)
 
 
 async def wait_for_container(container_id, token, max_wait=60, interval=3):
@@ -209,20 +236,41 @@ async def publish_carousel(req: Request):
     if len(images) > 10:
         raise HTTPException(status_code=400, detail="Max 10 images")
 
-    page_token, ig_id, username = await get_page_token_and_ig_id()
+    try:
+        page_token, ig_id, username = await get_page_token_and_ig_id()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Token error: {e}")
 
     child_ids = []
-    for img_url in images:
-        child = await graph_post(f"{ig_id}/media", {"image_url": img_url, "is_carousel_item": "true", "access_token": page_token})
-        child_ids.append(child["id"])
+    for i, img_url in enumerate(images):
+        try:
+            child = await graph_post(f"{ig_id}/media", {"image_url": img_url, "is_carousel_item": "true", "access_token": page_token})
+            child_ids.append(child["id"])
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} container failed: {e.detail}")
+        # Small delay between child containers to avoid rate limits
+        if i < len(images) - 1:
+            await asyncio.sleep(1)
 
-    for cid in child_ids:
-        await wait_for_container(cid, page_token)
+    for i, cid in enumerate(child_ids):
+        try:
+            await wait_for_container(cid, page_token)
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} processing failed: {e.detail}")
 
-    container = await graph_post(f"{ig_id}/media", {"media_type": "CAROUSEL", "children": ",".join(child_ids), "caption": caption, "access_token": page_token})
-    await wait_for_container(container["id"], page_token)
+    try:
+        container = await graph_post(f"{ig_id}/media", {"media_type": "CAROUSEL", "children": ",".join(child_ids), "caption": caption, "access_token": page_token})
+        await wait_for_container(container["id"], page_token)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=f"Carousel container failed: {e.detail}")
 
-    result = await graph_post(f"{ig_id}/media_publish", {"creation_id": container["id"], "access_token": page_token})
+    try:
+        result = await graph_post(f"{ig_id}/media_publish", {"creation_id": container["id"], "access_token": page_token})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=f"Publish failed: {e.detail}")
+
     return {"success": True, "media_id": result.get("id"), "username": username, "slide_count": len(images)}
 
 
@@ -246,20 +294,40 @@ async def publish_carousel_from_slides(req: Request):
         url = await upload_to_supabase(slide_data, filename)
         image_urls.append(url)
 
-    page_token, ig_id, username = await get_page_token_and_ig_id()
+    try:
+        page_token, ig_id, username = await get_page_token_and_ig_id()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Token error: {e}")
 
     child_ids = []
-    for img_url in image_urls:
-        child = await graph_post(f"{ig_id}/media", {"image_url": img_url, "is_carousel_item": "true", "access_token": page_token})
-        child_ids.append(child["id"])
+    for i, img_url in enumerate(image_urls):
+        try:
+            child = await graph_post(f"{ig_id}/media", {"image_url": img_url, "is_carousel_item": "true", "access_token": page_token})
+            child_ids.append(child["id"])
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} container failed: {e.detail}")
+        if i < len(image_urls) - 1:
+            await asyncio.sleep(1)
 
-    for cid in child_ids:
-        await wait_for_container(cid, page_token)
+    for i, cid in enumerate(child_ids):
+        try:
+            await wait_for_container(cid, page_token)
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} processing failed: {e.detail}")
 
-    container = await graph_post(f"{ig_id}/media", {"media_type": "CAROUSEL", "children": ",".join(child_ids), "caption": caption, "access_token": page_token})
-    await wait_for_container(container["id"], page_token)
+    try:
+        container = await graph_post(f"{ig_id}/media", {"media_type": "CAROUSEL", "children": ",".join(child_ids), "caption": caption, "access_token": page_token})
+        await wait_for_container(container["id"], page_token)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=f"Carousel container failed: {e.detail}")
 
-    result = await graph_post(f"{ig_id}/media_publish", {"creation_id": container["id"], "access_token": page_token})
+    try:
+        result = await graph_post(f"{ig_id}/media_publish", {"creation_id": container["id"], "access_token": page_token})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=f"Publish failed: {e.detail}")
+
     return {"success": True, "media_id": result.get("id"), "username": username, "slide_count": len(slides), "image_urls": image_urls}
 
 
