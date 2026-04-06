@@ -119,7 +119,18 @@ async def upload_slides(req: Request):
 
 async def get_page_token_and_ig_id():
     from instagram_analytics import token_mgr
+
+    # Auto-refresh token if near expiry before publishing
+    try:
+        refresh_result = await token_mgr.auto_refresh_if_needed()
+        if refresh_result.get("success"):
+            logger.info(f"Token auto-refreshed. Days remaining: {refresh_result.get('days_remaining')}")
+    except Exception as e:
+        logger.warning(f"Token auto-refresh check failed: {e}")
+
     token = token_mgr.user_token
+    if not token:
+        raise HTTPException(status_code=401, detail="No Instagram access token configured. Set INSTAGRAM_ACCESS_TOKEN in Render environment variables.")
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         r = await client.get(
@@ -127,7 +138,11 @@ async def get_page_token_and_ig_id():
             params={"access_token": token, "fields": "id,name,access_token,instagram_business_account{id,username}"}
         )
         if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail="Could not fetch page token")
+            try:
+                err_detail = r.json().get("error", {}).get("message", r.text)
+            except Exception:
+                err_detail = r.text
+            raise HTTPException(status_code=r.status_code, detail=f"Could not fetch page token: {err_detail}")
         for page in r.json().get("data", []):
             ig = page.get("instagram_business_account")
             if ig:
@@ -164,7 +179,7 @@ async def graph_post(endpoint, params, retries=3):
             # Retry on transient Instagram errors (code 2 = temporary issue)
             is_transient = error_code == 2 or "unexpected error" in (last_error or "").lower()
             if is_transient and attempt < retries - 1:
-                wait = (attempt + 1) * 3
+                wait = (attempt + 1) * 5  # 5s, 10s backoff for IG rate limits
                 logger.warning(f"Retrying {endpoint} (attempt {attempt+1}/{retries}) in {wait}s...")
                 await asyncio.sleep(wait)
                 continue
@@ -370,13 +385,15 @@ async def publish_carousel(req: Request):
             child_ids.append(child["id"])
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} container failed: {e.detail}")
-        # Small delay between child containers to avoid rate limits
+        # Delay between child containers to avoid Instagram rate limits (code=2)
         if i < len(images) - 1:
-            await asyncio.sleep(1)
+            await asyncio.sleep(3)
+        logger.info(f"Slide {i+1}/{len(images)} container created: {child['id']}")
 
     for i, cid in enumerate(child_ids):
         try:
             await wait_for_container(cid, page_token)
+            logger.info(f"Slide {i+1}/{len(child_ids)} container ready")
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} processing failed: {e.detail}")
 
@@ -429,7 +446,7 @@ async def publish_carousel_from_slides(req: Request):
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} container failed: {e.detail}")
         if i < len(image_urls) - 1:
-            await asyncio.sleep(1)
+            await asyncio.sleep(3)
 
     for i, cid in enumerate(child_ids):
         try:
