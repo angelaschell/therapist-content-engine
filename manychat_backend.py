@@ -84,6 +84,26 @@ def insert_returning(sql, params=None):
 
 # ── Auto-setup tables ─────────────────────────────────────────
 SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS manychat_leads_clean (
+  id                  BIGSERIAL PRIMARY KEY,
+  contact_id          TEXT NOT NULL UNIQUE,
+  keyword             TEXT DEFAULT '',
+  first_name          TEXT DEFAULT '',
+  last_name           TEXT DEFAULT '',
+  ig_username         TEXT DEFAULT '',
+  email               TEXT DEFAULT '',
+  grief_type          TEXT DEFAULT '',
+  user_location_state TEXT DEFAULT '',
+  audience_segment    TEXT DEFAULT '',
+  created_at          TIMESTAMPTZ DEFAULT now(),
+  updated_at          TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS grief_type TEXT DEFAULT '';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS user_location_state TEXT DEFAULT '';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS audience_segment TEXT DEFAULT '';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS keyword TEXT DEFAULT '';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS ig_username TEXT DEFAULT '';
+
 CREATE TABLE IF NOT EXISTS manychat_triggers (
   id BIGSERIAL PRIMARY KEY, keyword TEXT NOT NULL UNIQUE, label TEXT NOT NULL,
   description TEXT DEFAULT '', product_url TEXT DEFAULT '', is_active BOOLEAN DEFAULT true,
@@ -99,8 +119,12 @@ CREATE TABLE IF NOT EXISTS manychat_subscribers (
   trigger_count INT DEFAULT 0, conversation_count INT DEFAULT 0,
   interest_level TEXT DEFAULT 'new', heat_score INT DEFAULT 0, funnel_stage TEXT DEFAULT 'subscriber',
   flodesk_synced BOOLEAN DEFAULT false, do_not_contact BOOLEAN DEFAULT false,
+  grief_type TEXT DEFAULT '', user_location_state TEXT DEFAULT '', audience_segment TEXT DEFAULT '',
   synced_at TIMESTAMPTZ DEFAULT now(), created_at TIMESTAMPTZ DEFAULT now(), updated_at TIMESTAMPTZ DEFAULT now()
 );
+ALTER TABLE manychat_subscribers ADD COLUMN IF NOT EXISTS grief_type TEXT DEFAULT '';
+ALTER TABLE manychat_subscribers ADD COLUMN IF NOT EXISTS user_location_state TEXT DEFAULT '';
+ALTER TABLE manychat_subscribers ADD COLUMN IF NOT EXISTS audience_segment TEXT DEFAULT '';
 CREATE TABLE IF NOT EXISTS subscriber_triggers (
   id BIGSERIAL PRIMARY KEY, mc_id TEXT NOT NULL, keyword TEXT NOT NULL,
   source TEXT DEFAULT 'instagram', fired_at TIMESTAMPTZ DEFAULT now(),
@@ -149,7 +173,9 @@ SELECT * FROM (VALUES
   ('MOM','Community Circle','Free community on Circle.',13),
   ('COMMUNITYCALL','Motherless Daughters Group','Hope Edelman Thursday group.',14),
   ('EMDR','EMDR Therapy','EMDR therapy information.',15),
-  ('TAPPERS','Dharma Dr.','Dharma Dr. tappers.',16)
+  ('TAPPERS','Dharma Dr.','Dharma Dr. tappers.',16),
+  ('BOOK','Book Session','Book a therapy session.',17),
+  ('HORSE','Equine Therapy Session','Book equine therapy at Shakti Ranch Malibu.',18)
 ) AS v(keyword, label, description, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM manychat_triggers LIMIT 1)
 ON CONFLICT (keyword) DO NOTHING;
@@ -273,7 +299,6 @@ def clean_template_vars(text):
     if not text:
         return ""
     cleaned = re.sub(r'\{\{[^}]+\}\}', '', text).strip()
-    # If nothing left after stripping, return empty
     return cleaned if cleaned else ""
 
 
@@ -373,40 +398,87 @@ async def setup_db():
 
 
 # ================================================================
-#  WEBHOOK: ManyChat pushes subscriber data here automatically
+#  WEBHOOK: ManyChat pushes subscriber data here
+#  Writes to BOTH manychat_leads_clean AND manychat_subscribers
 # ================================================================
 @router.post("/api/manychat/webhook")
 async def manychat_webhook(request: Request):
     """
     ManyChat sends subscriber data here via External Request.
-    Auto-enriches with full profile from ManyChat API.
+    Saves all fields to manychat_leads_clean.
+    Also enriches and saves to manychat_subscribers for CRM features.
     """
     try:
         body = await request.json()
 
-        mc_id = str(body.get("id", "") or body.get("subscriber_id", "") or body.get("mc_id", "") or body.get("user_id", ""))
-        first_name = body.get("first_name", "") or ""
-        last_name = body.get("last_name", "") or ""
-        full_name = body.get("full_name", "") or body.get("name", "") or f"{first_name} {last_name}".strip()
-        email = body.get("email", "") or ""
-        phone = body.get("phone", "") or ""
-        ig_username = body.get("ig_username", "") or body.get("instagram_username", "") or ""
-        profile_pic = body.get("profile_pic", "") or body.get("profile_picture", "") or ""
-        gender = body.get("gender", "") or ""
-        keyword = (body.get("keyword", "") or body.get("trigger", "") or body.get("trigger_keyword", "") or "").strip().upper()
-        source = body.get("source", "instagram") or "instagram"
-        tags = body.get("tags", [])
+        # ── Extract all fields from request body ──────────────
+        # Support both "id" and "contact_id" as the subscriber identifier
+        contact_id = str(
+            body.get("contact_id", "") or
+            body.get("id", "") or
+            body.get("subscriber_id", "") or
+            body.get("mc_id", "") or
+            body.get("user_id", "") or
+            ""
+        ).strip()
+
+        first_name      = clean_template_vars(body.get("first_name", "") or "")
+        last_name       = clean_template_vars(body.get("last_name", "") or "")
+        email           = (body.get("email", "") or "").strip()
+        ig_username     = (body.get("ig_username", "") or body.get("instagram_username", "") or "").strip()
+        keyword         = (body.get("keyword", "") or body.get("trigger", "") or body.get("trigger_keyword", "") or "").strip().upper()
+        grief_type      = (body.get("grief_type", "") or "").strip()
+        user_location_state = (body.get("user_location_state", "") or "").strip()
+        audience_segment    = (body.get("audience_segment", "") or "").strip()
+
+        if not contact_id:
+            return JSONResponse(
+                content={"error": "No subscriber ID provided. Send 'contact_id' or 'id' in the request body."},
+                status_code=400
+            )
+
+        # ── 1. WRITE TO manychat_leads_clean ──────────────────
+        # This is the primary clean leads table you want populated.
+        # Uses INSERT ... ON CONFLICT so re-triggers update existing rows
+        # instead of creating duplicates.
+        execute("""
+            INSERT INTO manychat_leads_clean
+                (contact_id, keyword, first_name, last_name, ig_username, email,
+                 grief_type, user_location_state, audience_segment, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+            ON CONFLICT (contact_id) DO UPDATE SET
+                keyword             = COALESCE(NULLIF(EXCLUDED.keyword, ''),             manychat_leads_clean.keyword),
+                first_name          = COALESCE(NULLIF(EXCLUDED.first_name, ''),          manychat_leads_clean.first_name),
+                last_name           = COALESCE(NULLIF(EXCLUDED.last_name, ''),           manychat_leads_clean.last_name),
+                ig_username         = COALESCE(NULLIF(EXCLUDED.ig_username, ''),         manychat_leads_clean.ig_username),
+                email               = COALESCE(NULLIF(EXCLUDED.email, ''),               manychat_leads_clean.email),
+                grief_type          = COALESCE(NULLIF(EXCLUDED.grief_type, ''),          manychat_leads_clean.grief_type),
+                user_location_state = COALESCE(NULLIF(EXCLUDED.user_location_state, ''), manychat_leads_clean.user_location_state),
+                audience_segment    = COALESCE(NULLIF(EXCLUDED.audience_segment, ''),    manychat_leads_clean.audience_segment),
+                updated_at          = now()
+        """, (
+            contact_id, keyword, first_name, last_name, ig_username, email,
+            grief_type, user_location_state, audience_segment
+        ))
+
+        # ── 2. ALSO WRITE TO manychat_subscribers (CRM features) ──
+        # This keeps the existing CRM dashboard, recommendations,
+        # and analytics working exactly as before.
+        phone       = (body.get("phone", "") or "").strip()
+        profile_pic = (body.get("profile_pic", "") or body.get("profile_picture", "") or "").strip()
+        gender      = (body.get("gender", "") or "").strip()
+        source      = (body.get("source", "instagram") or "instagram").strip()
+        tags        = body.get("tags", [])
         custom_fields = body.get("custom_fields", {})
+        full_name   = clean_template_vars(
+            body.get("full_name", "") or body.get("name", "") or f"{first_name} {last_name}".strip()
+        )
 
-        if not mc_id:
-            return JSONResponse(content={"error": "No subscriber ID provided."}, status_code=400)
-
-        # ── ENRICHMENT: Pull full profile from ManyChat API ──
+        # Enrichment: Pull full profile from ManyChat API
         try:
-            full_profile = await mc_get(f"/fb/subscriber/getInfo?subscriber_id={mc_id}")
+            full_profile = await mc_get(f"/fb/subscriber/getInfo?subscriber_id={contact_id}")
             sub_data = full_profile.get("data", {})
             if sub_data:
-                # Fill in any missing fields from the API
                 if not email and sub_data.get("email"):
                     email = sub_data["email"]
                 if not phone and sub_data.get("phone"):
@@ -414,98 +486,108 @@ async def manychat_webhook(request: Request):
                 if not ig_username:
                     ig_username = sub_data.get("ig_username", "") or sub_data.get("instagram_username", "") or ""
                 if not first_name and sub_data.get("first_name"):
-                    first_name = sub_data["first_name"]
+                    first_name = clean_template_vars(sub_data["first_name"])
                 if not last_name and sub_data.get("last_name"):
-                    last_name = sub_data["last_name"]
+                    last_name = clean_template_vars(sub_data["last_name"])
                 if not profile_pic and sub_data.get("profile_pic"):
                     profile_pic = sub_data["profile_pic"]
                 if not gender and sub_data.get("gender"):
                     gender = sub_data["gender"]
-                # Always grab tags and custom fields from API (more complete)
                 api_tags = sub_data.get("tags", [])
                 if api_tags:
                     tags = api_tags
                 api_cf = sub_data.get("custom_fields", {})
                 if api_cf:
                     custom_fields = api_cf
-                # Update full_name if we got better data
                 full_name = f"{first_name} {last_name}".strip() or full_name
         except Exception as e:
-            print(f"[manychat] API enrichment error for {mc_id}: {e}")  # best-effort, webhook data is fallback
+            print(f"[manychat] API enrichment error for {contact_id}: {e}")
 
-        # Clean any {{template_variables}} from names
-        first_name = clean_template_vars(first_name)
-        last_name = clean_template_vars(last_name)
-        full_name = clean_template_vars(full_name)
-        # If name is still empty after cleaning, try ig_username
         if not full_name and ig_username:
             full_name = ig_username
 
-        # Get existing counts
-        trig_res = query("SELECT keyword FROM subscriber_triggers WHERE mc_id=%s", (mc_id,))
+        trig_res = query("SELECT keyword FROM subscriber_triggers WHERE mc_id=%s", (contact_id,))
         trigger_count = len(trig_res) + (1 if keyword else 0)
-        conv_res = query("SELECT id FROM subscriber_conversations WHERE mc_id=%s", (mc_id,))
+        conv_res = query("SELECT id FROM subscriber_conversations WHERE mc_id=%s", (contact_id,))
         conversation_count = len(conv_res)
-
         all_triggers = trig_res + ([{"keyword": keyword}] if keyword else [])
         il, hs = calc_interest(trigger_count, conversation_count, tags, all_triggers)
         fs = calc_funnel(trigger_count, conversation_count, tags)
 
-        # Upsert subscriber
-        execute("""INSERT INTO manychat_subscribers
-            (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
-             tags, custom_fields, trigger_count, conversation_count,
-             interest_level, heat_score, funnel_stage, opted_in_email, synced_at, last_interaction)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),now())
+        execute("""
+            INSERT INTO manychat_subscribers
+                (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
+                 tags, custom_fields, trigger_count, conversation_count,
+                 interest_level, heat_score, funnel_stage, opted_in_email,
+                 grief_type, user_location_state, audience_segment,
+                 synced_at, last_interaction)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,now(),now())
             ON CONFLICT (mc_id) DO UPDATE SET
-             first_name=COALESCE(NULLIF(EXCLUDED.first_name,''), manychat_subscribers.first_name),
-             last_name=COALESCE(NULLIF(EXCLUDED.last_name,''), manychat_subscribers.last_name),
-             full_name=COALESCE(NULLIF(EXCLUDED.full_name,''), manychat_subscribers.full_name),
-             email=COALESCE(NULLIF(EXCLUDED.email,''), manychat_subscribers.email),
-             phone=COALESCE(NULLIF(EXCLUDED.phone,''), manychat_subscribers.phone),
-             ig_username=COALESCE(NULLIF(EXCLUDED.ig_username,''), manychat_subscribers.ig_username),
-             profile_pic=COALESCE(NULLIF(EXCLUDED.profile_pic,''), manychat_subscribers.profile_pic),
-             tags=EXCLUDED.tags,
-             custom_fields=EXCLUDED.custom_fields,
-             trigger_count=EXCLUDED.trigger_count,
-             conversation_count=EXCLUDED.conversation_count,
-             interest_level=EXCLUDED.interest_level,
-             heat_score=EXCLUDED.heat_score,
-             funnel_stage=EXCLUDED.funnel_stage,
-             opted_in_email=EXCLUDED.opted_in_email,
-             last_interaction=now(),
-             synced_at=now(),
-             updated_at=now()""",
-            (mc_id, first_name, last_name, full_name, email, phone, ig_username, profile_pic, gender,
-             json.dumps(tags) if isinstance(tags, list) else "[]",
-             json.dumps(custom_fields) if isinstance(custom_fields, (dict, list)) else "{}",
-             trigger_count, conversation_count, il, hs, fs, bool(email)))
+                first_name          = COALESCE(NULLIF(EXCLUDED.first_name,''),          manychat_subscribers.first_name),
+                last_name           = COALESCE(NULLIF(EXCLUDED.last_name,''),           manychat_subscribers.last_name),
+                full_name           = COALESCE(NULLIF(EXCLUDED.full_name,''),           manychat_subscribers.full_name),
+                email               = COALESCE(NULLIF(EXCLUDED.email,''),               manychat_subscribers.email),
+                phone               = COALESCE(NULLIF(EXCLUDED.phone,''),               manychat_subscribers.phone),
+                ig_username         = COALESCE(NULLIF(EXCLUDED.ig_username,''),         manychat_subscribers.ig_username),
+                profile_pic         = COALESCE(NULLIF(EXCLUDED.profile_pic,''),         manychat_subscribers.profile_pic),
+                tags                = EXCLUDED.tags,
+                custom_fields       = EXCLUDED.custom_fields,
+                trigger_count       = EXCLUDED.trigger_count,
+                conversation_count  = EXCLUDED.conversation_count,
+                interest_level      = EXCLUDED.interest_level,
+                heat_score          = EXCLUDED.heat_score,
+                funnel_stage        = EXCLUDED.funnel_stage,
+                opted_in_email      = EXCLUDED.opted_in_email,
+                grief_type          = COALESCE(NULLIF(EXCLUDED.grief_type,''),          manychat_subscribers.grief_type),
+                user_location_state = COALESCE(NULLIF(EXCLUDED.user_location_state,''), manychat_subscribers.user_location_state),
+                audience_segment    = COALESCE(NULLIF(EXCLUDED.audience_segment,''),    manychat_subscribers.audience_segment),
+                last_interaction    = now(),
+                synced_at           = now(),
+                updated_at          = now()
+        """, (
+            contact_id, first_name, last_name, full_name, email, phone,
+            ig_username, profile_pic, gender,
+            json.dumps(tags) if isinstance(tags, list) else "[]",
+            json.dumps(custom_fields) if isinstance(custom_fields, (dict, list)) else "{}",
+            trigger_count, conversation_count, il, hs, fs, bool(email),
+            grief_type, user_location_state, audience_segment
+        ))
 
-        # Log the trigger
+        # Log the trigger event
         if keyword:
-            execute("INSERT INTO subscriber_triggers (mc_id, keyword, source, fired_at) VALUES (%s,%s,%s,now())",
-                    (mc_id, keyword, source))
+            execute(
+                "INSERT INTO subscriber_triggers (mc_id, keyword, source, fired_at) VALUES (%s,%s,%s,now())",
+                (contact_id, keyword, source)
+            )
 
         return JSONResponse(content={
             "success": True,
-            "subscriber": mc_id,
-            "name": full_name,
+            "contact_id": contact_id,
+            "name": full_name or f"{first_name} {last_name}".strip(),
             "keyword": keyword,
+            "grief_type": grief_type or None,
+            "user_location_state": user_location_state or None,
+            "audience_segment": audience_segment or None,
             "interest_level": il,
             "heat_score": hs,
             "email": email or None,
             "ig_username": ig_username or None,
-            "enriched": True
+            "saved_to": ["manychat_leads_clean", "manychat_subscribers"]
         })
 
     except Exception as e:
+        print(f"[manychat] Webhook error: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 @router.get("/api/manychat/webhook")
 async def webhook_status():
     """Quick check that the webhook endpoint is alive."""
-    return JSONResponse(content={"status": "ok", "message": "ManyChat webhook is active. Send POST requests here."})
+    return JSONResponse(content={
+        "status": "ok",
+        "message": "ManyChat webhook is active. Send POST requests here.",
+        "tables": ["manychat_leads_clean", "manychat_subscribers"]
+    })
 
 
 # ================================================================
@@ -652,6 +734,9 @@ Funnel Stage: {sub.get('funnel_stage','subscriber')}
 Subscribed: {sub.get('subscribed_at','')}
 Last Interaction: {sub.get('last_interaction','')}
 Email: {'Yes' if sub.get('email') else 'No'}
+Grief Type: {sub.get('grief_type','')}
+Location State: {sub.get('user_location_state','')}
+Audience Segment: {sub.get('audience_segment','')}
 Tags: {json.dumps([t.get('name',str(t)) if isinstance(t,dict) else str(t) for t in tags])}
 
 Triggers they've fired:
@@ -770,17 +855,14 @@ async def smart_send(request:Request):
         if not keyword:
             return JSONResponse(content={"error":"No keyword specified."}, status_code=400)
 
-        # Fetch all flows from ManyChat
         d = await mc_get("/fb/page/getFlows")
         raw = d.get("data", {})
         flows = raw.get("flows", []) if isinstance(raw, dict) else raw if isinstance(raw, list) else []
 
-        # Find matching flow by keyword in the name
         matched_flow = None
         keyword_lower = keyword.lower()
         for f in flows:
             name = (f.get("name","") or "").lower()
-            # Match patterns like "| WORTHY", "| HEAL", "MALIBURETREAT" in flow name
             if keyword_lower in name or f"| {keyword_lower}" in name:
                 matched_flow = f
                 break
@@ -794,16 +876,13 @@ async def smart_send(request:Request):
         if not flow_ns:
             return JSONResponse(content={"error": f"Flow '{flow_name}' has no namespace ID."}, status_code=400)
 
-        # Send it
         result = await mc_post("/fb/sending/sendFlow", {"subscriber_id":int(mc_id),"flow_ns":flow_ns})
 
-        # Log the action
         sub = query_one("SELECT full_name FROM manychat_subscribers WHERE mc_id=%s",(mc_id,))
         name = sub["full_name"] if sub else "Unknown"
         execute("INSERT INTO completed_actions (mc_id,subscriber_name,action_type,action_detail,flow_id,recommendation_id) VALUES (%s,%s,%s,%s,%s,%s)",
                 (mc_id, name, "sent_flow", f"Sent {keyword} flow ({flow_name}) to {name}", flow_ns, rec_id))
 
-        # Mark recommendation as completed if provided
         if rec_id:
             execute("UPDATE lead_recommendations SET status='completed', completed_at=now(), completed_note=%s WHERE id=%s",
                     (f"Sent {keyword} flow to {name}", rec_id))
@@ -833,7 +912,6 @@ async def send_personal_dm(request: Request):
         if not MC_KEY:
             return JSONResponse(content={"error": "MANYCHAT_API_KEY not configured."}, status_code=500)
 
-        # No message_tag — Instagram DMs don't use Facebook Messenger tags
         payload = {
             "subscriber_id": int(mc_id),
             "data": {
@@ -849,7 +927,6 @@ async def send_personal_dm(request: Request):
             }
         }
 
-        # Use raw httpx so we can read the error response
         async with httpx.AsyncClient(timeout=15) as c:
             r = await c.post(
                 f"{MC_API}/fb/sending/sendContent",
@@ -869,12 +946,10 @@ async def send_personal_dm(request: Request):
             "INSERT INTO subscriber_conversations (mc_id, direction, message_preview, channel, sent_at) VALUES (%s, 'outbound', %s, 'instagram', now())",
             (mc_id, message[:200])
         )
-
         execute(
             "UPDATE manychat_subscribers SET conversation_count = conversation_count + 1, last_interaction = now(), updated_at = now() WHERE mc_id = %s",
             (mc_id,)
         )
-
         execute(
             "INSERT INTO completed_actions (mc_id, subscriber_name, action_type, action_detail) VALUES (%s, %s, 'manual_message', %s)",
             (mc_id, name, "Sent DM: " + message[:100])
@@ -979,7 +1054,6 @@ async def analyze_leads():
                 try: tags = json.loads(tags)
                 except (json.JSONDecodeError, Exception): tags = []
 
-            # Get ACTUAL trigger keywords this person has fired (not just count)
             sub_triggers = query("SELECT keyword, fired_at FROM subscriber_triggers WHERE mc_id=%s ORDER BY fired_at DESC", (s["mc_id"],))
             trigger_keywords = list(set(t["keyword"] for t in sub_triggers))
             latest_trigger = sub_triggers[0] if sub_triggers else None
@@ -991,6 +1065,9 @@ async def analyze_leads():
                 "interest": s.get("interest_level"),
                 "heat": s.get("heat_score"),
                 "funnel": s.get("funnel_stage"),
+                "grief_type": s.get("grief_type",""),
+                "user_location_state": s.get("user_location_state",""),
+                "audience_segment": s.get("audience_segment",""),
                 "triggers_they_have": trigger_keywords,
                 "latest_trigger": {"keyword": latest_trigger["keyword"], "when": str(latest_trigger["fired_at"])} if latest_trigger else None,
                 "conversations": s.get("conversation_count",0),
@@ -1059,7 +1136,6 @@ Priority 1=urgent, 5=low."""
             key = f"{rec.get('mc_id')}_{rec.get('category')}"
             if key in existing: continue
 
-            # Store extra fields in data_points JSONB
             data_points = {
                 "ig_username": rec.get("ig_username", ""),
                 "action_type": rec.get("action_type", "send_flow"),
