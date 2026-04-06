@@ -132,6 +132,23 @@ async def get_page_token_and_ig_id():
     if not token:
         raise HTTPException(status_code=401, detail="No Instagram access token configured. Set INSTAGRAM_ACCESS_TOKEN in Render environment variables.")
 
+    # Check token scopes - instagram_content_publish is REQUIRED for posting
+    try:
+        status = await token_mgr.check_token()
+        scopes = status.get("scopes", [])
+        if scopes and "instagram_content_publish" not in scopes:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Token missing 'instagram_content_publish' permission. Current scopes: {', '.join(scopes)}. "
+                       f"Go to Facebook Developer Console → your app → App Review → Permissions, and request instagram_content_publish. "
+                       f"Also make sure your app is in Live Mode (not Development Mode)."
+            )
+        logger.info(f"Token scopes: {scopes}, valid: {status.get('valid')}, days_remaining: {status.get('days_remaining')}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Scope check failed (continuing anyway): {e}")
+
     async with httpx.AsyncClient(timeout=15.0) as client:
         r = await client.get(
             f"{GRAPH_API_BASE}/me/accounts",
@@ -246,6 +263,24 @@ async def debug_publish(req: Request):
     data = await req.json()
     test_url = data.get("image_url", "")
     steps = []
+
+    # Step 0: Check token scopes and app mode
+    from instagram_analytics import token_mgr
+    try:
+        token_status = await token_mgr.check_token()
+        scopes = token_status.get("scopes", [])
+        has_publish = "instagram_content_publish" in scopes
+        steps.append({
+            "step": "scopes",
+            "ok": has_publish,
+            "scopes": scopes,
+            "has_publish_permission": has_publish,
+            "valid": token_status.get("valid"),
+            "days_remaining": token_status.get("days_remaining"),
+            "error": None if has_publish else "MISSING instagram_content_publish scope. Your Facebook app needs this permission approved via App Review, and the app must be in Live Mode."
+        })
+    except Exception as e:
+        steps.append({"step": "scopes", "ok": False, "error": str(e)})
 
     # Step 1: Check token
     try:
