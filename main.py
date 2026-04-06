@@ -167,7 +167,7 @@ async def startup():
 async def root():
     try:
         with open("index.html", "r") as f:
-            return f.read()
+            return HTMLResponse(content=f.read(), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     except Exception as e:
         print(f"Could not load index.html: {e}")
         return HTMLResponse("<h1>Content Engine running</h1>")
