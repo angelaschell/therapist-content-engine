@@ -137,31 +137,39 @@ async def get_page_token_and_ig_id():
 
 async def graph_post(endpoint, params, retries=3):
     last_error = None
-    # Separate access_token as query param, send rest as form data body
-    form_data = {k: v for k, v in params.items() if k != "access_token"}
-    query = {"access_token": params["access_token"]} if "access_token" in params else {}
+    last_status = 500
     for attempt in range(retries):
         async with httpx.AsyncClient(timeout=60.0) as client:
-            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=query, data=form_data)
+            r = await client.post(f"{GRAPH_API_BASE}/{endpoint}", params=params)
+            last_status = r.status_code
             if r.status_code in (200, 201):
                 return r.json()
             try:
                 err_body = r.json()
-                error = err_body.get("error", {}).get("message", r.text)
-                error_code = err_body.get("error", {}).get("code", 0)
+                err_obj = err_body.get("error", {})
+                error_code = err_obj.get("code", 0)
+                error_subcode = err_obj.get("error_subcode", "")
+                error_type = err_obj.get("type", "")
+                error_msg = err_obj.get("message", r.text)
+                fbtrace = err_obj.get("fbtrace_id", "")
+                # Build detailed error string for debugging
+                last_error = error_msg
+                if error_code or error_subcode:
+                    last_error += f" (code={error_code}, subcode={error_subcode}, type={error_type})"
+                logger.error(f"Graph API error on POST {endpoint}: status={r.status_code} code={error_code} subcode={error_subcode} type={error_type} msg={error_msg} fbtrace={fbtrace}")
             except Exception:
-                error = r.text
+                last_error = r.text
                 error_code = 0
-            last_error = error
+                logger.error(f"Graph API non-JSON error on POST {endpoint}: status={r.status_code} body={r.text[:500]}")
             # Retry on transient Instagram errors (code 2 = temporary issue)
-            is_transient = error_code == 2 or "unexpected error" in error.lower()
+            is_transient = error_code == 2 or "unexpected error" in (last_error or "").lower()
             if is_transient and attempt < retries - 1:
                 wait = (attempt + 1) * 3
-                logger.warning(f"Transient IG error on {endpoint} (attempt {attempt+1}): {error}. Retrying in {wait}s...")
+                logger.warning(f"Retrying {endpoint} (attempt {attempt+1}/{retries}) in {wait}s...")
                 await asyncio.sleep(wait)
                 continue
             break
-    raise HTTPException(status_code=r.status_code, detail=last_error)
+    raise HTTPException(status_code=last_status, detail=last_error)
 
 
 async def graph_get(endpoint, params, retries=3):
@@ -215,6 +223,48 @@ async def verify_image_url(url: str) -> tuple[bool, str]:
             return False, f"HTTP {r.status_code}"
     except Exception as e:
         return False, str(e)
+
+
+@router.post("/debug-publish")
+async def debug_publish(req: Request):
+    """Test Instagram API connectivity with a single image. Returns raw API responses."""
+    data = await req.json()
+    test_url = data.get("image_url", "")
+    steps = []
+
+    # Step 1: Check token
+    try:
+        page_token, ig_id, username = await get_page_token_and_ig_id()
+        steps.append({"step": "token", "ok": True, "ig_id": ig_id, "username": username})
+    except Exception as e:
+        steps.append({"step": "token", "ok": False, "error": str(e)})
+        return {"success": False, "steps": steps, "failed_at": "token"}
+
+    # Step 2: Check image URL accessible
+    if test_url:
+        ok, msg = await verify_image_url(test_url)
+        steps.append({"step": "image_check", "ok": ok, "url": test_url[:100], "detail": msg})
+        if not ok:
+            return {"success": False, "steps": steps, "failed_at": "image_check"}
+
+        # Step 3: Try creating a single child container (the actual IG API call)
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                r = await client.post(f"{GRAPH_API_BASE}/{ig_id}/media", params={
+                    "image_url": test_url,
+                    "is_carousel_item": "true",
+                    "access_token": page_token
+                })
+                steps.append({
+                    "step": "create_container",
+                    "ok": r.status_code in (200, 201),
+                    "status_code": r.status_code,
+                    "response": r.json() if r.status_code in (200, 201) else r.json()
+                })
+        except Exception as e:
+            steps.append({"step": "create_container", "ok": False, "error": str(e)})
+
+    return {"success": all(s["ok"] for s in steps), "steps": steps}
 
 
 @router.post("/preflight")
@@ -291,6 +341,7 @@ async def publish_carousel(req: Request):
     data = await req.json()
     images = data.get("images", [])
     caption = data.get("caption", "")
+    logger.info(f"Carousel publish request: {len(images)} images, caption length={len(caption)}")
 
     if len(images) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 images")
@@ -301,7 +352,9 @@ async def publish_carousel(req: Request):
     for i, img_url in enumerate(images):
         ok, msg = await verify_image_url(img_url)
         if not ok:
+            logger.error(f"Image {i+1} not accessible: {img_url} - {msg}")
             raise HTTPException(status_code=400, detail=f"Slide {i+1} image not accessible ({msg}). Instagram must be able to download the image. Check Supabase bucket is public.")
+    logger.info(f"All {len(images)} images verified accessible")
 
     try:
         page_token, ig_id, username = await get_page_token_and_ig_id()
