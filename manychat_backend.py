@@ -1,14 +1,5 @@
 """
 Lead CRM Backend - uses DATABASE_URL (psycopg2) directly.
-No Supabase REST client needed.
-
-Add to main.py:
-  from manychat_backend import router as manychat_router
-  app.include_router(manychat_router)
-"""
-
-"""
-Lead CRM Backend - uses DATABASE_URL (psycopg2) directly.
 """
 
 from fastapi import APIRouter, Request
@@ -28,7 +19,7 @@ MC_API = "https://api.manychat.com"
 MC_KEY = os.environ.get("MANYCHAT_API_KEY", "")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
-# ── DB Helper ─────────────────────────────────────────────────
+# ───────────────── DB HELPERS ─────────────────
 def get_conn():
     if not DATABASE_URL:
         raise Exception("DATABASE_URL not configured")
@@ -39,9 +30,7 @@ def clean(row):
         return None
     d = dict(row)
     for k, v in d.items():
-        if isinstance(v, (datetime,)):
-            d[k] = v.isoformat()
-        elif hasattr(v, 'isoformat'):
+        if hasattr(v, "isoformat"):
             d[k] = v.isoformat()
     return d
 
@@ -67,10 +56,6 @@ def execute(sql, params=None):
     finally:
         conn.close()
 
-def query_one(sql, params=None):
-    rows = query(sql, params)
-    return rows[0] if rows else None
-
 def insert_returning(sql, params=None):
     conn = get_conn()
     try:
@@ -84,11 +69,12 @@ def insert_returning(sql, params=None):
         conn.close()
 
 
-# ── FIXED SCHEMA ───────────────────────────────────────────────
+# ───────────────── FIXED SCHEMA ─────────────────
 SCHEMA_SQL = """
+
 CREATE TABLE IF NOT EXISTS manychat_leads_clean (
   id BIGSERIAL PRIMARY KEY,
-  contact_id TEXT NOT NULL UNIQUE,
+  contact_id TEXT NOT NULL,
   keyword TEXT DEFAULT '',
   first_name TEXT DEFAULT '',
   last_name TEXT DEFAULT '',
@@ -101,25 +87,38 @@ CREATE TABLE IF NOT EXISTS manychat_leads_clean (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- ✅ CRITICAL FIXES
+-- Ensure columns exist
 ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
-ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS grief_type TEXT DEFAULT '';
-ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS user_location_state TEXT DEFAULT '';
-ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS audience_segment TEXT DEFAULT '';
-ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS keyword TEXT DEFAULT '';
-ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS ig_username TEXT DEFAULT '';
+-- Remove duplicates BEFORE adding unique constraint
+DELETE FROM manychat_leads_clean a
+USING manychat_leads_clean b
+WHERE a.id < b.id
+AND a.contact_id = b.contact_id;
+
+-- Add UNIQUE constraint safely
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'manychat_leads_clean_contact_id_key'
+    ) THEN
+        ALTER TABLE manychat_leads_clean
+        ADD CONSTRAINT manychat_leads_clean_contact_id_key UNIQUE (contact_id);
+    END IF;
+END $$;
+
 """
 
 try:
     if DATABASE_URL:
         execute(SCHEMA_SQL)
 except Exception as e:
-    print(f"[manychat] Schema setup warning: {e}")
+    print("[SCHEMA ERROR]", e)
 
 
-# ── Helpers ────────────────────────────────────────────────────
+# ───────────────── HELPERS ─────────────────
 def clean_template_vars(text):
     if not text:
         return ""
@@ -131,9 +130,7 @@ def normalize_keyword(keyword):
     return re.sub(r'\s+', '', keyword.upper())
 
 
-# ================================================================
-# WEBHOOK (FIXED)
-# ================================================================
+# ───────────────── WEBHOOK ─────────────────
 @router.post("/api/manychat/webhook")
 async def manychat_webhook(request: Request):
     try:
@@ -147,15 +144,10 @@ async def manychat_webhook(request: Request):
         ).strip()
 
         if not contact_id:
-            return JSONResponse(
-                content={"error": "No subscriber ID provided"},
-                status_code=400
-            )
+            return JSONResponse({"error": "No subscriber ID"}, status_code=400)
 
         keyword = normalize_keyword(
-            body.get("keyword")
-            or body.get("trigger")
-            or ""
+            body.get("keyword") or body.get("trigger") or ""
         )
 
         first_name = clean_template_vars(body.get("first_name", ""))
@@ -167,7 +159,6 @@ async def manychat_webhook(request: Request):
         user_location_state = body.get("user_location_state", "")
         audience_segment = body.get("audience_segment", "")
 
-        # ✅ SAFE INSERT
         execute("""
             INSERT INTO manychat_leads_clean
             (contact_id, keyword, first_name, last_name, ig_username, email,
@@ -185,24 +176,18 @@ async def manychat_webhook(request: Request):
                 updated_at = now()
         """, (
             contact_id, keyword, first_name, last_name,
-            ig_username, email, grief_type,
-            user_location_state, audience_segment
+            ig_username, email,
+            grief_type, user_location_state, audience_segment
         ))
 
-        return JSONResponse(content={
-            "success": True,
-            "contact_id": contact_id,
-            "keyword": keyword
-        })
+        return {"success": True, "contact_id": contact_id}
 
     except Exception as e:
-        print("[manychat webhook error]", e)
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+        print("[WEBHOOK ERROR]", e)
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
-# ================================================================
-# SYNC (FIXED log_id bug)
-# ================================================================
+# ───────────────── SYNC (FIXED) ─────────────────
 @router.post("/api/manychat/sync")
 async def sync_data():
     log_id = None
@@ -233,12 +218,10 @@ async def sync_data():
                 "UPDATE sync_log SET status='error', error_message=%s WHERE id=%s",
                 (str(e), log_id)
             )
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
-# ================================================================
-# HEALTH CHECK
-# ================================================================
+# ───────────────── HEALTH ─────────────────
 @router.get("/api/manychat/webhook")
 async def webhook_status():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "Webhook working"}
