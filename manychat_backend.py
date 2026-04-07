@@ -129,6 +129,25 @@ CREATE TABLE IF NOT EXISTS sync_log (
   completed_at TIMESTAMPTZ
 );
 
+-- Seed default triggers if table is empty
+INSERT INTO manychat_triggers (keyword, label, description) VALUES
+  ('WORTHY', 'Emotional Starter Kit', 'my free Emotional Starter Kit'),
+  ('HEAL', '1:1 Therapy Session', 'the link to book a 1:1 therapy session'),
+  ('MALIBURETREAT', 'Healing with Horses Retreat', 'details about the Healing with Horses Somatic Grief Retreat in Malibu'),
+  ('UNLEARN', 'Mother Hunger Course', 'info about the Mother Hunger Course'),
+  ('GRIEFRELIEF', 'Grief Relief Video Series', 'the Grief Relief Video Series'),
+  ('TOOLS', '101 Tools Resource', 'my 101 Tools resource'),
+  ('EQUINE', 'Equine Therapy Guide', 'my Equine Therapy digital guide'),
+  ('MOM', 'Grief Trauma and Your Mama', 'the link to join the Grief, Trauma and Your Mama community'),
+  ('EMDR', 'EMDR Therapy Sessions', 'info about EMDR therapy sessions'),
+  ('UNTANGLE', '1:1 Session', 'the link to book a 1:1 session'),
+  ('STEADY', '1:1 Session', 'the link to book a 1:1 session'),
+  ('COMMUNITYCALL', 'Motherless Daughters Thursday Group', 'the link to the Motherless Daughters Thursday group'),
+  ('TAPPERS', 'Dharma Dr. Resource', 'info about the Dharma Dr. resource'),
+  ('HORSEHEALING', 'Equine Therapy Guide', 'my Equine Therapy digital guide'),
+  ('GRIEFTOOLS', 'Grief Relief Video Series', 'the Grief Relief Video Series')
+ON CONFLICT (keyword) DO NOTHING;
+
 """
 
 try:
