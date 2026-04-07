@@ -250,7 +250,7 @@ async def categorize_comments(batch_size: int = Query(default=20, le=50)):
 
     system_prompt = """You analyze Instagram comments for Angela Schellenberg, a licensed trauma/grief therapist (171K followers). Brand: "Grief, Trauma & Your Mama." Specializes in motherless daughters, Mother Hunger (Kelly McDaniel), EMDR, frozen grief, somatic/equine therapy.
 
-Products: 1:1 sessions (HEAL/UNTANGLE/STEADY), Mother Hunger course (UNLEARN), Healing with Horses Retreat Malibu (MALIBURETREAT), Grief Relief Videos (GRIEFRELIEF), Starter Kit (WORTHY), Community (MOM), Equine Digital (EQUINE).
+Products: 1:1 sessions (BOOK), free 15-min intro call (15MIN), EMDR therapy (EMDR), Equine Therapy LA (HORSE), Mother Hunger course (UNLEARN), Healing with Horses Retreat Malibu (MALIBU), Free Emotional Starter Kit (WORTHY), 101 Tools digital product (TOOLS101), Free GT&YM Community (CIRCLES), Hope Edelman Thursday Group (COMMUNITYCALL), Dharma Dr. Bilateral Tappers (TAPPERS), Trauma Tools Affiliate (HELPTA).
 
 For each comment return: db_id, category (warm_lead|testimonial|engagement_opportunity|question_needs_reply|support_request|spam_noise), category_confidence (0-1), category_reasoning, sentiment (positive|negative|neutral|vulnerable), sentiment_score (-1 to 1), lead_score (0-100), lead_signals (array), reply_draft (warm, no em dashes, 1-3 sentences).
 
@@ -352,7 +352,7 @@ async def deep_analysis(comment_id: int):
             print(f"Perplexity deep analysis error: {e}")
 
     system_prompt = """You are Angela Schellenberg's AI sales intelligence assistant. Licensed trauma/grief therapist, 171K followers, "Grief, Trauma & Your Mama."
-Product suite: FREE Starter Kit (WORTHY), FREE Community (MOM), $ Grief Relief Videos (GRIEFRELIEF), $ 101 Tools (TOOLS), $ Equine Digital (EQUINE), $$ Mother Hunger course Kelly McDaniel (UNLEARN), $$$ 1:1 Therapy (HEAL/UNTANGLE/STEADY), $$$$ Horses Retreat Malibu Apr 29-May 3 2026 (MALIBURETREAT).
+Product suite: FREE Emotional Starter Kit (WORTHY), FREE GT&YM Community (CIRCLES), $ 101 Tools digital product (TOOLS101), $ Dharma Dr. Bilateral Tappers (TAPPERS), $ Trauma Tools Affiliate (HELPTA), $$ Mother Hunger course Kelly McDaniel (UNLEARN), $$$ 1:1 Therapy (BOOK), $$$ Free 15-min Intro Call (15MIN), $$$ EMDR Therapy (EMDR), $$$ Equine Therapy LA (HORSE), $$$$ Healing with Horses Retreat Malibu (MALIBU), Community call Hope Edelman Thursday Group (COMMUNITYCALL).
 REPLY RULES: Write as Angela. Warm, direct, real. NEVER em dashes. NEVER "It might not be X, it might be Y." 1-3 sentences. Validate first, offer second.
 Return ONLY valid JSON, no backticks."""
 
@@ -408,7 +408,7 @@ async def auto_draft_reply(comment_id: int):
         ai_resp = await client.post("https://api.anthropic.com/v1/messages",
             headers={"x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
             json={"model": "claude-sonnet-4-20250514", "max_tokens": 300,
-                "system": "You are Angela Schellenberg, licensed trauma/grief therapist. Warm Instagram reply. Never em dashes. 1-3 sentences. If potential client, guide to DM: HEAL/UNTANGLE/STEADY, UNLEARN, MALIBURETREAT, WORTHY, MOM. Only the reply text.",
+                "system": "You are Angela Schellenberg, licensed trauma/grief therapist. Warm Instagram reply. Never em dashes. 1-3 sentences. If potential client, guide to DM: BOOK, 15MIN, EMDR, HORSE, UNLEARN, MALIBU, WORTHY, TOOLS101, CIRCLES, COMMUNITYCALL, TAPPERS, HELPTA. Only the reply text.",
                 "messages": [{"role": "user", "content": f"Post: {(c.get('media_caption') or '')[:200]}\n@{c['username']}: {c['comment_text']}\nCategory: {c.get('category','?')} | Lead: {c.get('lead_score',0)}"}]})
         ai_resp.raise_for_status()
         ai_data = ai_resp.json()
@@ -557,7 +557,7 @@ Return format:
 Rules:
 - You are Angela Schellenberg, licensed trauma/grief therapist
 - Warm, human tone. No em dashes. 1-3 sentences each.
-- If potential client (high lead score), gently guide to DM with relevant keyword (HEAL, UNLEARN, MALIBURETREAT, WORTHY, MOM)
+- If potential client (high lead score), gently guide to DM with relevant keyword (BOOK, 15MIN, EMDR, UNLEARN, MALIBU, WORTHY, CIRCLES, TOOLS101)
 - For testimonials, express genuine gratitude
 - For questions, give a thoughtful brief answer or invite them to DM
 - For spam/noise, skip (return empty string for reply)"""
