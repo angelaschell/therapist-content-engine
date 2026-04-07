@@ -131,22 +131,28 @@ CREATE TABLE IF NOT EXISTS sync_log (
 
 -- Seed default triggers if table is empty
 INSERT INTO manychat_triggers (keyword, label, description) VALUES
-  ('WORTHY', 'Emotional Starter Kit', 'my free Emotional Starter Kit'),
-  ('HEAL', '1:1 Therapy Session', 'the link to book a 1:1 therapy session'),
-  ('MALIBURETREAT', 'Healing with Horses Retreat', 'details about the Healing with Horses Somatic Grief Retreat in Malibu'),
-  ('UNLEARN', 'Mother Hunger Course', 'info about the Mother Hunger Course'),
-  ('GRIEFRELIEF', 'Grief Relief Video Series', 'the Grief Relief Video Series'),
-  ('TOOLS', '101 Tools Resource', 'my 101 Tools resource'),
-  ('EQUINE', 'Equine Therapy Guide', 'my Equine Therapy digital guide'),
-  ('MOM', 'Grief Trauma and Your Mama', 'the link to join the Grief, Trauma and Your Mama community'),
-  ('EMDR', 'EMDR Therapy Sessions', 'info about EMDR therapy sessions'),
-  ('UNTANGLE', '1:1 Session', 'the link to book a 1:1 session'),
-  ('STEADY', '1:1 Session', 'the link to book a 1:1 session'),
-  ('COMMUNITYCALL', 'Motherless Daughters Thursday Group', 'the link to the Motherless Daughters Thursday group'),
-  ('TAPPERS', 'Dharma Dr. Resource', 'info about the Dharma Dr. resource'),
-  ('HORSEHEALING', 'Equine Therapy Guide', 'my Equine Therapy digital guide'),
-  ('GRIEFTOOLS', 'Grief Relief Video Series', 'the Grief Relief Video Series')
-ON CONFLICT (keyword) DO NOTHING;
+  ('BOOK', '1:1 Therapy Session', 'the link to book a 1:1 therapy session'),
+  ('15MIN', 'Free 15-min Intro Call', 'the link to book a free 15-minute intro call'),
+  ('HORSE', 'Equine Therapy', 'info about Equine Therapy in LA'),
+  ('EMDR', 'EMDR Therapy Booking', 'the link to book an EMDR therapy session'),
+  ('UNLEARN', 'Mother Hunger Course', 'info about the 8-week live Mother Hunger Course'),
+  ('WORTHY', 'Free Emotional Starter Kit', 'my free Emotional Starter Kit'),
+  ('TOOLS101', '101 Tools Digital Product', 'my 101 Tools digital product'),
+  ('CIRCLES', 'Free GT&YM Community', 'the link to join the free Grief, Trauma and Your Mama community'),
+  ('COMMUNITYCALL', 'Hope Edelman Thursday Group', 'the link to the Hope Edelman Thursday Group community call'),
+  ('MALIBU', 'Healing with Horses Retreat', 'details about the Healing with Horses Retreat in Malibu'),
+  ('TAPPERS', 'Dharma Dr. Bilateral Tappers', 'info about the Dharma Dr. Bilateral Tappers'),
+  ('HELPTA', 'Trauma Tools Affiliate', 'affiliate links for trauma tools')
+ON CONFLICT (keyword) DO UPDATE SET
+  label = EXCLUDED.label,
+  description = EXCLUDED.description,
+  updated_at = now();
+
+-- Remove old triggers that are no longer in ManyChat
+DELETE FROM manychat_triggers WHERE keyword IN (
+  'HEAL', 'MALIBURETREAT', 'GRIEFRELIEF', 'TOOLS', 'EQUINE',
+  'MOM', 'UNTANGLE', 'STEADY', 'HORSEHEALING', 'GRIEFTOOLS'
+);
 
 """
 
