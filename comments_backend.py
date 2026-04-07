@@ -17,10 +17,55 @@ from pydantic import BaseModel
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
-GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
+GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
 SELF_USERNAME = "angelaschellenberg"
 
 router = APIRouter(prefix="/api/comments", tags=["Comment Command Center"])
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS ig_comments (
+    id BIGSERIAL PRIMARY KEY,
+    ig_comment_id TEXT UNIQUE NOT NULL,
+    ig_media_id TEXT NOT NULL,
+    media_permalink TEXT DEFAULT '',
+    media_caption TEXT DEFAULT '',
+    media_thumbnail_url TEXT DEFAULT '',
+    username TEXT DEFAULT 'unknown',
+    comment_text TEXT DEFAULT '',
+    like_count INT DEFAULT 0,
+    is_reply BOOLEAN DEFAULT FALSE,
+    parent_comment_id TEXT DEFAULT '',
+    timestamp TIMESTAMPTZ DEFAULT now(),
+    status TEXT DEFAULT 'unread',
+    category TEXT DEFAULT 'uncategorized',
+    category_confidence REAL DEFAULT 0,
+    category_reasoning TEXT DEFAULT '',
+    reply_draft TEXT DEFAULT '',
+    lead_score INT DEFAULT 0,
+    assigned_to TEXT DEFAULT '',
+    dm_sent BOOLEAN DEFAULT FALSE,
+    replied_at TIMESTAMPTZ,
+    reply_ig_id TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS ig_commenters (
+    id BIGSERIAL PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    total_comments INT DEFAULT 0,
+    first_seen TIMESTAMPTZ DEFAULT now(),
+    last_seen TIMESTAMPTZ DEFAULT now(),
+    is_superfan BOOLEAN DEFAULT FALSE,
+    is_potential_client BOOLEAN DEFAULT FALSE,
+    engagement_rate REAL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS comment_fetch_log (
+    id BIGSERIAL PRIMARY KEY,
+    ig_media_id TEXT NOT NULL,
+    comments_fetched INT DEFAULT 0,
+    new_comments INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+"""
 
 
 def get_db():
@@ -70,6 +115,14 @@ def db_count(sql, params=None):
         return row["count"] if row else 0
     finally:
         conn.close()
+
+
+# Auto-create tables on startup
+try:
+    if DATABASE_URL:
+        db_execute(SCHEMA_SQL)
+except Exception as e:
+    print(f"[COMMENTS SCHEMA ERROR] {e}")
 
 
 async def get_page_token_and_ig_id():
