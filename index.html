@@ -2205,7 +2205,7 @@ function loadManyChatCTAs(){
     // Carousel Builder Step 5 CTA
     var bctaEl=document.getElementById("b-cta-trigger");
     if(bctaEl){
-      bctaEl.innerHTML=opts||'<option value="">No triggers</option>';
+      bctaEl.innerHTML='<option value="">Select trigger...</option>'+opts;
       var badge=document.getElementById("triggerDisplay");
       if(badge&&triggers.length)badge.textContent=triggers[0].keyword;
     }

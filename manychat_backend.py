@@ -109,6 +109,26 @@ BEGIN
     END IF;
 END $$;
 
+CREATE TABLE IF NOT EXISTS manychat_triggers (
+  id BIGSERIAL PRIMARY KEY,
+  keyword TEXT NOT NULL UNIQUE,
+  label TEXT NOT NULL DEFAULT '',
+  description TEXT DEFAULT '',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sync_log (
+  id BIGSERIAL PRIMARY KEY,
+  sync_type TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending',
+  records_synced INT DEFAULT 0,
+  error_message TEXT DEFAULT '',
+  started_at TIMESTAMPTZ DEFAULT now(),
+  completed_at TIMESTAMPTZ
+);
+
 """
 
 try:
@@ -225,3 +245,216 @@ async def sync_data():
 @router.get("/api/manychat/webhook")
 async def webhook_status():
     return {"status": "ok", "message": "Webhook working"}
+
+
+# ───────────────── TRIGGERS CRUD ─────────────────
+
+@router.get("/api/manychat/triggers")
+async def list_triggers():
+    rows = query("SELECT * FROM manychat_triggers ORDER BY keyword ASC")
+    return {"triggers": rows}
+
+
+@router.post("/api/manychat/triggers")
+async def create_trigger(request: Request):
+    try:
+        body = await request.json()
+        keyword = (body.get("keyword") or "").strip().upper()
+        label = (body.get("label") or "").strip()
+        description = (body.get("description") or "").strip()
+
+        if not keyword:
+            return JSONResponse({"error": "Keyword is required"}, status_code=400)
+
+        row = insert_returning(
+            """INSERT INTO manychat_triggers (keyword, label, description)
+               VALUES (%s, %s, %s)
+               ON CONFLICT (keyword) DO UPDATE SET
+                 label = EXCLUDED.label,
+                 description = EXCLUDED.description,
+                 updated_at = now()
+               RETURNING *""",
+            (keyword, label, description)
+        )
+        return {"success": True, "trigger": row}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.put("/api/manychat/triggers/{trigger_id}")
+async def update_trigger(trigger_id: int, request: Request):
+    try:
+        body = await request.json()
+        label = (body.get("label") or "").strip()
+        description = (body.get("description") or "").strip()
+
+        execute(
+            """UPDATE manychat_triggers
+               SET label = %s, description = %s, updated_at = now()
+               WHERE id = %s""",
+            (label, description, trigger_id)
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.patch("/api/manychat/triggers/{trigger_id}/toggle")
+async def toggle_trigger(trigger_id: int):
+    try:
+        execute(
+            "UPDATE manychat_triggers SET is_active = NOT is_active, updated_at = now() WHERE id = %s",
+            (trigger_id,)
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.delete("/api/manychat/triggers/{trigger_id}")
+async def delete_trigger(trigger_id: int):
+    try:
+        execute("DELETE FROM manychat_triggers WHERE id = %s", (trigger_id,))
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── SYNC STATUS ─────────────────
+
+@router.get("/api/manychat/sync/status")
+async def sync_status():
+    try:
+        rows = query(
+            "SELECT * FROM sync_log ORDER BY started_at DESC LIMIT 1"
+        )
+        return {"last_sync": rows[0] if rows else None}
+    except Exception:
+        return {"last_sync": None}
+
+
+# ───────────────── SUBSCRIBERS ─────────────────
+
+@router.get("/api/manychat/subscribers")
+async def list_subscribers(request: Request):
+    try:
+        params = request.query_params
+        page = int(params.get("page", 1))
+        limit = min(int(params.get("limit", 30)), 100)
+        search = params.get("search", "")
+        interest = params.get("interest", "")
+        sort = params.get("sort", "recent")
+        offset = (page - 1) * limit
+
+        where_clauses = []
+        where_params = []
+
+        if search:
+            where_clauses.append(
+                "(first_name ILIKE %s OR last_name ILIKE %s OR ig_username ILIKE %s OR email ILIKE %s)"
+            )
+            s = f"%{search}%"
+            where_params.extend([s, s, s, s])
+
+        if interest:
+            where_clauses.append("audience_segment = %s")
+            where_params.append(interest)
+
+        where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+        order_map = {
+            "recent": "updated_at DESC",
+            "heat_score": "updated_at DESC",
+            "triggers": "updated_at DESC",
+            "subscribed": "created_at DESC",
+        }
+        order = order_map.get(sort, "updated_at DESC")
+
+        count_rows = query(f"SELECT COUNT(*) as cnt FROM manychat_leads_clean{where_sql}", where_params)
+        total = count_rows[0]["cnt"] if count_rows else 0
+
+        rows = query(
+            f"""SELECT contact_id as mc_id, first_name, last_name,
+                       CONCAT(first_name, ' ', last_name) as full_name,
+                       ig_username, email, grief_type, audience_segment as interest_level,
+                       0 as heat_score, 0 as trigger_count, 0 as conversation_count,
+                       updated_at as last_interaction, created_at as subscribed_at
+                FROM manychat_leads_clean{where_sql}
+                ORDER BY {order} LIMIT %s OFFSET %s""",
+            where_params + [limit, offset]
+        )
+        pages = max(1, -(-total // limit))
+        return {"subscribers": rows, "total": total, "page": page, "pages": pages}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/api/manychat/subscribers/stats")
+async def subscriber_stats():
+    try:
+        count_rows = query("SELECT COUNT(*) as total FROM manychat_leads_clean")
+        total = count_rows[0]["total"] if count_rows else 0
+
+        segment_rows = query(
+            """SELECT COALESCE(audience_segment, 'new') as segment, COUNT(*) as cnt
+               FROM manychat_leads_clean GROUP BY audience_segment"""
+        )
+        by_interest = {}
+        for r in segment_rows:
+            seg = r["segment"] or "new"
+            by_interest[seg] = r["cnt"]
+
+        return {"total": total, "by_interest": by_interest}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/api/manychat/subscribers/{mc_id}")
+async def get_subscriber(mc_id: str):
+    try:
+        rows = query(
+            """SELECT contact_id as mc_id, first_name, last_name,
+                      CONCAT(first_name, ' ', last_name) as full_name,
+                      ig_username, email, grief_type,
+                      audience_segment as interest_level,
+                      0 as heat_score, 0 as trigger_count, 0 as conversation_count,
+                      updated_at as last_interaction, created_at as subscribed_at,
+                      '[]'::text as tags
+               FROM manychat_leads_clean WHERE contact_id = %s LIMIT 1""",
+            (mc_id,)
+        )
+        if not rows:
+            return JSONResponse({"error": "Not found"}, status_code=404)
+        return {"subscriber": rows[0]}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── SUBSCRIBER LOOKUP ─────────────────
+
+@router.post("/api/manychat/lookup")
+async def lookup_subscriber(request: Request):
+    try:
+        body = await request.json()
+        contact_id = (body.get("contact_id") or "").strip()
+        email = (body.get("email") or "").strip()
+        phone = (body.get("phone") or "").strip()
+
+        if contact_id:
+            rows = query(
+                "SELECT * FROM manychat_leads_clean WHERE contact_id = %s LIMIT 1",
+                (contact_id,)
+            )
+        elif email:
+            rows = query(
+                "SELECT * FROM manychat_leads_clean WHERE email ILIKE %s LIMIT 1",
+                (email,)
+            )
+        else:
+            return JSONResponse({"error": "Provide contact_id or email"}, status_code=400)
+
+        if rows:
+            return {"success": True, "subscriber": rows[0], "source": "database"}
+        return {"success": True, "subscriber": None, "message": "Not found in local database"}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
