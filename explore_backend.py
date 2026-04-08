@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 import httpx
 import os
 import json
+import re
 import psycopg2
 import psycopg2.extras
 from datetime import datetime, timedelta
@@ -35,7 +36,7 @@ DEFAULT_HASHTAGS = [
     "attachmenttheory",
     "healingtrauma",
     "innerchildhealing",
-    "nervousystemregulation",
+    "nervoussystemregulation",
     "personalgrowth",
     "selfawareness",
     "psychologyfacts",
@@ -121,6 +122,24 @@ except Exception as e:
     print(f"Explore schema setup: {e}")
 
 
+# ── Language filter ───────────────────────────────────────────
+def is_english(text):
+    """Quick check: is the caption primarily English/Latin text?
+    Strips hashtags and mentions, then checks that most characters are Latin-script."""
+    if not text:
+        return False
+    # Remove hashtags, mentions, URLs, and emoji
+    cleaned = re.sub(r'[#@]\S+', '', text)
+    cleaned = re.sub(r'https?://\S+', '', cleaned)
+    # Count Latin-script letters vs non-Latin letters
+    latin = sum(1 for c in cleaned if c.isalpha() and ord(c) < 0x0250)
+    non_latin = sum(1 for c in cleaned if c.isalpha() and ord(c) >= 0x0250)
+    total_alpha = latin + non_latin
+    if total_alpha < 10:
+        return False  # Too short to tell — skip
+    return latin / total_alpha >= 0.8
+
+
 # ── Token helper (reuse existing TokenManager) ────────────────
 async def get_ig_credentials():
     """Get the IG account ID and token from the existing TokenManager."""
@@ -192,6 +211,10 @@ async def refresh_explore(req: Request):
                 media = await get_top_media(h_id, token, ig_id, limit=30)
 
                 for post in media:
+                    # Skip non-English posts
+                    if not is_english(post.get("caption", "")):
+                        continue
+
                     media_type = post.get("media_type", "")
 
                     # Get slide URLs for carousels
