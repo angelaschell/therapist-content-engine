@@ -565,3 +565,85 @@ async def delete_template(template_id: str):
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+# ───────────────── SEED: Grief Trauma & Your Mama ─────────────────
+_CHAIN_DECO = """<path d='M-50,200 C100,100 200,300 350,180 S600,50 750,200 S950,350 1130,250' fill='none' stroke='#A8C4E8' stroke-width='28' opacity='0.4' stroke-linecap='round'/>
+<path d='M-30,280 C120,180 250,380 400,260 S650,120 800,280 S1000,400 1130,320' fill='none' stroke='#A8C4E8' stroke-width='22' opacity='0.3' stroke-linecap='round'/>
+<path d='M200,1050 C350,950 500,1150 650,1030 S900,880 1100,1050' fill='none' stroke='#E8C97A' stroke-width='26' opacity='0.35' stroke-linecap='round'/>
+<path d='M-60,1100 C100,1000 250,1200 400,1080 S650,920 850,1100 S1050,1250 1150,1150' fill='none' stroke='#E8C97A' stroke-width='20' opacity='0.3' stroke-linecap='round'/>
+<path d='M-40,950 C80,850 180,1050 320,930 S520,780 700,950' fill='none' stroke='#D4B8D4' stroke-width='22' opacity='0.3' stroke-linecap='round'/>
+<path d='M700,150 C850,80 950,250 1080,150' fill='none' stroke='#E8C97A' stroke-width='24' opacity='0.35' stroke-linecap='round'/>
+<path d='M750,100 C900,30 1000,200 1130,100' fill='none' stroke='#E8C97A' stroke-width='18' opacity='0.25' stroke-linecap='round'/>"""
+
+_GTYM_SVG_HOOK = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
+<rect width='1080' height='1350' fill='#F8F4EE'/>
+{_CHAIN_DECO}
+<foreignObject x='80' y='300' width='920' height='500' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:#8BADE0; font-family:Fredoka One,Jost,sans-serif; font-size:72px; font-weight:700; text-align:center; line-height:1.15; text-transform:uppercase; letter-spacing:2px;'></div>
+</foreignObject>
+<foreignObject x='120' y='780' width='840' height='80' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-sub' style='color:#B0C0D8; font-family:Jost,sans-serif; font-size:24px; font-weight:400; text-align:center; letter-spacing:4px; text-transform:uppercase;'></div>
+</foreignObject>
+<text x='540' y='1220' text-anchor='middle' fill='#B0C0D8' font-family='Jost,sans-serif' font-size='22' font-weight='400' letter-spacing='3' opacity='0.6'>ANGELA SCHELLENBERG</text>
+<text x='540' y='1256' text-anchor='middle' fill='#B0C0D8' font-family='Jost,sans-serif' font-size='18' font-weight='400' letter-spacing='3' opacity='0.5'>ATTACHMENT-INFORMED GRIEF EDUCATOR</text>
+</svg>"""
+
+_GTYM_SVG_BODY = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
+<rect width='1080' height='1350' fill='#F8F4EE'/>
+{_CHAIN_DECO}
+<foreignObject x='100' y='280' width='880' height='790' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:#7A96C0; font-family:Cormorant Garamond,serif; font-size:44px; font-weight:400; text-align:center; line-height:1.55;'></div>
+</foreignObject>
+</svg>"""
+
+_GTYM_SVG_CLOSE = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
+<rect width='1080' height='1350' fill='#F8F4EE'/>
+{_CHAIN_DECO}
+<foreignObject x='100' y='350' width='880' height='600' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:#7A96C0; font-family:Cormorant Garamond,serif; font-size:48px; font-weight:400; font-style:italic; text-align:center; line-height:1.45;'></div>
+</foreignObject>
+<text x='540' y='1220' text-anchor='middle' fill='#B0C0D8' font-family='Jost,sans-serif' font-size='22' font-weight='400' letter-spacing='3' opacity='0.6'>ANGELA SCHELLENBERG</text>
+<text x='540' y='1256' text-anchor='middle' fill='#B0C0D8' font-family='Jost,sans-serif' font-size='18' font-weight='400' letter-spacing='3' opacity='0.5'>ATTACHMENT-INFORMED GRIEF EDUCATOR</text>
+</svg>"""
+
+def _seed_gtym_template():
+    """Seed the Grief Trauma & Your Mama template if it doesn't exist."""
+    if not DATABASE_URL:
+        return
+    try:
+        existing = db_query("SELECT id FROM carousel_templates WHERE name = %s", ("Grief Trauma & Your Mama",))
+        if existing:
+            return
+        svg_data = json.dumps({
+            "svg_hook": _GTYM_SVG_HOOK,
+            "svg_body": _GTYM_SVG_BODY,
+            "svg_close": _GTYM_SVG_CLOSE
+        })
+        template_data = {
+            "bg_color": "#F8F4EE", "text_color": "#7A96C0",
+            "hook_bg": "#F8F4EE", "hook_text": "#8BADE0",
+            "close_bg": "#F8F4EE", "close_text": "#7A96C0",
+            "title_style": "sans-bold", "body_style": "serif-regular",
+            "text_size": "large", "text_align": "center",
+            "spacing": "spacious", "watermark": True,
+            "description": "Soft cream background with flowing pastel chain decorations in blue, yellow, and pink. Playful bold sans-serif hook with serif body text in muted blue. Designed for the Grief Trauma & Your Mama brand."
+        }
+        db_execute(
+            """INSERT INTO carousel_templates (name, bg_color, text_color, hook_bg, hook_text, close_bg, close_text,
+               title_style, body_style, text_size, text_align, spacing, watermark, description, original_image_url,
+               full_analysis, svg_template) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            ("Grief Trauma & Your Mama", template_data["bg_color"], template_data["text_color"],
+             template_data["hook_bg"], template_data["hook_text"], template_data["close_bg"], template_data["close_text"],
+             template_data["title_style"], template_data["body_style"], template_data["text_size"],
+             template_data["text_align"], template_data["spacing"], template_data["watermark"],
+             template_data["description"], "", json.dumps(template_data), svg_data)
+        )
+        print("[TEMPLATES] Seeded 'Grief Trauma & Your Mama' template")
+    except Exception as e:
+        print(f"[TEMPLATES] Seed error: {e}")
+
+try:
+    _seed_gtym_template()
+except Exception:
+    pass
