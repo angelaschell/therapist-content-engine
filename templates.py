@@ -529,6 +529,14 @@ async def save_template(req: Request):
             except Exception as e:
                 print(f"Logo upload error (non-fatal): {e}")
 
+        # Ensure required fields have defaults
+        if "brand_colors" not in template_data:
+            template_data["brand_colors"] = []
+        if "text_zone" not in template_data:
+            template_data["text_zone"] = {"x": 7, "y": 25, "w": 85, "h": 50}
+        if "logo_pos" not in template_data:
+            template_data["logo_pos"] = {"x": 50, "y": 92, "size": 22}
+
         row = {
             "name": name,
             "bg_color": template_data.get("bg_color", "#F7EBE0"),
