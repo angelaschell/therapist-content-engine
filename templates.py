@@ -242,7 +242,9 @@ Since you can see multiple slides, pay close attention to:
 
 @router.post("/generate-svg")
 async def generate_svg_templates(req: Request):
-    """Generate three SVG slide templates from screenshot(s) + analysis."""
+    """Generate three SVG slide templates using the uploaded image as the background.
+    The image is stored in Supabase and embedded as an <image> element in the SVG.
+    No AI generation of decorative elements — pixel-perfect backgrounds every time."""
     try:
         data = await req.json()
         image_data = data.get("image", "")
@@ -256,40 +258,115 @@ async def generate_svg_templates(req: Request):
         if not images:
             return JSONResponse({"success": False, "error": "No image provided"}, status_code=400)
 
-        prompt = SVG_GENERATE_PROMPT.format(analysis=json.dumps(analysis, indent=2))
+        # Upload images to Supabase storage for permanent hosting
+        image_urls = []
+        for i, img in enumerate(images):
+            if SUPABASE_URL and SUPABASE_KEY:
+                try:
+                    clean_img = strip_base64_prefix(img)
+                    img_bytes = base64.b64decode(clean_img)
+                    ext = "png"
+                    if img.startswith("data:image/jpeg"):
+                        ext = "jpg"
+                    elif img.startswith("data:image/webp"):
+                        ext = "webp"
+                    filename = f"template-bgs/{uuid.uuid4().hex}.{ext}"
+                    url = sb_storage_upload("brand-assets", filename, img_bytes, f"image/{ext}")
+                    image_urls.append(url)
+                except Exception as e:
+                    print(f"[TEMPLATE] Image upload error: {e}")
+            if not image_urls or len(image_urls) <= i:
+                # Fallback: embed as base64 data URI
+                media_type = detect_media_type(img)
+                clean_img = strip_base64_prefix(img)
+                image_urls.append(f"data:{media_type};base64,{clean_img}")
 
-        if len(images) > 1:
-            prompt += f"\n\nIMPORTANT: You are looking at {len(images)} slides from the same carousel. Use slide 1 as the hook reference, the middle slides as body references, and the last slide as the close reference. Match each SVG to the actual slide type from the screenshots."
+        # Use the uploaded images as backgrounds:
+        # - 1 image: same background for all three slide types
+        # - 2 images: first for hook, second for body and close
+        # - 3+ images: first for hook, middle for body, last for close
+        hook_bg_url = image_urls[0]
+        body_bg_url = image_urls[1] if len(image_urls) > 1 else image_urls[0]
+        close_bg_url = image_urls[-1] if len(image_urls) > 2 else body_bg_url
+
+        # Extract style info from analysis
+        hook_text = analysis.get("hook_text", "#F7EBE0")
+        text_color = analysis.get("text_color", "#D2C7FF")
+        close_text = analysis.get("close_text", "#F7EBE0")
+        text_size = analysis.get("text_size", "large")
+        text_align = analysis.get("text_align", "center")
+        title_style = analysis.get("title_style", "sans-bold")
+        body_style = analysis.get("body_style", "serif-regular")
+        watermark = analysis.get("watermark", True)
+
+        # Font mapping
+        font_map = {
+            "serif-bold": ("'Cormorant Garamond',serif", "700", "normal"),
+            "serif-regular": ("'Cormorant Garamond',serif", "400", "normal"),
+            "serif-italic": ("'Cormorant Garamond',serif", "400", "italic"),
+            "sans-bold": ("'Jost',sans-serif", "700", "normal"),
+            "sans-light": ("'Jost',sans-serif", "300", "normal"),
+            "sans-regular": ("'Jost',sans-serif", "400", "normal"),
+            "sans-medium": ("'Jost',sans-serif", "500", "normal"),
+            "italic-serif": ("'Cormorant Garamond',serif", "400", "italic"),
+            "italic-sans": ("'Jost',sans-serif", "400", "italic"),
+            "uppercase-sans": ("'Jost',sans-serif", "700", "normal"),
+            "uppercase-serif": ("'Cormorant Garamond',serif", "700", "normal"),
+        }
+
+        # Use custom font if available
+        title_font_family, title_font_weight, title_font_style = font_map.get(title_style, font_map["sans-bold"])
+        body_font_family, body_font_weight, body_font_style = font_map.get(body_style, font_map["serif-regular"])
 
         if custom_fonts:
-            font_list = ", ".join([f"'{f}'" for f in custom_fonts])
-            prompt += f"\n\nADDITIONAL CUSTOM FONTS AVAILABLE (loaded via @font-face, use these if they match the screenshot better than the defaults): {font_list}"
+            title_font_family = f"'{custom_fonts[0]}',{title_font_family}"
+            body_font_family = f"'{custom_fonts[0]}',{body_font_family}"
 
-        # Build content with all images
-        messages_content = []
-        for img in images:
-            media_type = detect_media_type(img)
-            clean_image = strip_base64_prefix(img)
-            messages_content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": clean_image}})
-        messages_content.append({"type": "text", "text": prompt})
+        title_transform = "text-transform:uppercase;" if "uppercase" in title_style else ""
 
-        if not claude_client:
-            return JSONResponse({"success": False, "error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
-        response = claude_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": messages_content}]
-        )
+        # Size mapping
+        size_map = {"small": (52, 32, 36), "medium": (64, 38, 42), "large": (78, 44, 50), "xlarge": (96, 52, 58)}
+        hook_size, body_size, close_size = size_map.get(text_size, size_map["large"])
 
-        clean = response.content[0].text.strip()
-        if clean.startswith("```"):
-            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        # Watermark SVG
+        wm = ""
+        if watermark:
+            wm = f"<text x='540' y='1280' text-anchor='middle' font-family='Jost,sans-serif' font-size='22' letter-spacing='4' fill='{text_color}' opacity='0.35'>@ANGELASCHELLENBERG</text>"
 
-        return JSONResponse({"success": True, "data": json.loads(clean)})
+        # Build deterministic SVGs with image backgrounds
+        svg_hook = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
+<image href='{hook_bg_url}' x='0' y='0' width='1080' height='1350' preserveAspectRatio='xMidYMid slice'/>
+<foreignObject x='80' y='320' width='920' height='500' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:{hook_text}; font-family:{title_font_family}; font-size:{hook_size}px; font-weight:{title_font_weight}; font-style:{title_font_style}; {title_transform} text-align:{text_align}; line-height:1.2; word-wrap:break-word;'></div>
+</foreignObject>
+<foreignObject x='100' y='830' width='880' height='100' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-sub' style='color:{hook_text}; font-family:{body_font_family}; font-size:24px; font-weight:400; text-align:{text_align}; line-height:1.4; letter-spacing:3px; text-transform:uppercase; opacity:0.7;'></div>
+</foreignObject>
+{wm}
+</svg>"""
 
-    except json.JSONDecodeError:
-        raw_text = response.content[0].text if response else "No response"
-        return JSONResponse({"success": False, "error": "Could not generate SVG templates. Try again.", "raw": raw_text[:500]})
+        svg_body = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
+<image href='{body_bg_url}' x='0' y='0' width='1080' height='1350' preserveAspectRatio='xMidYMid slice'/>
+<foreignObject x='100' y='300' width='880' height='750' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:{text_color}; font-family:{body_font_family}; font-size:{body_size}px; font-weight:{body_font_weight}; font-style:{body_font_style}; text-align:{text_align}; line-height:1.5; word-wrap:break-word;'></div>
+</foreignObject>
+</svg>"""
+
+        svg_close = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
+<image href='{close_bg_url}' x='0' y='0' width='1080' height='1350' preserveAspectRatio='xMidYMid slice'/>
+<foreignObject x='100' y='350' width='880' height='600' class='tz'>
+  <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:{close_text}; font-family:{body_font_family}; font-size:{close_size}px; font-weight:{body_font_weight}; font-style:italic; text-align:{text_align}; line-height:1.45; word-wrap:break-word;'></div>
+</foreignObject>
+{wm}
+</svg>"""
+
+        return JSONResponse({"success": True, "data": {
+            "svg_hook": svg_hook,
+            "svg_body": svg_body,
+            "svg_close": svg_close,
+            "bg_urls": {"hook": hook_bg_url, "body": body_bg_url, "close": close_bg_url}
+        }})
+
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
