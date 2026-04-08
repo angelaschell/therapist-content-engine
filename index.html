@@ -24,7 +24,16 @@ body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:1
 .hero-status-txt{font-size:11px;color:rgba(59,33,69,.3)}
 .hero-logout{font-size:11px;color:#90A9EC;cursor:pointer;margin-left:12px;white-space:nowrap}
 .hero-logout:hover{text-decoration:underline}
-.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;overflow-x:auto;justify-content:center;gap:2px}
+.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;justify-content:center;gap:0;position:relative}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 16px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
+.nav-group-btn:hover{color:rgba(59,33,69,.6)}
+.nav-group.active>.nav-group-btn{color:#3B2145;border-bottom-color:#90A9EC}
+.nav-dropdown{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#F7EBE0;border:1px solid rgba(210,199,255,.3);border-radius:0 0 10px 10px;box-shadow:0 8px 24px rgba(59,33,69,.1);z-index:100;min-width:160px;padding:6px 0}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown .tab{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:none;color:rgba(59,33,69,.45);padding:9px 18px;font-size:11px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .15s}
+.nav-dropdown .tab:hover{background:rgba(144,169,236,.1);color:#3B2145}
+.nav-dropdown .tab.active{color:#3B2145;background:rgba(144,169,236,.08);font-weight:600}
 .tab{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
 .tab:hover{color:rgba(59,33,69,.6)}
 .tab.active{color:#3B2145;border-bottom-color:#90A9EC}
@@ -341,29 +350,55 @@ option{background:#F7EBE0}
   <div class="hero-status"><div class="hero-dot" id="dot"></div><div class="hero-status-txt" id="status-txt">Checking...</div><span class="hero-logout" onclick="logout()">Log Out</span></div>
 </div></div>
 
-<div class="tabs">
+<div class="tabs" id="mainNav">
   <button class="tab active" onclick="showTab('brief',this)">Strategy</button>
+  <div class="nav-group" data-group="create">
+    <button class="nav-group-btn">Create &#9662;</button>
+    <div class="nav-dropdown">
+      <button class="tab" onclick="showTab('content',this)">Content</button>
+      <button class="tab" onclick="showTab('builder',this)">Carousels</button>
+      <button class="tab" onclick="showTab('stories_tab',this)">Stories</button>
+      <button class="tab" onclick="showTab('reels',this)">Reels</button>
+      <button class="tab" onclick="showTab('shownotes_tab',this)">Show Notes</button>
+      <button class="tab" onclick="showTab('adstudio_tab',this)">Ad Studio</button>
+    </div>
+  </div>
+  <div class="nav-group" data-group="manage">
+    <button class="nav-group-btn">Manage &#9662;</button>
+    <div class="nav-dropdown">
+      <button class="tab" onclick="showTab('calendar',this)">Calendar</button>
+      <button class="tab" onclick="showTab('dm',this)">DMs</button>
+      <button class="tab" onclick="window.location.href='/comments'">Comments</button>
+      <button class="tab" onclick="window.location.href='/manychat'">Leads</button>
+    </div>
+  </div>
   <button class="tab" onclick="showTab('explore',this)">Explore</button>
-  <button class="tab" onclick="showTab('content',this)">Content</button>
-  <button class="tab" onclick="showTab('builder',this)">Carousels</button>
-  <button class="tab" onclick="showTab('stories_tab',this)">Stories</button>
-  <button class="tab" onclick="showTab('reels',this)">Reels</button>
-  <button class="tab" onclick="showTab('shownotes_tab',this)">Show Notes</button>
-  <button class="tab" onclick="showTab('dm',this)">DMs</button>
-  <button class="tab" onclick="showTab('calendar',this)">Calendar</button>
-  <button class="tab" onclick="showTab('recent',this)">History</button>
-  <button class="tab" onclick="showTab('testimonial_tab',this)">Testimonials</button>
-  <button class="tab" onclick="showTab('monitor',this)">Monitor</button>
-  <button class="tab" onclick="showTab('hashtag_tab',this)">Hashtags</button>
-  <button class="tab" onclick="showTab('analytics',this)">Analytics</button>
-  <button class="tab" onclick="showTab('perf_tab',this)">Performance</button>
-  <button class="tab" onclick="window.location.href='/manychat'">Leads</button>
-  <button class="tab" onclick="window.location.href='/comments'">Comments</button>
-  <button class="tab" onclick="showTab('templates',this)">Templates</button>
-  <button class="tab" onclick="showTab('vault',this)">Vault</button>
-  <button class="tab" onclick="showTab('flows',this)">Flows</button>
-  <button class="tab" onclick="showTab('webhooks_tab',this)">Webhooks</button>
-  <button class="tab" onclick="showTab('adstudio_tab',this)">Ad Studio</button>
+  <div class="nav-group" data-group="analyze">
+    <button class="nav-group-btn">Analyze &#9662;</button>
+    <div class="nav-dropdown">
+      <button class="tab" onclick="showTab('analytics',this)">Analytics</button>
+      <button class="tab" onclick="showTab('perf_tab',this)">Performance</button>
+      <button class="tab" onclick="showTab('monitor',this)">Monitor</button>
+      <button class="tab" onclick="showTab('hashtag_tab',this)">Hashtags</button>
+    </div>
+  </div>
+  <div class="nav-group" data-group="library">
+    <button class="nav-group-btn">Library &#9662;</button>
+    <div class="nav-dropdown">
+      <button class="tab" onclick="showTab('templates',this)">Templates</button>
+      <button class="tab" onclick="showTab('vault',this)">Vault</button>
+      <button class="tab" onclick="showTab('recent',this)">History</button>
+      <button class="tab" onclick="showTab('testimonial_tab',this)">Testimonials</button>
+    </div>
+  </div>
+  <div class="nav-group" data-group="settings">
+    <button class="nav-group-btn">Settings &#9662;</button>
+    <div class="nav-dropdown">
+      <button class="tab" onclick="showTab('webhooks_tab',this)">Webhooks</button>
+      <button class="tab" onclick="showTab('flows',this)">Flows</button>
+      <button class="tab" onclick="showTab('triggers',this)">ManyChat Triggers</button>
+    </div>
+  </div>
 </div>
 <div class="main">
 
@@ -1711,7 +1746,7 @@ var savedPhoto=localStorage.getItem("ce-profile-photo");
 if(savedPhoto)document.addEventListener("DOMContentLoaded",function(){document.getElementById("heroPhoto").src=savedPhoto});
 function changePhoto(e){var f=e.target.files[0];if(!f||!f.type.startsWith("image/"))return;var r=new FileReader();r.onload=function(ev){document.getElementById("heroPhoto").src=ev.target.result;try{localStorage.setItem("ce-profile-photo",ev.target.result)}catch(e){}};r.readAsDataURL(f)}
 fetch(BACKEND+"/health").then(function(r){if(r.ok){document.getElementById("dot").style.background="#6fcf97";document.getElementById("status-txt").textContent="Live"}else throw 0}).catch(function(){document.getElementById("dot").style.background="#e87070";document.getElementById("status-txt").textContent="Offline"});
-function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.getElementById(id).style.display="block";if(el)el.classList.add("active");if(id==="recent")renderRecentList();if(id==="calendar")loadCalendar();if(id==="monitor")loadMonitor();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
+function showTab(id,el){document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none"});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active")});document.querySelectorAll(".nav-group").forEach(function(g){g.classList.remove("active")});document.getElementById(id).style.display="block";if(el){el.classList.add("active");var group=el.closest(".nav-group");if(group)group.classList.add("active")}if(id==="recent")renderRecentList();if(id==="calendar")loadCalendar();if(id==="monitor")loadMonitor();if(id==="templates"){loadTemplateLibrary();loadCustomFonts()}if(id==="triggers")mcLoadTriggers();if(id==="reels"){loadReelProjects();loadReelFonts();loadReelBrandColors()}if(id==="explore")loadExploreFeed()}
 function callBackend(ep,body){return fetch(BACKEND+"/generate/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
 function genContent(){var t=document.getElementById("topic").value.trim();if(!t)return;var b=document.getElementById("gen-btn");b.textContent="Generating...";b.disabled=true;callBackend("content",{content_type:document.getElementById("ctype").value,pillar:document.getElementById("pillar").value,topic:t,tone:document.getElementById("tone").value,cta_trigger:document.getElementById("cta").value||null}).then(function(d){document.getElementById("content-out").textContent=d.content||"Error.";document.getElementById("content-out-wrap").style.display="block";document.getElementById("copy-content").style.display="inline-block";document.getElementById("clear-btn").style.display="inline-block"}).catch(function(){document.getElementById("content-out").textContent="Error.";document.getElementById("content-out-wrap").style.display="block"}).finally(function(){b.textContent="Generate Content";b.disabled=false})}
 function clearContent(){document.getElementById("topic").value="";document.getElementById("content-out-wrap").style.display="none";document.getElementById("copy-content").style.display="none";document.getElementById("clear-btn").style.display="none"}
