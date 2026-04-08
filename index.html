@@ -2100,7 +2100,7 @@ function loadCustomTemplateDropdown(){fetch(BACKEND+"/api/templates/").then(func
 
 var activeCustomTemplate=null;
 var activeCustomSvgs=null;
-function applyCustomTemplate(){var sel=document.getElementById("b-custom-template");var id=sel.value;if(!id){activeCustomTemplate=null;activeCustomSvgs=null;return}
+function applyCustomTemplate(){var sel=document.getElementById("b-custom-template");var id=sel.value;activeCustomSvgs=null;if(!id){activeCustomTemplate=null;return}
 // Fetch full template with SVG data
 fetch(BACKEND+"/api/templates/"+id).then(function(r){return r.json()}).then(function(d){if(d.success&&d.template){activeCustomTemplate=d.template;if(d.template.svg_template){try{activeCustomSvgs=JSON.parse(d.template.svg_template)}catch(e){activeCustomSvgs=null}}else{activeCustomSvgs=null}
 // Apply unified preset data if available
