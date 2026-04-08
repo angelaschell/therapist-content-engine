@@ -487,6 +487,7 @@ async def save_template(req: Request):
         template_data = data.get("template", {})
         svg_data = data.get("svg_data", {})
         original_image = data.get("original_image", "")
+        logo_image = data.get("logo_image", "")
 
         image_url = ""
         if original_image and SUPABASE_URL:
@@ -499,6 +500,18 @@ async def save_template(req: Request):
                 image_url = sb_storage_upload("brand-assets", filename, img_bytes, "image/png")
             except Exception as e:
                 print(f"Image upload error (non-fatal): {e}")
+
+        logo_url = template_data.get("logo_url", "")
+        if logo_image and SUPABASE_URL:
+            try:
+                if "," in logo_image:
+                    logo_bytes = base64.b64decode(logo_image.split(",", 1)[1])
+                else:
+                    logo_bytes = base64.b64decode(logo_image)
+                logo_filename = f"template-logos/{uuid.uuid4().hex}.png"
+                logo_url = sb_storage_upload("brand-assets", logo_filename, logo_bytes, "image/png")
+            except Exception as e:
+                print(f"Logo upload error (non-fatal): {e}")
 
         row = {
             "name": name,
@@ -516,18 +529,24 @@ async def save_template(req: Request):
             "watermark": bool(template_data.get("watermark", True)) if not isinstance(template_data.get("watermark"), bool) else template_data.get("watermark", True),
             "description": template_data.get("description", ""),
             "original_image_url": image_url,
-            "full_analysis": json.dumps(template_data),
+            "full_analysis": json.dumps({**template_data, "logo_url": logo_url}),
             "svg_template": json.dumps(svg_data) if svg_data else None,
         }
+
+        # Add logo_url column if it doesn't exist
+        try:
+            db_execute("ALTER TABLE carousel_templates ADD COLUMN IF NOT EXISTS logo_url TEXT DEFAULT ''")
+        except Exception:
+            pass
 
         result = db_execute(
             """INSERT INTO carousel_templates (name, bg_color, text_color, hook_bg, hook_text, close_bg, close_text,
                title_style, body_style, text_size, text_align, spacing, watermark, description, original_image_url,
-               full_analysis, svg_template) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+               full_analysis, svg_template, logo_url) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
             (row["name"], row["bg_color"], row["text_color"], row["hook_bg"], row["hook_text"],
              row["close_bg"], row["close_text"], row["title_style"], row["body_style"], row["text_size"],
              row["text_align"], row["spacing"], row["watermark"], row["description"], row["original_image_url"],
-             row["full_analysis"], row["svg_template"])
+             row["full_analysis"], row["svg_template"], logo_url)
         )
 
         if result and len(result) > 0:
@@ -542,7 +561,7 @@ async def save_template(req: Request):
 async def list_templates():
     """List all saved templates."""
     try:
-        result = db_query("SELECT id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,created_at FROM carousel_templates ORDER BY created_at DESC")
+        result = db_query("SELECT id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,logo_url,created_at FROM carousel_templates ORDER BY created_at DESC")
         templates = []
         for t in (result or []):
             has_svg = bool(t.get("svg_template"))
@@ -723,6 +742,12 @@ def _seed_gtym_template():
         print("[TEMPLATES] Seeded 'Grief Trauma & Your Mama' template")
     except Exception as e:
         print(f"[TEMPLATES] Seed error: {e}")
+
+try:
+    if DATABASE_URL:
+        db_execute("ALTER TABLE carousel_templates ADD COLUMN IF NOT EXISTS logo_url TEXT DEFAULT ''")
+except Exception:
+    pass
 
 try:
     _seed_gtym_template()
