@@ -1848,7 +1848,10 @@ function renderSlides(){goStep(4);var tpl=currentTemplate||document.getElementBy
 if(activeCustomSvgs&&activeCustomSvgs.svg_hook){renderSvgSlides(tpl);saveCarousel();return}
 // DEFAULT HTML RENDERING
 var brandColors=["#3B2145","#90A9EC","#D2C7FF","#FFC696","#F7EBE0","#D3E0F1"];var h='<div class="cr-scroll" id="slideScroll">';carouselSlides.forEach(function(s,i){h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+' <span style="font-size:8px;color:#90A9EC;cursor:pointer" onclick="toggleColorEditor('+i+')">(edit style)</span></div>';var slideClass="body-s";if(s.type==="hook")slideClass="hook-s";else if(s.type==="cta")slideClass="cta-s";else if(s.type==="close")slideClass="close-s";h+='<div class="slide '+slideClass+" tpl-"+tpl+'" id="slide-'+i+'" onclick="toggleColorEditor('+i+')">';if(s.type==="hook")h+='<div class="sl-text" contenteditable="true"><div class="sl-upper">'+s.upper+'</div><div class="sl-italic">'+s.italic+'</div></div>';else if(s.type==="cta")h+='<div class="sl-text" contenteditable="true"><div class="sl-cta-top">'+s.top+'</div><div class="sl-cta-bot">'+s.bottom+'</div></div>';else if(s.type==="close")h+='<div class="sl-text" contenteditable="true">'+s.text+'</div>';else h+='<div class="sl-text" contenteditable="true">'+s.html+'</div>';var _wmLogo=(activeCustomTemplate&&activeCustomTemplate.logo_url)||(activeCustomTemplate&&activeCustomTemplate.full_analysis&&(function(){try{var fa=typeof activeCustomTemplate.full_analysis==="string"?JSON.parse(activeCustomTemplate.full_analysis):activeCustomTemplate.full_analysis;return fa.logo_url||""}catch(e){return""}})())||"";
-if(_wmLogo){h+='<div class="sl-wm" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%)"><img src="'+_wmLogo+'" style="height:28px;opacity:0.5" crossorigin="anonymous"></div>'}else{h+='<div class="sl-wm">@angelaschellenberg</div>'}
+var _wmLogoPos=null;if(activeCustomTemplate){try{var _fa=typeof activeCustomTemplate.full_analysis==="string"?JSON.parse(activeCustomTemplate.full_analysis):activeCustomTemplate.full_analysis;if(_fa&&_fa.logo_pos)_wmLogoPos=_fa.logo_pos}catch(e){}}
+if(_wmLogo&&_wmLogoPos){h+='<div class="sl-wm" style="position:absolute;left:'+_wmLogoPos.x+'%;top:'+_wmLogoPos.y+'%;transform:translate(-50%,-50%)"><img src="'+_wmLogo+'" style="height:'+(_wmLogoPos.size||22)+'px;opacity:0.5" crossorigin="anonymous"></div>'}
+else if(_wmLogo){h+='<div class="sl-wm" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%)"><img src="'+_wmLogo+'" style="height:28px;opacity:0.5" crossorigin="anonymous"></div>'}
+else{h+='<div class="sl-wm">@angelaschellenberg</div>'}
 h+='</div>';h+='<div class="sl-color-editor" id="ce-'+i+'">';h+='<div class="sl-color-row"><span class="sl-color-label">BG</span>';brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="bg" data-color="'+c+'"></div>'});h+='</div><div class="sl-color-row"><span class="sl-color-label">TEXT</span>';brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="text" data-color="'+c+'"></div>'});h+='</div><div class="sl-color-row" style="flex-wrap:wrap"><span class="sl-color-label" style="min-width:28px">FONT</span>';var allFonts=[{n:"Playfair",f:"Playfair Display,serif"},{n:"Cormorant",f:"Cormorant Garamond,serif"},{n:"Jost",f:"Jost,sans-serif"}];customFonts.forEach(function(cf){allFonts.push({n:cf.name,f:cf.font_family+",serif"})});allFonts.forEach(function(fnt){h+='<span class="sl-font-pill" style="font-family:'+fnt.f+'" onclick="setSlideFont('+i+',\''+fnt.f.replace(/'/g,"\\'")+'\',this)">'+fnt.n+'</span>'});h+='</div></div>';h+='<button class="ghost" style="margin-top:6px;font-size:11px" onclick="downloadSlide('+i+')">Download</button></div>'});h+="</div>";document.getElementById("renderedSlides").innerHTML=h;document.querySelectorAll(".sl-swatch").forEach(function(sw){sw.addEventListener("click",function(e){e.stopPropagation();var idx=parseInt(this.dataset.slide);var type=this.dataset.type;var color=this.dataset.color;setSlideColor(idx,type,color)})});if(activeCustomTemplate){applyCustomTemplateColors()}autoSizeSlideText();saveCarousel()}
 function autoSizeSlideText(){document.querySelectorAll('.slide').forEach(function(slide){var textEl=slide.querySelector('.sl-text');if(!textEl)return;var slideH=slide.offsetHeight;var maxH=slideH-66;var allText=textEl.querySelectorAll('.sl-upper,.sl-italic,.sl-cta-top,.sl-cta-bot');if(allText.length===0)allText=[textEl];allText.forEach(function(t){t.style.fontSize='';t.style.lineHeight=''});if(textEl.scrollHeight<=maxH)return;var scaleTries=0;while(textEl.scrollHeight>maxH&&scaleTries<20){scaleTries++;allText.forEach(function(t){var cs=window.getComputedStyle(t);var cur=parseFloat(cs.fontSize);var newSize=Math.max(cur*0.88,9);t.style.fontSize=newSize+'px';var curLh=parseFloat(cs.lineHeight);if(!isNaN(curLh)){t.style.lineHeight=Math.max(curLh*0.9,1.0)+''}});if(parseFloat(window.getComputedStyle(allText[0]).fontSize)<=9)break}})}
 
@@ -1891,7 +1894,9 @@ if(hasImageBg){
     else if(s.type==="close"){h+='<div class="sl-text" contenteditable="true" style="color:'+closeTextColor+';font-style:italic">'+s.text+'</div>'}
     else{h+='<div class="sl-text" contenteditable="true" style="color:'+txtColor+'">'+s.html+'</div>'}
     var logoUrl=(t.logo_url||"");if(!logoUrl){try{var fa=typeof t.full_analysis==="string"?JSON.parse(t.full_analysis):t.full_analysis;if(fa&&fa.logo_url)logoUrl=fa.logo_url}catch(e){}}
-    if(logoUrl){h+='<div class="sl-wm" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%)"><img src="'+logoUrl+'" style="height:28px;opacity:0.5" crossorigin="anonymous"></div>'}
+    var lpos=null;try{var faa=typeof t.full_analysis==="string"?JSON.parse(t.full_analysis):t.full_analysis;if(faa&&faa.logo_pos)lpos=faa.logo_pos}catch(e){}
+    if(logoUrl&&lpos){h+='<div class="sl-wm" style="position:absolute;left:'+lpos.x+'%;top:'+lpos.y+'%;transform:translate(-50%,-50%)"><img src="'+logoUrl+'" style="height:'+(lpos.size||22)+'px;opacity:0.5" crossorigin="anonymous"></div>'}
+    else if(logoUrl){h+='<div class="sl-wm" style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%)"><img src="'+logoUrl+'" style="height:28px;opacity:0.5" crossorigin="anonymous"></div>'}
     else{h+='<div class="sl-wm" style="color:'+txtColor+';opacity:0.35">@angelaschellenberg</div>'}
     h+='</div>';
     // Color/font editor
@@ -2235,19 +2240,28 @@ h+='</div>';
 h+='</div>';
 h+='</div>';
 h+='<div style="margin-top:12px"><div class="tpl-feedback-row"><textarea id="tplFeedback" placeholder="e.g. Make the hook slide darker, change body text to lavender"></textarea><button class="btn" onclick="regenTpl()">Regen Analysis</button></div></div>';
-// Logo upload
+// Logo upload + position editor
+var lp=data.logo_pos||{x:50,y:92,size:22};
 h+='<div style="margin-top:14px;padding:14px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.2);border-radius:10px">';
 h+='<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Slide Logo (optional)</div>';
-h+='<div style="font-size:11px;color:rgba(59,33,69,.35);margin-bottom:8px">Upload a logo image to show at the bottom of every slide.</div>';
-h+='<div style="display:flex;gap:8px;align-items:center">';
+h+='<div style="font-size:11px;color:rgba(59,33,69,.35);margin-bottom:8px">Upload a logo, then drag it to position on the slide. Use the slider to resize.</div>';
+h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">';
 h+='<input type="file" id="tpl-logo-input" accept="image/*" style="font-size:11px" onchange="handleTplLogo(this.files)">';
-if(data.logo_url||tplLogoData)h+='<img src="'+(tplLogoData||data.logo_url)+'" style="height:30px;opacity:.6">';
 h+='</div>';
+if(tplLogoData||data.logo_url){
+  var lSrc=tplLogoData||data.logo_url;
+  h+='<div id="logoEditor" style="position:relative;width:180px;height:225px;border-radius:8px;overflow:hidden;border:1px solid rgba(210,199,255,.3);margin-bottom:10px;'+(bgImg?'background-image:url('+bgImg+');background-size:cover;background-position:center':'background:'+(data.bg_color||'#F7EBE0'))+'">';
+  h+='<img id="logoHandle" src="'+lSrc+'" style="position:absolute;left:'+lp.x+'%;top:'+lp.y+'%;transform:translate(-50%,-50%);height:'+lp.size+'px;opacity:0.6;cursor:move;user-select:none" draggable="false">';
+  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:10px;color:rgba(59,33,69,.35)">Size</span>';
+  h+='<input type="range" min="12" max="60" value="'+lp.size+'" style="flex:1" oninput="updateLogoSize(this.value)">';
+  h+='<span id="logoSizeVal" style="font-size:10px;color:rgba(59,33,69,.35);min-width:24px">'+lp.size+'px</span></div>';
+}
 h+='</div>';
 h+='<div class="btns" style="margin-top:12px"><button class="btn" style="background:#6fcf97;color:#3B2145" onclick="saveTpl()" id="saveTplBtn">Save Template</button><button class="ghost" onclick="resetTpl()">Start Over</button></div>';
 document.getElementById("tplResult").innerHTML=h;document.getElementById("tplResult").style.display="block";
-// Init text zone drag/resize
-initTzEditor()}
+// Init text zone drag/resize + logo drag
+initTzEditor();initLogoDrag()}
 
 function regenTpl(){var fb=document.getElementById("tplFeedback").value.trim();if(!fb){alert("Type what you want changed.");return}document.getElementById("tplResult").style.display="none";document.getElementById("tplLoader").style.display="block";document.getElementById("tplLoader").querySelector("p").textContent="Applying your feedback...";fetch(BACKEND+"/api/templates/regenerate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({previous:tplCurrentAnalysis,feedback:fb,image:tplImageData,images:tplImages.map(function(img){return img.data})})}).then(function(r){return r.json()}).then(function(d){document.getElementById("tplLoader").style.display="none";if(d.success&&d.data&&!d.data.error){tplCurrentAnalysis=d.data;tplCurrentSvgs=null;renderTplResult(d.data)}else{document.getElementById("tplResult").style.display="block";alert("Could not regenerate. Try different feedback.")}}).catch(function(e){document.getElementById("tplLoader").style.display="none";document.getElementById("tplResult").style.display="block";alert("Error: "+e.message)})}
 
@@ -2262,7 +2276,44 @@ function regenSvg(){var fb=document.getElementById("svgFeedback").value.trim();i
 function saveTpl(){if(!tplCurrentAnalysis)return;var name=prompt("Name this template:",tplCurrentAnalysis.suggested_name||"Custom Template");if(!name)return;var saveBtn=document.getElementById("saveTplBtn");if(saveBtn){saveBtn.textContent="Saving...";saveBtn.disabled=true}fetch(BACKEND+"/api/templates/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,template:tplCurrentAnalysis,svg_data:tplCurrentSvgs||{},original_image:tplImageData,logo_image:tplLogoData})}).then(function(r){return r.json()}).then(function(d){if(d.success){loadTemplateLibrary();loadCustomTemplateDropdown();var bubble='<div class="tpl-bubble system"><div class="tpl-bubble-label">Saved</div>"'+name+'" is now in your library. You can select it in the Carousel Builder under Custom Template.</div>';document.getElementById("tplResult").insertAdjacentHTML("beforeend",bubble);if(saveBtn){saveBtn.textContent="Saved!";saveBtn.disabled=true}}else{alert("Save failed: "+(d.error||"Unknown error"));if(saveBtn){saveBtn.textContent="Save Template";saveBtn.disabled=false}}}).catch(function(e){alert("Error: "+e.message);if(saveBtn){saveBtn.textContent="Save Template";saveBtn.disabled=false}})}
 
 function resetTpl(){tplImageData="";tplImages=[];tplCurrentAnalysis=null;tplCurrentSvgs=null;tplLogoData="";document.getElementById("tplPreviewImg").style.display="none";document.getElementById("tplPreviewImg").src="";document.getElementById("tplPreviewGrid").innerHTML="";document.getElementById("tplUploadZone").querySelector("div").textContent="Drop carousel screenshots here";document.getElementById("tplNotes").style.display="none";document.getElementById("tplNotesInput").value="";document.getElementById("tplAnalyzeBtn").style.display="none";document.getElementById("tplResult").style.display="none";document.getElementById("tplResult").innerHTML="";document.getElementById("tplLoader").style.display="none";document.getElementById("tpl-file-input").value=""}
-function handleTplLogo(files){if(!files||!files.length)return;var r=new FileReader();r.onload=function(e){tplLogoData=e.target.result;if(tplCurrentAnalysis)renderTplResult(tplCurrentAnalysis)};r.readAsDataURL(files[0])}
+function handleTplLogo(files){if(!files||!files.length)return;var r=new FileReader();r.onload=function(e){tplLogoData=e.target.result;if(tplCurrentAnalysis){if(!tplCurrentAnalysis.logo_pos)tplCurrentAnalysis.logo_pos={x:50,y:92,size:22};renderTplResult(tplCurrentAnalysis)}};r.readAsDataURL(files[0])}
+function updateLogoSize(val){
+  var img=document.getElementById("logoHandle");
+  if(img)img.style.height=val+"px";
+  var label=document.getElementById("logoSizeVal");
+  if(label)label.textContent=val+"px";
+  if(tplCurrentAnalysis){if(!tplCurrentAnalysis.logo_pos)tplCurrentAnalysis.logo_pos={x:50,y:92,size:22};tplCurrentAnalysis.logo_pos.size=parseInt(val)}
+}
+function initLogoDrag(){
+  var editor=document.getElementById("logoEditor");
+  var logo=document.getElementById("logoHandle");
+  if(!editor||!logo)return;
+  var dragging=false,dx=0,dy=0;
+  logo.addEventListener("mousedown",function(e){dragging=true;dx=e.offsetX;dy=e.offsetY;e.preventDefault()});
+  logo.addEventListener("touchstart",function(e){dragging=true;var t=e.touches[0];var rect=logo.getBoundingClientRect();dx=t.clientX-rect.left;dy=t.clientY-rect.top;e.preventDefault()});
+  document.addEventListener("mousemove",function(e){
+    if(!dragging)return;
+    var rect=editor.getBoundingClientRect();
+    var nx=Math.max(0,Math.min(e.clientX-rect.left,rect.width));
+    var ny=Math.max(0,Math.min(e.clientY-rect.top,rect.height));
+    var px=Math.round(nx/rect.width*100);
+    var py=Math.round(ny/rect.height*100);
+    logo.style.left=px+"%";logo.style.top=py+"%";
+    if(tplCurrentAnalysis){if(!tplCurrentAnalysis.logo_pos)tplCurrentAnalysis.logo_pos={x:50,y:92,size:22};tplCurrentAnalysis.logo_pos.x=px;tplCurrentAnalysis.logo_pos.y=py}
+  });
+  document.addEventListener("touchmove",function(e){
+    if(!dragging)return;
+    var t=e.touches[0];var rect=editor.getBoundingClientRect();
+    var nx=Math.max(0,Math.min(t.clientX-rect.left,rect.width));
+    var ny=Math.max(0,Math.min(t.clientY-rect.top,rect.height));
+    var px=Math.round(nx/rect.width*100);
+    var py=Math.round(ny/rect.height*100);
+    logo.style.left=px+"%";logo.style.top=py+"%";
+    if(tplCurrentAnalysis){if(!tplCurrentAnalysis.logo_pos)tplCurrentAnalysis.logo_pos={x:50,y:92,size:22};tplCurrentAnalysis.logo_pos.x=px;tplCurrentAnalysis.logo_pos.y=py}
+  });
+  document.addEventListener("mouseup",function(){dragging=false});
+  document.addEventListener("touchend",function(){dragging=false});
+}
 
 function updateTplColor(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;var hexEl=document.getElementById("cpick-"+key);if(hexEl)hexEl.textContent=value;renderTplResult(tplCurrentAnalysis)}
 function updateTplFont(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;renderTplResult(tplCurrentAnalysis)}
