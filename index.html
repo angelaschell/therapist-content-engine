@@ -1740,13 +1740,16 @@ function loadSpinoffUrl(){
   var status=document.getElementById("spinoffStatus");
   var btn=document.querySelector('[onclick="loadSpinoffUrl()"]');
   status.style.display="block";
-  status.textContent="Loading post + reading slide text... (may take up to 60 seconds)";
+  status.textContent="Waking up server...";
   status.style.color="#90A9EC";
   if(btn){btn.disabled=true;btn.textContent="Loading..."}
 
-  fetch(BACKEND+"/api/load-instagram-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url,extract_slide_text:true})})
+  fetch(BACKEND+"/health",{signal:AbortSignal.timeout(30000)}).catch(function(){return null}).then(function(){
+    status.textContent="Loading post + reading slide text... (may take up to 60 seconds)";
+    return fetch(BACKEND+"/api/load-instagram-post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url,extract_slide_text:true}),signal:AbortSignal.timeout(120000)});
+  })
   .then(function(r){
-    if(!r.ok) return r.json().then(function(err){throw new Error(err.detail||"Could not extract caption")});
+    if(!r.ok) return r.text().then(function(body){try{var err=JSON.parse(body);throw new Error(err.detail||"Could not extract caption")}catch(pe){if(pe.message&&pe.message!=="Could not extract caption"&&!pe.message.includes("caption"))throw new Error("Server error ("+r.status+"). The post may be private or the server is busy.");throw pe}});
     return r.json();
   })
   .then(function(d){
@@ -1766,7 +1769,9 @@ function loadSpinoffUrl(){
     }
     if(output)document.getElementById("spinoff-text").value=output;
   }).catch(function(e){
-    status.textContent="Could not load: "+e.message+". Try pasting the text manually.";
+    var msg=e.message||"Unknown error";
+    if(msg.includes("AbortError")||msg.includes("timeout")||msg.includes("TimeoutError"))msg="Request timed out. The server may be starting up — wait 30 seconds and try again.";
+    status.textContent="Could not load: "+msg+". Try pasting the text manually.";
     status.style.color="#c45a4a";
   }).finally(function(){
     if(btn){btn.disabled=false;btn.textContent="Load Post"}
@@ -1793,7 +1798,7 @@ function addSlideAt(idx){syncSlidesFromEditors();carouselSlides.splice(idx,0,{ty
 function addSlideAtEnd(){syncSlidesFromEditors();carouselSlides.push({type:"body",html:"",text:""});buildEditors();var el=document.getElementById("se-"+(carouselSlides.length-1));if(el){el.focus();el.scrollIntoView({behavior:"smooth",block:"center"})}}
 function deleteSlide(idx){if(carouselSlides.length<=2){alert("You need at least 2 slides.");return}syncSlidesFromEditors();carouselSlides.splice(idx,1);buildEditors()}
 function syncSlidesFromEditors(){carouselSlides.forEach(function(s,i){var el=document.getElementById("se-"+i);if(!el)return;var v=el.value;if(s.type==="hook"){var l=v.split("\n");s.upper=l[0]||"";s.italic=l.slice(1).join("\n")||""}else if(s.type==="cta"){var l=v.split("\n");s.top=l[0]||"";s.bottom=l.slice(1).join("\n")||""}else if(s.type==="close"){s.text=v}else{s.html=v.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");s.text=v}})}
-function useHook(el){var text=el.textContent;var parts=text.split("/");if(parts.length>=2){document.getElementById("se-0").value=parts[0].trim()+"\n"+parts.slice(1).join("/").trim()}else{document.getElementById("se-0").value=text}el.style.background="#90A9EC";el.style.color="#fff";el.style.borderColor="#90A9EC"}
+function useHook(el){var editor=document.getElementById("se-0");if(!editor)return;var text=el.textContent;var parts=text.split("/");if(parts.length>=2){editor.value=parts[0].trim()+"\n"+parts.slice(1).join("/").trim()}else{editor.value=text}syncSlidesFromEditors();updateWordCount(0,14);document.querySelectorAll(".hook-pill").forEach(function(p){p.style.background="rgba(255,255,255,.6)";p.style.color="#3B2145";p.style.borderColor="rgba(210,199,255,.3)"});el.style.background="#90A9EC";el.style.color="#fff";el.style.borderColor="#90A9EC"}
 function renderSlides(){goStep(4);var tpl=currentTemplate||document.getElementById("b-template").value||"naming";carouselSlides.forEach(function(s,i){var v=document.getElementById("se-"+i).value;if(s.type==="hook"){var l=v.split("\n");s.upper=l[0]||"";s.italic=l.slice(1).join("\n")||""}else if(s.type==="cta"){var l=v.split("\n");s.top=l[0]||"";s.bottom=l.slice(1).join("\n")||""}else if(s.type==="close"){s.text=v}else{s.html=v.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>")}});
 // SVG TEMPLATE RENDERING
 if(activeCustomSvgs&&activeCustomSvgs.svg_hook){renderSvgSlides(tpl);saveCarousel();return}
@@ -2212,7 +2217,7 @@ function loadManyChatCTAs(){
   }).catch(function(){console.log("Could not load ManyChat triggers for CTA dropdowns")});
 }
 
-function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;viralHooks=d.hooks||[]}}).catch(function(){})}
+function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;viralHooks=d.hooks||[]}}).catch(function(e){console.log("Could not load viral feed:",e.message)})}
 
 // ── EXPLORE FEED ──────────────────────────────────────────────
 var explorePosts=[];
