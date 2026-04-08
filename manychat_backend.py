@@ -10,6 +10,7 @@ import json
 import re
 import psycopg2
 import psycopg2.extras
+import psycopg2.errors
 from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
@@ -109,11 +110,49 @@ BEGIN
     END IF;
 END $$;
 
+
+
+CREATE TABLE IF NOT EXISTS manychat_triggers (
+  id BIGSERIAL PRIMARY KEY,
+  keyword TEXT NOT NULL UNIQUE,
+  label TEXT NOT NULL DEFAULT '',
+  description TEXT DEFAULT '',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 """
+
+SEED_TRIGGERS = [
+    ("WORTHY", "Emotional Starter Kit", "my free Emotional Starter Kit"),
+    ("HEAL", "1:1 Therapy Session", "the link to book a 1:1 therapy session"),
+    ("MALIBURETREAT", "Healing with Horses Retreat", "details about the Healing with Horses Somatic Grief Retreat in Malibu"),
+    ("MALIBU RETREAT", "Healing with Horses Retreat", "details about the Healing with Horses Somatic Grief Retreat in Malibu"),
+    ("UNLEARN", "Mother Hunger Course", "info about the Mother Hunger Course"),
+    ("GRIEFRELIEF", "Grief Relief Video Series", "the Grief Relief Video Series"),
+    ("TOOLS", "101 Tools Resource", "my 101 Tools resource"),
+    ("EQUINE", "Equine Therapy Guide", "my Equine Therapy digital guide"),
+    ("MOM", "Grief, Trauma and Your Mama", "the link to join the Grief, Trauma and Your Mama community"),
+    ("EMDR", "EMDR Therapy Sessions", "info about EMDR therapy sessions"),
+    ("UNTANGLE", "1:1 Session", "the link to book a 1:1 session"),
+    ("STEADY", "1:1 Session", "the link to book a 1:1 session"),
+    ("COMMUNITYCALL", "Motherless Daughters Thursday Group", "the link to the Motherless Daughters Thursday group"),
+    ("TAPPERS", "Dharma Dr. Resource", "info about the Dharma Dr. resource"),
+    ("HORSEHEALING", "Equine Therapy Guide", "my Equine Therapy digital guide"),
+    ("GRIEFTOOLS", "Grief Relief Video Series", "the Grief Relief Video Series"),
+]
 
 try:
     if DATABASE_URL:
         execute(SCHEMA_SQL)
+        # Seed default triggers if table is empty
+        rows = query("SELECT COUNT(*) AS cnt FROM manychat_triggers")
+        if rows and rows[0]["cnt"] == 0:
+            for kw, lbl, desc in SEED_TRIGGERS:
+                execute(
+                    "INSERT INTO manychat_triggers (keyword, label, description) VALUES (%s, %s, %s) ON CONFLICT (keyword) DO NOTHING",
+                    (kw, lbl, desc)
+                )
 except Exception as e:
     print("[SCHEMA ERROR]", e)
 
@@ -128,6 +167,74 @@ def normalize_keyword(keyword):
     if not keyword:
         return ""
     return re.sub(r'\s+', '', keyword.upper())
+
+
+# ───────────────── TRIGGERS CRUD ─────────────────
+@router.get("/api/manychat/triggers")
+async def list_triggers():
+    try:
+        rows = query("SELECT * FROM manychat_triggers ORDER BY keyword")
+        return {"triggers": rows}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.post("/api/manychat/triggers")
+async def create_trigger(request: Request):
+    try:
+        body = await request.json()
+        keyword = (body.get("keyword") or "").strip().upper()
+        label = (body.get("label") or "").strip()
+        description = (body.get("description") or "").strip()
+        if not keyword or not label:
+            return JSONResponse({"error": "Keyword and label are required"}, status_code=400)
+        row = insert_returning(
+            "INSERT INTO manychat_triggers (keyword, label, description) VALUES (%s, %s, %s) RETURNING *",
+            (keyword, label, description)
+        )
+        return {"trigger": row}
+    except psycopg2.errors.UniqueViolation:
+        return JSONResponse({"error": "A trigger with that keyword already exists"}, status_code=409)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.put("/api/manychat/triggers/{trigger_id}")
+async def update_trigger(trigger_id: int, request: Request):
+    try:
+        body = await request.json()
+        label = (body.get("label") or "").strip()
+        description = (body.get("description") or "").strip()
+        if not label:
+            return JSONResponse({"error": "Label is required"}, status_code=400)
+        execute(
+            "UPDATE manychat_triggers SET label=%s, description=%s WHERE id=%s",
+            (label, description, trigger_id)
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.patch("/api/manychat/triggers/{trigger_id}/toggle")
+async def toggle_trigger(trigger_id: int):
+    try:
+        execute(
+            "UPDATE manychat_triggers SET is_active = NOT is_active WHERE id=%s",
+            (trigger_id,)
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.delete("/api/manychat/triggers/{trigger_id}")
+async def delete_trigger(trigger_id: int):
+    try:
+        execute("DELETE FROM manychat_triggers WHERE id=%s", (trigger_id,))
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ───────────────── WEBHOOK ─────────────────
