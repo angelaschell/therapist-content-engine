@@ -345,54 +345,68 @@ async def load_instagram_post(req: LoadPostRequest):
     if not shortcode:
         raise HTTPException(400, "Could not extract shortcode from URL")
 
+    caption = None
+    image_urls = []
+    method = ""
+
     # 1. Graph API (own posts, instant)
     caption = await try_graph_api(shortcode)
     if caption:
-        return LoadPostResponse(caption=caption, method="graph_api")
+        method = "graph_api"
 
     # 2. Explore DB (already scraped, instant)
-    caption = await try_explore_db(url, shortcode)
-    if caption:
-        return LoadPostResponse(caption=caption, method="explore_db")
+    if not caption:
+        caption = await try_explore_db(url, shortcode)
+        if caption:
+            method = "explore_db"
 
     # 3. oEmbed (fast, sometimes works)
-    caption = await try_oembed(url)
-    if caption:
-        return LoadPostResponse(caption=caption, method="oembed")
+    if not caption:
+        caption = await try_oembed(url)
+        if caption:
+            method = "oembed"
 
-    # 4. Apify (reliable, takes 15-30 seconds)
-    apify_result = await try_apify(url)
-    if apify_result and (apify_result.get("caption") or apify_result.get("image_urls")):
-        caption = apify_result.get("caption", "")
-        image_urls = apify_result.get("image_urls", [])
-        
-        # OCR slide images if requested or if we have images
-        slide_texts = []
-        slide_text = None
-        if image_urls and (req.extract_slide_text or not caption):
-            slide_texts = await ocr_slide_images(image_urls)
-            if slide_texts:
-                numbered = []
-                for idx, st in enumerate(slide_texts):
-                    if st:
-                        numbered.append(f"Slide {idx+1}: {st}")
-                slide_text = "\n".join(numbered) if numbered else None
-        
-        if caption or slide_text:
-            return LoadPostResponse(
-                caption=caption or (slide_text or ""),
-                method="apify" + (" + ocr" if slide_text else ""),
-                slide_text=slide_text,
-                slide_texts=slide_texts if slide_texts else None
-            )
+    # 4. Apify (reliable, returns caption + images, 15-30s)
+    # Always try Apify if we need slide text, or if we still have no caption
+    if not caption or (req.extract_slide_text and not image_urls):
+        apify_result = await try_apify(url)
+        if apify_result:
+            if not caption:
+                caption = apify_result.get("caption", "")
+                if caption:
+                    method = "apify"
+            image_urls = apify_result.get("image_urls", [])
 
     # 5. Scraping (fast, often blocked)
-    caption = await try_scrape(url)
-    if caption:
-        return LoadPostResponse(caption=caption, method="scrape")
+    if not caption:
+        caption = await try_scrape(url)
+        if caption:
+            method = "scrape"
 
-    raise HTTPException(
-        404,
-        "Could not extract caption from this post. The post may be private. "
-        "Try pasting the caption text manually.",
+    if not caption and not image_urls:
+        raise HTTPException(
+            404,
+            "Could not extract content from this post. The post may be private. "
+            "Try pasting the caption text manually.",
+        )
+
+    # OCR slide images if requested and we have images
+    slide_texts = []
+    slide_text = None
+    if image_urls and req.extract_slide_text:
+        slide_texts = await ocr_slide_images(image_urls)
+        if slide_texts:
+            numbered = []
+            for idx, st in enumerate(slide_texts):
+                if st:
+                    numbered.append(f"Slide {idx+1}: {st}")
+            slide_text = "\n".join(numbered) if numbered else None
+            if slide_text:
+                method += " + ocr"
+
+    return LoadPostResponse(
+        caption=caption or "",
+        method=method or "unknown",
+        slide_text=slide_text,
+        slide_texts=slide_texts if slide_texts else None,
     )
