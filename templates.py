@@ -673,6 +673,57 @@ async def get_template(template_id: str):
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
+@router.put("/{template_id}")
+async def update_template(template_id: str, req: Request):
+    """Update an existing template (brand colors, fonts, colors, logo, etc.)."""
+    try:
+        data = await req.json()
+        template_data = data.get("template", {})
+        logo_image = data.get("logo_image", "")
+
+        # Upload new logo if provided
+        logo_url = template_data.get("logo_url", "")
+        if logo_image and SUPABASE_URL:
+            try:
+                if "," in logo_image:
+                    logo_bytes = base64.b64decode(logo_image.split(",", 1)[1])
+                else:
+                    logo_bytes = base64.b64decode(logo_image)
+                logo_filename = f"template-logos/{uuid.uuid4().hex}.png"
+                logo_url = sb_storage_upload("brand-assets", logo_filename, logo_bytes, "image/png")
+            except Exception as e:
+                print(f"Logo upload error: {e}")
+
+        full_analysis = json.dumps({**template_data, "logo_url": logo_url})
+
+        db_execute(
+            """UPDATE carousel_templates SET
+               name = COALESCE(%s, name),
+               bg_color = %s, text_color = %s,
+               hook_bg = %s, hook_text = %s,
+               close_bg = %s, close_text = %s,
+               title_style = %s, body_style = %s,
+               text_size = %s, text_align = %s,
+               spacing = %s, watermark = %s,
+               description = %s,
+               full_analysis = %s,
+               logo_url = %s
+               WHERE id = %s""",
+            (data.get("name"), template_data.get("bg_color", "#F7EBE0"),
+             template_data.get("text_color", "#D2C7FF"),
+             template_data.get("hook_bg", "#3B2145"), template_data.get("hook_text", "#F7EBE0"),
+             template_data.get("close_bg", "#90A9EC"), template_data.get("close_text", "#F7EBE0"),
+             template_data.get("title_style", "serif-bold"), template_data.get("body_style", "serif-regular"),
+             template_data.get("text_size", "large"), template_data.get("text_align", "center"),
+             template_data.get("spacing", "spacious"), bool(template_data.get("watermark", True)),
+             template_data.get("description", ""),
+             full_analysis, logo_url or "", template_id)
+        )
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 @router.delete("/{template_id}")
 async def delete_template(template_id: str):
     """Delete a template."""
