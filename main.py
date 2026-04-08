@@ -564,9 +564,17 @@ async def generate_carousel(req: Request):
 
     # Build CTA instruction based on selected trigger
     if trigger_keyword and trigger_keyword.strip():
-        cta_instruction = f"""- End the caption with EXACTLY ONE CTA line starting with "Comment {trigger_keyword}".
-- The product/service for this trigger is: {trigger_label} ({trigger_description}).
-- Write the CTA so it directly connects this product to the carousel topic. Do NOT use generic "I'll send you a free resource." Instead, tie what they will receive to what they just read. Example: if the carousel is about nervous system dysregulation and the trigger is EMDR, write "Comment EMDR and I'll walk you through how bilateral stimulation helps your nervous system process what your body has been holding."
+        cta_instruction = f"""- End the caption with EXACTLY ONE CTA line that contains "Comment {trigger_keyword}".
+- The trigger offers: {trigger_label} ({trigger_description}).
+- THE CTA MUST FEEL LIKE ANGELA WROTE IT IN THE MOMENT, not like a marketing template.
+- Bridge the emotional thread of the carousel directly into the offer. The reader just felt something — the CTA should feel like the obvious next exhale, not a pivot to selling.
+- DO NOT use these generic patterns: "I'll send you a free resource", "I created something for you", "DM me for...". These feel copy-pasted.
+- Instead, NAME the specific pain or longing from the carousel and connect it to what they'll get. Make the reader feel like THIS offer was made for THIS exact feeling.
+- Examples of what Angela sounds like:
+  * Post about motherless daughters → "If you're a daughter without her mom and you need a place where people just get it — comment MOM. I'll send you the link. It's free and it's yours."
+  * Post about nervous system → "Comment EMDR and I'll walk you through how bilateral stimulation helps your nervous system actually process what your body has been holding onto."
+  * Post about grief at milestones → "Comment WORTHY if you want the toolkit I made for the moments when grief shows up uninvited. It's free."
+- Keep it warm, direct, casual. One or two sentences. Can include "it's free" if applicable.
 - Only ONE CTA line. No other Comment triggers."""
         trigger_json = trigger_keyword
     else:
@@ -731,7 +739,7 @@ CAPTION RULES:
         # Trigger ranking as a separate fast call
         if all_triggers and len(all_triggers) > 0:
             try:
-                trigger_list = ", ".join([f"{t['keyword']} ({t['label']})" for t in all_triggers])
+                trigger_list = "\n".join([f"- {t['keyword']}: {t['label']} — {t.get('description', t['label'])}" for t in all_triggers])
                 slide_summary = ""
                 for s in result.get("slides", []):
                     if s.get("type") == "hook":
@@ -747,10 +755,13 @@ CAPTION RULES:
                     messages=[{"role": "user", "content": f"""Given this carousel about: {topic}
 Slide content: {slide_summary[:500]}
 
-Available ManyChat triggers: {trigger_list}
+Available ManyChat triggers and what they offer:
+{trigger_list}
 
-Pick the top 3 triggers that best fit this specific post. Return ONLY valid JSON, no backticks:
-[{{"keyword":"KEYWORD","label":"Label","reason":"One sentence why this fits"}}]"""}]
+Pick the top 3 triggers whose offer most naturally extends the emotional thread of this carousel. The best trigger is one where a reader who just felt something from these slides would think "yes, I need that" without it feeling like a sales pitch.
+
+Return ONLY valid JSON, no backticks:
+[{{"keyword":"KEYWORD","label":"Label","reason":"One sentence explaining the emotional bridge between this post and the offer"}}]"""}]
                 )
                 rank_clean = rank_resp.content[0].text.strip()
                 if rank_clean.startswith("```"):
