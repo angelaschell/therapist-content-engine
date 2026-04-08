@@ -123,6 +123,51 @@ CREATE TABLE IF NOT EXISTS sync_log (
 );
 
 
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS heat_score INT DEFAULT 0;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS interest_level TEXT DEFAULT 'new';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS funnel_stage TEXT DEFAULT '';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS do_not_contact BOOLEAN DEFAULT false;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS trigger_count INT DEFAULT 0;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS conversation_count INT DEFAULT 0;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS last_interaction TIMESTAMPTZ;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]';
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS flodesk_synced BOOLEAN DEFAULT false;
+ALTER TABLE manychat_leads_clean ADD COLUMN IF NOT EXISTS analysis JSONB DEFAULT '{}';
+
+CREATE TABLE IF NOT EXISTS subscriber_notes (
+  id BIGSERIAL PRIMARY KEY,
+  contact_id TEXT NOT NULL,
+  note TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS subscriber_recommendations (
+  id BIGSERIAL PRIMARY KEY,
+  contact_id TEXT NOT NULL,
+  subscriber_name TEXT DEFAULT '',
+  title TEXT DEFAULT '',
+  priority INT DEFAULT 3,
+  category TEXT DEFAULT '',
+  description TEXT DEFAULT '',
+  suggested_action TEXT DEFAULT '',
+  suggested_flow TEXT DEFAULT '',
+  data_points JSONB DEFAULT '{}',
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS action_log (
+  id BIGSERIAL PRIMARY KEY,
+  contact_id TEXT DEFAULT '',
+  subscriber_name TEXT DEFAULT '',
+  action_type TEXT DEFAULT '',
+  action_detail TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+
 CREATE TABLE IF NOT EXISTS manychat_triggers (
   id BIGSERIAL PRIMARY KEY,
   keyword TEXT NOT NULL UNIQUE,
@@ -414,6 +459,462 @@ async def sync_status():
         if rows:
             return {"last_sync": rows[0]}
         return {"last_sync": None}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── SUBSCRIBERS ─────────────────
+def build_subscriber(row):
+    """Format a subscriber row for the frontend."""
+    if not row:
+        return None
+    d = dict(row)
+    d["mc_id"] = d.get("contact_id", "")
+    fn = d.get("first_name", "") or ""
+    ln = d.get("last_name", "") or ""
+    d["full_name"] = f"{fn} {ln}".strip() or d.get("ig_username", "") or "Unknown"
+    d["subscribed_at"] = d.get("created_at", "")
+    return d
+
+
+@router.get("/api/manychat/subscribers")
+async def list_subscribers(request: Request):
+    try:
+        page = int(request.query_params.get("page", "1"))
+        limit = min(int(request.query_params.get("limit", "30")), 100)
+        sort = request.query_params.get("sort", "recent")
+        search = request.query_params.get("search", "").strip()
+        interest = request.query_params.get("interest", "").strip()
+        offset = (page - 1) * limit
+
+        where = "WHERE 1=1"
+        params = []
+
+        if search:
+            where += " AND (first_name ILIKE %s OR last_name ILIKE %s OR ig_username ILIKE %s OR email ILIKE %s OR contact_id ILIKE %s)"
+            sq = f"%{search}%"
+            params.extend([sq, sq, sq, sq, sq])
+
+        if interest and interest != "all":
+            where += " AND interest_level = %s"
+            params.append(interest)
+
+        order = "updated_at DESC"
+        if sort == "heat":
+            order = "heat_score DESC"
+        elif sort == "name":
+            order = "first_name ASC, last_name ASC"
+        elif sort == "recent":
+            order = "COALESCE(last_interaction, updated_at) DESC"
+
+        count_rows = query(f"SELECT COUNT(*) AS cnt FROM manychat_leads_clean {where}", tuple(params))
+        total = count_rows[0]["cnt"] if count_rows else 0
+
+        params.extend([limit, offset])
+        rows = query(
+            f"SELECT * FROM manychat_leads_clean {where} ORDER BY {order} LIMIT %s OFFSET %s",
+            tuple(params)
+        )
+
+        subs = [build_subscriber(r) for r in rows]
+        return {"subscribers": subs, "total": total, "pages": max(1, -(-total // limit))}
+    except Exception as e:
+        print(f"[SUBSCRIBERS] Error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/api/manychat/subscribers/stats")
+async def subscriber_stats():
+    try:
+        total_rows = query("SELECT COUNT(*) AS cnt FROM manychat_leads_clean")
+        total = total_rows[0]["cnt"] if total_rows else 0
+
+        level_rows = query(
+            "SELECT interest_level, COUNT(*) AS cnt FROM manychat_leads_clean GROUP BY interest_level"
+        )
+        by_interest = {"vip": 0, "hot": 0, "warm": 0, "cold": 0, "new": 0}
+        for r in level_rows:
+            lvl = (r.get("interest_level") or "new").lower()
+            if lvl in by_interest:
+                by_interest[lvl] = r["cnt"]
+            else:
+                by_interest["new"] += r["cnt"]
+
+        return {"total": total, "by_interest": by_interest}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/api/manychat/subscribers/{mc_id}")
+async def get_subscriber(mc_id: str):
+    try:
+        rows = query("SELECT * FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+        if not rows:
+            return JSONResponse({"error": "Subscriber not found"}, status_code=404)
+
+        sub = build_subscriber(rows[0])
+
+        # Get notes
+        notes = query(
+            "SELECT * FROM subscriber_notes WHERE contact_id = %s ORDER BY created_at DESC",
+            (mc_id,)
+        )
+
+        # Get actions
+        actions = query(
+            "SELECT * FROM action_log WHERE contact_id = %s ORDER BY created_at DESC LIMIT 20",
+            (mc_id,)
+        )
+
+        return {
+            "subscriber": sub,
+            "notes": notes or [],
+            "triggers": [],
+            "conversations": [],
+            "actions": actions or [],
+        }
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.post("/api/manychat/subscribers/{mc_id}/notes")
+async def add_note(mc_id: str, request: Request):
+    try:
+        body = await request.json()
+        note_text = (body.get("note") or "").strip()
+        if not note_text:
+            return JSONResponse({"error": "Note text required"}, status_code=400)
+        execute(
+            "INSERT INTO subscriber_notes (contact_id, note) VALUES (%s, %s)",
+            (mc_id, note_text)
+        )
+        # Log action
+        rows = query("SELECT first_name, last_name FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+        name = f"{(rows[0].get('first_name','') if rows else '')} {(rows[0].get('last_name','') if rows else '')}".strip() or mc_id
+        execute(
+            "INSERT INTO action_log (contact_id, subscriber_name, action_type, action_detail) VALUES (%s, %s, 'added_note', %s)",
+            (mc_id, name, f"Note: {note_text[:100]}")
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.delete("/api/manychat/notes/{note_id}")
+async def delete_note(note_id: int):
+    try:
+        execute("DELETE FROM subscriber_notes WHERE id = %s", (note_id,))
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.patch("/api/manychat/subscribers/{mc_id}/dnc")
+async def toggle_dnc(mc_id: str):
+    try:
+        execute(
+            "UPDATE manychat_leads_clean SET do_not_contact = NOT do_not_contact WHERE contact_id = %s",
+            (mc_id,)
+        )
+        rows = query("SELECT do_not_contact FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+        dnc = rows[0]["do_not_contact"] if rows else False
+        return {"do_not_contact": dnc}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.post("/api/manychat/lookup")
+async def lookup_subscriber(request: Request):
+    try:
+        body = await request.json()
+        mc_id = (body.get("mc_id") or "").strip()
+        email = (body.get("email") or "").strip()
+        phone = (body.get("phone") or "").strip()
+
+        row = None
+        if mc_id:
+            rows = query("SELECT * FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+            if rows:
+                row = rows[0]
+        if not row and email:
+            rows = query("SELECT * FROM manychat_leads_clean WHERE email ILIKE %s", (email,))
+            if rows:
+                row = rows[0]
+        if not row and phone:
+            rows = query("SELECT * FROM manychat_leads_clean WHERE phone = %s", (phone,))
+            if rows:
+                row = rows[0]
+
+        if row:
+            return {"subscriber": build_subscriber(row)}
+        return JSONResponse({"error": "No subscriber found"}, status_code=404)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── RECOMMENDATIONS ─────────────────
+@router.get("/api/manychat/recommendations")
+async def get_recommendations(request: Request):
+    try:
+        status_filter = request.query_params.get("status", "pending")
+        rows = query(
+            "SELECT * FROM subscriber_recommendations WHERE status = %s ORDER BY priority ASC, created_at DESC LIMIT 50",
+            (status_filter,)
+        )
+        return {"recommendations": rows or []}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.patch("/api/manychat/recommendations/{rec_id}/complete")
+async def complete_recommendation(rec_id: int):
+    try:
+        execute("UPDATE subscriber_recommendations SET status = 'completed' WHERE id = %s", (rec_id,))
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.patch("/api/manychat/recommendations/{rec_id}/dismiss")
+async def dismiss_recommendation(rec_id: int):
+    try:
+        execute("UPDATE subscriber_recommendations SET status = 'dismissed' WHERE id = %s", (rec_id,))
+        # Log action
+        rows = query("SELECT subscriber_name, title FROM subscriber_recommendations WHERE id = %s", (rec_id,))
+        name = rows[0]["subscriber_name"] if rows else ""
+        execute(
+            "INSERT INTO action_log (subscriber_name, action_type, action_detail) VALUES (%s, 'dismissed_rec', %s)",
+            (name, f"Dismissed: {rows[0]['title']}" if rows else "Dismissed recommendation")
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── AI ANALYSIS ─────────────────
+@router.post("/api/manychat/subscribers/{mc_id}/analyze")
+async def analyze_subscriber(mc_id: str):
+    try:
+        if not ANTHROPIC_KEY:
+            return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
+        import anthropic
+        rows = query("SELECT * FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+        if not rows:
+            return JSONResponse({"error": "Subscriber not found"}, status_code=404)
+        sub = rows[0]
+        notes = query("SELECT note FROM subscriber_notes WHERE contact_id = %s ORDER BY created_at DESC LIMIT 10", (mc_id,))
+
+        # Get available triggers
+        triggers = query("SELECT keyword, label, description FROM manychat_triggers WHERE is_active = true")
+        trigger_list = "\n".join([f"- {t['keyword']}: {t['label']} — {t.get('description','')}" for t in (triggers or [])])
+
+        fn = sub.get("first_name","") or ""
+        ln = sub.get("last_name","") or ""
+        name = f"{fn} {ln}".strip() or sub.get("ig_username","") or "Unknown"
+
+        prompt = f"""Analyze this therapy practice subscriber and recommend next steps.
+
+Subscriber: {name}
+Instagram: @{sub.get('ig_username','')}
+Email: {sub.get('email','') or 'none'}
+Keyword they triggered: {sub.get('keyword','')}
+Grief type: {sub.get('grief_type','')}
+Location: {sub.get('user_location_state','')}
+Segment: {sub.get('audience_segment','')}
+Heat score: {sub.get('heat_score',0)}/100
+Interest level: {sub.get('interest_level','new')}
+Notes: {', '.join([n['note'] for n in notes]) if notes else 'none'}
+
+Available ManyChat triggers:
+{trigger_list}
+
+Return a JSON object (no backticks) with:
+- "overview": 2-3 sentence summary of this subscriber and where they are in their journey
+- "recommended_triggers": array of 2-3 triggers to send them, each with "keyword" and "reason" """
+
+        client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        text = resp.content[0].text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        analysis = json.loads(text)
+
+        # Save analysis
+        execute(
+            "UPDATE manychat_leads_clean SET analysis = %s WHERE contact_id = %s",
+            (json.dumps(analysis), mc_id)
+        )
+
+        return {"success": True, "analysis": analysis}
+    except json.JSONDecodeError:
+        return {"success": True, "analysis": {"overview": text, "recommended_triggers": []}}
+    except Exception as e:
+        print(f"[ANALYZE] Error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.post("/api/manychat/analyze")
+async def analyze_all(request: Request):
+    """Run Claude analysis on subscribers who need attention."""
+    try:
+        if not ANTHROPIC_KEY:
+            return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
+        import anthropic
+
+        # Get subscribers with recent activity but no recent recommendations
+        subs = query("""
+            SELECT * FROM manychat_leads_clean
+            WHERE keyword != '' AND keyword IS NOT NULL
+            ORDER BY updated_at DESC LIMIT 20
+        """)
+
+        if not subs:
+            return {"success": True, "recommendations": 0}
+
+        triggers = query("SELECT keyword, label, description FROM manychat_triggers WHERE is_active = true")
+        trigger_list = "\n".join([f"- {t['keyword']}: {t['label']} — {t.get('description','')}" for t in (triggers or [])])
+
+        sub_summaries = []
+        for s in subs:
+            fn = s.get("first_name","") or ""
+            ln = s.get("last_name","") or ""
+            name = f"{fn} {ln}".strip() or s.get("ig_username","") or "Unknown"
+            sub_summaries.append(f"- {name} (ID: {s['contact_id']}): keyword={s.get('keyword','')}, heat={s.get('heat_score',0)}, level={s.get('interest_level','new')}")
+
+        prompt = f"""You are an AI assistant for a grief therapist's CRM. Analyze these subscribers and generate actionable recommendations.
+
+Subscribers:
+{chr(10).join(sub_summaries)}
+
+Available ManyChat triggers:
+{trigger_list}
+
+For each subscriber who needs attention, generate a recommendation. Return a JSON array (no backticks) of objects, each with:
+- "contact_id": the subscriber's ID
+- "subscriber_name": their name
+- "title": short action title
+- "priority": 1 (urgent) to 4 (low)
+- "category": one of "follow_up", "re_engage", "high_intent", "new_lead"
+- "description": why this person needs attention
+- "suggested_action": what Angela should do
+- "suggested_flow": trigger keyword to send (or empty string)
+
+Return max 10 recommendations. Focus on high-value opportunities."""
+
+        client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        text = resp.content[0].text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        recs = json.loads(text)
+
+        count = 0
+        for rec in recs:
+            try:
+                execute(
+                    """INSERT INTO subscriber_recommendations
+                    (contact_id, subscriber_name, title, priority, category, description, suggested_action, suggested_flow, data_points)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (rec.get("contact_id",""), rec.get("subscriber_name",""), rec.get("title",""),
+                     rec.get("priority",3), rec.get("category","follow_up"), rec.get("description",""),
+                     rec.get("suggested_action",""), rec.get("suggested_flow",""),
+                     json.dumps(rec.get("data_points",{})))
+                )
+                count += 1
+            except Exception as e:
+                print(f"[ANALYZE] Rec insert error: {e}")
+
+        return {"success": True, "recommendations": count}
+    except Exception as e:
+        print(f"[ANALYZE ALL] Error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── ACTIONS ─────────────────
+@router.get("/api/manychat/actions")
+async def get_actions():
+    try:
+        rows = query("SELECT * FROM action_log ORDER BY created_at DESC LIMIT 50")
+        return {"actions": rows or []}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── SMART SEND / DM ─────────────────
+@router.post("/api/manychat/smart-send")
+async def smart_send(request: Request):
+    """Send a ManyChat flow to a subscriber."""
+    try:
+        body = await request.json()
+        mc_id = body.get("mc_id", "")
+        flow_ns = body.get("flow_ns", "")
+        if not mc_id or not flow_ns:
+            return JSONResponse({"error": "mc_id and flow_ns required"}, status_code=400)
+        if not MC_KEY:
+            return JSONResponse({"error": "MANYCHAT_API_KEY not configured"}, status_code=500)
+
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.post(
+                f"{MC_API}/fb/sending/sendFlow",
+                headers={"Authorization": f"Bearer {MC_KEY}", "Content-Type": "application/json"},
+                json={"subscriber_id": mc_id, "flow_ns": flow_ns}
+            )
+            result = r.json()
+
+        # Log action
+        rows = query("SELECT first_name, last_name FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+        name = f"{(rows[0].get('first_name','') if rows else '')} {(rows[0].get('last_name','') if rows else '')}".strip() or mc_id
+        execute(
+            "INSERT INTO action_log (contact_id, subscriber_name, action_type, action_detail) VALUES (%s, %s, 'sent_flow', %s)",
+            (mc_id, name, f"Sent flow: {flow_ns}")
+        )
+
+        if result.get("status") == "success":
+            return {"success": True}
+        return JSONResponse({"error": result.get("message", "Failed to send flow")}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.post("/api/manychat/send-dm")
+async def send_dm(request: Request):
+    """Send a direct message via ManyChat."""
+    try:
+        body = await request.json()
+        mc_id = body.get("mc_id", "")
+        message = body.get("message", "").strip()
+        if not mc_id or not message:
+            return JSONResponse({"error": "mc_id and message required"}, status_code=400)
+        if not MC_KEY:
+            return JSONResponse({"error": "MANYCHAT_API_KEY not configured"}, status_code=500)
+
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.post(
+                f"{MC_API}/fb/sending/sendContent",
+                headers={"Authorization": f"Bearer {MC_KEY}", "Content-Type": "application/json"},
+                json={"subscriber_id": mc_id, "data": {"version": "v2", "content": {"messages": [{"type": "text", "text": message}]}}}
+            )
+            result = r.json()
+
+        # Log action
+        rows = query("SELECT first_name, last_name FROM manychat_leads_clean WHERE contact_id = %s", (mc_id,))
+        name = f"{(rows[0].get('first_name','') if rows else '')} {(rows[0].get('last_name','') if rows else '')}".strip() or mc_id
+        execute(
+            "INSERT INTO action_log (contact_id, subscriber_name, action_type, action_detail) VALUES (%s, %s, 'manual_message', %s)",
+            (mc_id, name, f"DM: {message[:100]}")
+        )
+
+        if result.get("status") == "success":
+            return {"success": True}
+        return JSONResponse({"error": result.get("message", "Failed to send message")}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
