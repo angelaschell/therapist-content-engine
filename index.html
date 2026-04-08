@@ -10,18 +10,20 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:100vh}
-.hero{background:#F7EBE0;padding:40px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
-.hero-inner{max-width:700px;margin:0 auto}
-.hero-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:16px;box-shadow:0 4px 20px rgba(59,33,69,.08);cursor:pointer;transition:opacity .25s}
+.hero{background:#F7EBE0;padding:10px 24px;text-align:left;border-bottom:1px solid rgba(59,33,69,.06)}
+.hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.hero-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(210,199,255,.4);box-shadow:0 2px 8px rgba(59,33,69,.06);cursor:pointer;transition:opacity .25s;flex-shrink:0}
 .hero-photo:hover{opacity:.8}
-.photo-hint{font-size:10px;color:rgba(59,33,69,.2);margin-bottom:10px;cursor:pointer}
+.photo-hint{display:none}
 .photo-hint:hover{color:#90A9EC}
-.hero-greeting{font-family:'Jost',sans-serif;font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:6px;font-weight:500}
-.hero h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:#3B2145;margin-bottom:6px;line-height:1.2}
-.hero-handle{font-size:13px;color:rgba(59,33,69,.35);margin-bottom:4px}
-.hero-status{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:18px}
+.hero-greeting{font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;font-weight:500;line-height:1}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#3B2145;line-height:1.2;margin:0}
+.hero-handle{font-size:11px;color:rgba(59,33,69,.35)}
+.hero-status{display:flex;gap:5px;align-items:center;margin-left:auto;flex-shrink:0}
 .hero-dot{width:7px;height:7px;border-radius:50%;background:#e87070}
 .hero-status-txt{font-size:11px;color:rgba(59,33,69,.3)}
+.hero-logout{font-size:11px;color:#90A9EC;cursor:pointer;margin-left:12px;white-space:nowrap}
+.hero-logout:hover{text-decoration:underline}
 .tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;overflow-x:auto;justify-content:center;gap:2px}
 .tab{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
 .tab:hover{color:rgba(59,33,69,.6)}
@@ -218,7 +220,7 @@ option{background:#F7EBE0}
 .reel-actions button.star-active{border-color:#F3DA8B;background:rgba(243,218,139,.15);color:#3B2145}
 .reel-project-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;background:rgba(255,255,255,.4);border:1px solid rgba(210,199,255,.1);margin-bottom:6px;cursor:pointer;transition:all .15s}
 .reel-project-item:hover{border-color:rgba(144,169,236,.3);background:rgba(255,255,255,.6)}
-.explore-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.explore-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:800px;overflow-y:auto}
 @media(max-width:700px){.explore-grid{grid-template-columns:repeat(2,1fr)}}
 .explore-cell{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:4px;cursor:pointer;background:#f0ede8}
 .explore-cell img{width:100%;height:100%;object-fit:cover;transition:opacity .2s}
@@ -331,11 +333,12 @@ option{background:#F7EBE0}
 <div class="hero"><div class="hero-inner">
   <img class="hero-photo" id="heroPhoto" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela Schellenberg" onclick="document.getElementById('photo-upload').click()">
   <input type="file" id="photo-upload" accept="image/*" style="display:none" onchange="changePhoto(event)">
-  <div class="photo-hint" onclick="document.getElementById('photo-upload').click()">click photo to change</div>
-  <div class="hero-greeting">Content Engine</div>
-  <h1>Angela Schellenberg</h1>
-  <div class="hero-handle">@angelaschellenberg</div>
-  <div class="hero-status"><div class="hero-dot" id="dot"></div><div class="hero-status-txt" id="status-txt">Checking...</div></div>
+  <div>
+    <div class="hero-greeting">Content Engine</div>
+    <h1>Angela Schellenberg</h1>
+    <div class="hero-handle">@angelaschellenberg</div>
+  </div>
+  <div class="hero-status"><div class="hero-dot" id="dot"></div><div class="hero-status-txt" id="status-txt">Checking...</div><span class="hero-logout" onclick="logout()">Log Out</span></div>
 </div></div>
 
 <div class="tabs">
@@ -365,7 +368,7 @@ option{background:#F7EBE0}
 <div class="main">
 
 <!-- EXPLORE FEED -->
-<div id="explore" class="tab-panel">
+<div id="explore" class="tab-panel" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
     <div>
       <div class="vault-head" style="color:#90A9EC;margin-bottom:2px">Explore</div>
@@ -400,7 +403,7 @@ option{background:#F7EBE0}
   <p class="desc">Generate brand-aligned content in your voice, across every format.</p>
   <div class="card">
     <div class="grid2"><div><label>Content Type</label><select id="ctype"><option>Instagram Reel Script</option><option>Carousel Slide Copy (6 slides)</option><option>Email Newsletter</option><option>Instagram Caption</option><option>Blog Post Outline</option><option>Podcast Intro / Hook</option><option>TikTok Script</option><option>Story Sequence (5 frames)</option></select></div><div><label>Pillar</label><select id="pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option><option>Nervous System Regulation</option><option>Inner Child Work</option><option>Emotional Neglect</option><option>Parentification</option><option>People Pleasing and Fawning</option><option>Boundaries After Trauma</option><option>Relationships and Codependency</option><option>Anxiety and Hypervigilance</option><option>Shame and Worthiness</option><option>Dissociation and Freeze Response</option><option>Generational Trauma</option><option>Milestone Grief</option></select></div></div>
-    <div class="grid2"><div><label>Tone</label><select id="tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div><div><label>ManyChat CTA</label><select id="cta"><option value="">No CTA</option></select></div></div>
+    <div class="grid2"><div><label>Tone</label><select id="tone"><option value="clinical-but-warm">Clinical &amp; Warm</option><option value="humor-forward">Humor-Forward</option><option value="tender / emotional">Tender &amp; Emotional</option><option value="direct / confrontational">Direct &amp; Confrontational</option><option value="educational / expert">Educational &amp; Expert</option></select></div><div><label>ManyChat CTA</label><select id="cta"><option value="">No CTA</option></select></div></div>
     <label>Topic</label><textarea id="topic" placeholder="e.g. The grief that lives in your body when you never got to say goodbye."></textarea>
     <div class="btns"><button class="btn" id="gen-btn" onclick="genContent()">Generate Content</button><button class="ghost" id="copy-content" style="display:none" onclick="copyIt('content-out','copy-content','Copy')">Copy</button><button class="ghost" id="clear-btn" style="display:none" onclick="clearContent()">Clear</button></div>
   </div>
@@ -521,7 +524,7 @@ option{background:#F7EBE0}
     <div class="step-title">Pick your topic</div>
     <div class="step-sub">Choose pillar, tone, slide count, and whether to include clinical research.</div>
     <div class="card">
-      <div class="grid2"><div><label>Pillar</label><select id="b-pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option><option>Nervous System Regulation</option><option>Inner Child Work</option><option>Emotional Neglect</option><option>Parentification</option><option>People Pleasing and Fawning</option><option>Boundaries After Trauma</option><option>Relationships and Codependency</option><option>Anxiety and Hypervigilance</option><option>Shame and Worthiness</option><option>Dissociation and Freeze Response</option><option>Generational Trauma</option><option>Milestone Grief</option></select></div><div><label>Tone</label><select id="b-tone"><option>clinical-but-warm</option><option>humor-forward</option><option>tender / emotional</option><option>direct / confrontational</option><option>educational / expert</option></select></div></div>
+      <div class="grid2"><div><label>Pillar</label><select id="b-pillar"><option>Grief Education</option><option>Mother Hunger (Kelly McDaniel)</option><option>EMDR and Bilateral Stimulation</option><option>Equine Therapy</option><option>Somatic Healing</option><option>Attachment and Childhood Wounds</option><option>Nervous System Regulation</option><option>Inner Child Work</option><option>Emotional Neglect</option><option>Parentification</option><option>People Pleasing and Fawning</option><option>Boundaries After Trauma</option><option>Relationships and Codependency</option><option>Anxiety and Hypervigilance</option><option>Shame and Worthiness</option><option>Dissociation and Freeze Response</option><option>Generational Trauma</option><option>Milestone Grief</option></select></div><div><label>Tone</label><select id="b-tone"><option value="clinical-but-warm">Clinical &amp; Warm</option><option value="humor-forward">Humor-Forward</option><option value="tender / emotional">Tender &amp; Emotional</option><option value="direct / confrontational">Direct &amp; Confrontational</option><option value="educational / expert">Educational &amp; Expert</option></select></div></div>
       <div class="grid2"><div><label>Slide Count</label><select id="b-slides"><option value="1">1 slide</option><option value="2">2 slides</option><option value="3">3 slides</option><option value="4">4 slides</option><option value="5">5 slides</option><option value="6">6 slides</option><option value="7">7 slides</option><option value="8">8 slides</option><option value="9">9 slides</option><option value="10" selected>10 slides</option><option value="11">11 slides</option><option value="12">12 slides</option><option value="13">13 slides</option><option value="14">14 slides</option><option value="15">15 slides</option><option value="16">16 slides</option><option value="17">17 slides</option><option value="18">18 slides</option><option value="19">19 slides</option><option value="20">20 slides</option></select></div><div><label>Clinical Research</label><select id="b-research"><option value="yes">Include Perplexity Research</option><option value="no">Skip Research</option></select></div></div>
       <div class="grid2"><div><label>Writing Pattern <span id="deletePatternBtn" style="font-size:9px;color:#c45a4a;cursor:pointer;display:none" onclick="deleteSelectedPattern()">delete this pattern</span></label><select id="b-template" onchange="onWritingPatternChange()"><option value="naming">The Naming Post (370K pattern)</option><option value="redefine">The Authority Redefine (80K pattern)</option><option value="tribal">The Tribal Identity (165K pattern)</option><option value="framework">The Framework Explainer (saves + follows)</option><option value="pullquote">The Pull Quote (reach + shares)</option><option value="editorial">The Layered Editorial (profile visits)</option><option value="conversational">The Conversational List (comments)</option><option value="covercontext">The Cover + Context (funnel-aware)</option></select><div style="font-size:10px;color:rgba(59,33,69,.25);margin-top:4px">How Claude writes the slides</div></div><div><label>Visual Style</label><select id="b-custom-template" onchange="applyCustomTemplate()"><option value="">Use default style</option></select><div style="font-size:10px;color:rgba(59,33,69,.25);margin-top:4px">Colors, fonts, spacing (from Templates tab)</div></div></div>
       <div style="margin-top:10px"><button class="btn" style="width:100%;background:rgba(144,169,236,.12);color:#90A9EC;border:1.5px dashed rgba(144,169,236,.4);font-size:13px;letter-spacing:1.5px;padding:12px;text-transform:uppercase;font-weight:600" onclick="toggleInlineTemplateCreator()">+ Create New Writing Pattern</button></div>
@@ -1236,13 +1239,13 @@ function renderMonPosts(posts){var el=document.getElementById("monPosts");var ht
 <div id="brief" class="tab-panel">
   <p class="desc">Your AI-generated weekly content strategy. Combines analytics, trends, and CRM data into actionable recommendations.</p>
   <div class="card">
-    <div class="btns"><button class="btn" onclick="generateBrief()">Generate This Week's Brief</button><button class="ghost" onclick="loadBrief()">Load Latest</button></div>
+    <div class="btns"><button class="btn" id="brief-btn" onclick="generateBrief()">Generate This Week's Brief</button><button class="ghost" onclick="loadBrief()">Load Latest</button></div>
   </div>
   <div id="briefLoader" style="display:none;text-align:center;padding:20px;color:#90A9EC;font-size:14px">Generating strategy brief...</div>
   <div id="briefContent"></div>
 </div>
 <script>
-function generateBrief(){document.getElementById("briefLoader").style.display="block";document.getElementById("briefContent").innerHTML="";fetch(BACKEND+"/api/brief/generate",{method:"POST"}).then(function(r){return r.json()}).then(function(d){document.getElementById("briefLoader").style.display="none";if(d.error){document.getElementById("briefContent").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderBrief(d)}).catch(function(e){document.getElementById("briefLoader").style.display="none";document.getElementById("briefContent").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'})}
+function generateBrief(){var b=document.getElementById("brief-btn");b.disabled=true;b.textContent="Generating...";document.getElementById("briefLoader").style.display="block";document.getElementById("briefContent").innerHTML="";fetch(BACKEND+"/api/brief/generate",{method:"POST"}).then(function(r){return r.json()}).then(function(d){document.getElementById("briefLoader").style.display="none";if(d.error){document.getElementById("briefContent").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderBrief(d)}).catch(function(e){document.getElementById("briefLoader").style.display="none";document.getElementById("briefContent").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'}).finally(function(){b.disabled=false;b.textContent="Generate This Week's Brief"})}
 function loadBrief(){fetch(BACKEND+"/api/brief/latest").then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById("briefContent").innerHTML='<div class="card" style="color:rgba(59,33,69,.3)">No briefs yet. Generate your first one!</div>';return}renderBrief(d)}).catch(function(){})}
 function renderBrief(d){var html='<div class="card"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Weekly Strategy Brief</div>';if(d.created_at)html+='<div style="font-size:11px;color:rgba(59,33,69,.3);margin-bottom:16px">Generated '+new Date(d.created_at).toLocaleString()+'</div>';var brief=d.brief_text||d.brief||"";html+='<div style="font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.8;color:#3B2145;white-space:pre-wrap">'+brief+'</div>';html+='</div>';document.getElementById("briefContent").innerHTML=html}
 </script>
@@ -1255,13 +1258,13 @@ function renderBrief(d){var html='<div class="card"><div style="font-size:10px;l
       <div><label>Story Type</label><select id="story-type"><option value="poll">Poll</option><option value="this_or_that">This or That</option><option value="quiz">Quiz</option><option value="prompt">Prompt / Question Box</option><option value="behind_scenes">Behind the Scenes</option><option value="countdown">Countdown</option><option value="affirmation">Affirmation</option></select></div>
       <div><label>Topic</label><input type="text" id="story-topic" placeholder="e.g. motherless daughters, nervous system"></div>
     </div>
-    <div class="btns"><button class="btn" onclick="genStory()">Generate Story</button><button class="ghost" onclick="genStoryBatch()">Generate All 7 Types</button></div>
+    <div class="btns"><button class="btn" id="story-btn" onclick="genStory()">Generate Story</button><button class="ghost" id="story-batch-btn" onclick="genStoryBatch()">Generate All 7 Types</button></div>
   </div>
   <div id="storyResult"></div>
 </div>
 <script>
-function genStory(){var type=document.getElementById("story-type").value;var topic=document.getElementById("story-topic").value.trim()||"grief healing";document.getElementById("storyResult").innerHTML='<div class="card" style="text-align:center;color:#90A9EC">Generating...</div>';fetch(BACKEND+"/api/stories/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({story_type:type,topic:topic})}).then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderStoryResult([d])}).catch(function(e){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'})}
-function genStoryBatch(){var topic=document.getElementById("story-topic").value.trim()||"grief healing";document.getElementById("storyResult").innerHTML='<div class="card" style="text-align:center;color:#90A9EC">Generating all 7 story types...</div>';fetch(BACKEND+"/api/stories/batch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderStoryResult(d.stories||[])}).catch(function(e){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'})}
+function genStory(){var type=document.getElementById("story-type").value;var topic=document.getElementById("story-topic").value.trim()||"grief healing";var b=document.getElementById("story-btn");b.disabled=true;b.textContent="Generating...";document.getElementById("storyResult").innerHTML='<div class="card" style="text-align:center;color:#90A9EC">Generating...</div>';fetch(BACKEND+"/api/stories/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({story_type:type,topic:topic})}).then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderStoryResult([d])}).catch(function(e){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'}).finally(function(){b.disabled=false;b.textContent="Generate Story"})}
+function genStoryBatch(){var topic=document.getElementById("story-topic").value.trim()||"grief healing";var b=document.getElementById("story-batch-btn");b.disabled=true;b.textContent="Generating...";document.getElementById("storyResult").innerHTML='<div class="card" style="text-align:center;color:#90A9EC">Generating all 7 story types...</div>';fetch(BACKEND+"/api/stories/batch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:topic})}).then(function(r){return r.json()}).then(function(d){if(d.error){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderStoryResult(d.stories||[])}).catch(function(e){document.getElementById("storyResult").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'}).finally(function(){b.disabled=false;b.textContent="Generate All 7 Types"})}
 function renderStoryResult(stories){var html='';stories.forEach(function(s){html+='<div class="card" style="margin-top:12px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">'+((s.story_type||"story").replace(/_/g," "))+'</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.7;white-space:pre-wrap">'+JSON.stringify(s.content||s,null,2).replace(/^"|"$/g,"")+'</div></div>'});document.getElementById("storyResult").innerHTML=html}
 </script>
 
@@ -1324,7 +1327,7 @@ function loadPerfCorrelations(){document.getElementById("perfResults").innerHTML
       <div><label>Episode Title</label><input type="text" id="sn-title" placeholder="e.g. EP12 — Frozen Grief with Claire Bidwell Smith"></div>
       <div><label>Guest Name (optional)</label><input type="text" id="sn-guest" placeholder="e.g. Claire Bidwell Smith"></div>
     </div>
-    <div class="btns"><button class="btn" onclick="generateShowNotes()">Generate Show Notes</button></div>
+    <div class="btns"><button class="btn" id="sn-btn" onclick="generateShowNotes()">Generate Show Notes</button></div>
   </div>
   <div id="snLoader" style="display:none;text-align:center;padding:20px;color:#90A9EC;font-size:14px">Generating show notes...</div>
   <div id="snResult"></div>
@@ -1337,7 +1340,7 @@ function loadPerfCorrelations(){document.getElementById("perfResults").innerHTML
   </div>
 </div>
 <script>
-function generateShowNotes(){var t=document.getElementById("sn-transcript").value.trim();if(!t){alert("Paste a transcript first.");return}document.getElementById("snLoader").style.display="block";document.getElementById("snResult").innerHTML="";fetch(BACKEND+"/api/show-notes/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transcript:t,title:document.getElementById("sn-title").value.trim(),guest:document.getElementById("sn-guest").value.trim()})}).then(function(r){return r.json()}).then(function(d){document.getElementById("snLoader").style.display="none";if(d.error){document.getElementById("snResult").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderShowNote(d)}).catch(function(e){document.getElementById("snLoader").style.display="none";document.getElementById("snResult").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'})}
+function generateShowNotes(){var t=document.getElementById("sn-transcript").value.trim();if(!t){alert("Paste a transcript first.");return}var b=document.getElementById("sn-btn");b.disabled=true;b.textContent="Generating...";document.getElementById("snLoader").style.display="block";document.getElementById("snResult").innerHTML="";fetch(BACKEND+"/api/show-notes/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transcript:t,title:document.getElementById("sn-title").value.trim(),guest:document.getElementById("sn-guest").value.trim()})}).then(function(r){return r.json()}).then(function(d){document.getElementById("snLoader").style.display="none";if(d.error){document.getElementById("snResult").innerHTML='<div class="card" style="color:#c45a4a">'+d.error+'</div>';return}renderShowNote(d)}).catch(function(e){document.getElementById("snLoader").style.display="none";document.getElementById("snResult").innerHTML='<div class="card" style="color:#c45a4a">Error: '+e.message+'</div>'}).finally(function(){b.disabled=false;b.textContent="Generate Show Notes"})}
 function renderShowNote(d){var html='<div class="card" style="margin-top:16px"><div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:12px">Generated Show Notes</div>';if(d.title)html+='<h3 style="font-family:Cormorant Garamond,serif;font-size:22px;margin-bottom:8px">'+d.title+'</h3>';if(d.summary)html+='<div style="font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.7;margin-bottom:16px;color:rgba(59,33,69,.7)">'+d.summary+'</div>';if(d.timestamps&&d.timestamps.length){html+='<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Timestamps</div><div style="margin-bottom:16px">';d.timestamps.forEach(function(ts){html+='<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(59,33,69,.04)"><span style="color:#90A9EC;font-weight:500;margin-right:8px">'+(ts.time||"")+'</span>'+ts.topic+'</div>'});html+='</div>'}if(d.key_quotes&&d.key_quotes.length){html+='<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Key Quotes</div>';d.key_quotes.forEach(function(q){html+='<blockquote style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;border-left:3px solid #90A9EC;padding-left:14px;margin:0 0 10px;color:#3B2145">"'+q+'"</blockquote>'});html+='<div style="margin-bottom:16px"></div>'}if(d.show_notes_text){html+='<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Full Show Notes</div><div style="font-family:Cormorant Garamond,serif;font-size:15px;line-height:1.8;white-space:pre-wrap;color:#3B2145">'+d.show_notes_text+'</div>'}html+='<div class="btns" style="margin-top:14px"><button class="ghost" onclick="copyShowNotes()">Copy Show Notes</button></div></div>';document.getElementById("snResult").innerHTML=html;window._lastShowNotes=d}
 function copyShowNotes(){if(!window._lastShowNotes)return;var d=window._lastShowNotes;var text=(d.title||"")+"\n\n"+(d.summary||"")+"\n\n";if(d.timestamps)text+="TIMESTAMPS\n"+d.timestamps.map(function(t){return(t.time||"")+" "+t.topic}).join("\n")+"\n\n";if(d.key_quotes)text+="KEY QUOTES\n"+d.key_quotes.map(function(q){return'"'+q+'"'}).join("\n")+"\n\n";if(d.show_notes_text)text+=d.show_notes_text;navigator.clipboard.writeText(text);alert("Copied!")}
 function loadShowNotesList(){fetch(BACKEND+"/api/show-notes").then(function(r){return r.json()}).then(function(d){var list=d.show_notes||d||[];if(!list.length){document.getElementById("snList").innerHTML='<span style="color:rgba(59,33,69,.3)">No saved show notes yet.</span>';return}var html='';list.forEach(function(n){html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(59,33,69,.04);cursor:pointer" onclick="loadShowNote('+n.id+')"><div><strong style="font-family:Cormorant Garamond,serif;font-size:16px">'+(n.title||"Untitled")+'</strong>'+(n.guest?' <span style="font-size:12px;color:rgba(59,33,69,.35)">with '+n.guest+'</span>':'')+'</div><span style="font-size:11px;color:rgba(59,33,69,.25)">'+new Date(n.created_at).toLocaleDateString()+'</span></div>'});document.getElementById("snList").innerHTML=html}).catch(function(){})}
@@ -1647,7 +1650,7 @@ function suggestAudiences(){
   </div>
 </div>
 
-<div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved. <span style="cursor:pointer;color:#90A9EC;margin-left:12px" onclick="logout()">Log Out</span></p></div>
+<div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved.</p></div>
 </div>
 </div>
 
@@ -2205,11 +2208,16 @@ function loadManyChatCTAs(){
     // Carousel Builder Step 5 CTA
     var bctaEl=document.getElementById("b-cta-trigger");
     if(bctaEl){
-      bctaEl.innerHTML=opts||'<option value="">No triggers</option>';
+      bctaEl.innerHTML=opts||'<option value="" disabled>No triggers yet — add one in Webhooks tab</option>';
       var badge=document.getElementById("triggerDisplay");
       if(badge&&triggers.length)badge.textContent=triggers[0].keyword;
     }
-  }).catch(function(){console.log("Could not load ManyChat triggers for CTA dropdowns")});
+  }).catch(function(){
+    var ctaEl=document.getElementById("cta");
+    if(ctaEl)ctaEl.innerHTML='<option value="">No CTA — check Webhooks tab</option>';
+    var bctaEl=document.getElementById("b-cta-trigger");
+    if(bctaEl)bctaEl.innerHTML='<option value="" disabled>Could not load triggers</option>';
+  });
 }
 
 function loadViralFeed(){fetch(BACKEND+"/api/viral").then(function(r){return r.json()}).then(function(d){if(d.success&&d.posts){viralPosts=d.posts;viralHooks=d.hooks||[]}}).catch(function(){})}

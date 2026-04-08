@@ -35,7 +35,7 @@ DEFAULT_HASHTAGS = [
     "attachmenttheory",
     "healingtrauma",
     "innerchildhealing",
-    "nervousystemregulation",
+    "nervoussystemregulation",
     "personalgrowth",
     "selfawareness",
     "psychologyfacts",
