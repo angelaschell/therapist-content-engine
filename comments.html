@@ -8,12 +8,21 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:100vh}
-.hero{background:#F7EBE0;padding:24px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
-.hero-inner{max-width:700px;margin:0 auto}
-.hero-greeting{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:6px;font-weight:500}
-.hero h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:#3B2145;margin-bottom:4px}
-.hero-sub{font-size:13px;color:rgba(59,33,69,.35);margin-bottom:16px}
-.nav-bar{display:flex;align-items:center;justify-content:center;gap:6px;padding:0 16px;border-bottom:1px solid rgba(59,33,69,.08);background:#F7EBE0;flex-wrap:wrap}
+.hero{background:#F7EBE0;padding:10px 24px;text-align:left;border-bottom:1px solid rgba(59,33,69,.06)}
+.hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.hero-greeting{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;font-weight:500;line-height:1}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#3B2145;line-height:1.2;margin:0}
+.hero-sub{display:none}
+.nav-bar{display:flex;align-items:center;justify-content:center;gap:0;padding:0 16px;border-bottom:1px solid rgba(59,33,69,.08);background:#F7EBE0;position:relative}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 16px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
+.nav-group-btn:hover{color:rgba(59,33,69,.6)}
+.nav-group.active>.nav-group-btn{color:#3B2145;border-bottom-color:#90A9EC}
+.nav-dropdown{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#F7EBE0;border:1px solid rgba(210,199,255,.3);border-radius:0 0 10px 10px;box-shadow:0 8px 24px rgba(59,33,69,.1);z-index:100;min-width:160px;padding:6px 0}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown .nav-link{display:block;width:100%;text-align:left;border-bottom:none;padding:9px 18px}
+.nav-dropdown .nav-link:hover{background:rgba(144,169,236,.1);color:#3B2145}
+.nav-dropdown .nav-link.active{color:#3B2145;background:rgba(144,169,236,.08);font-weight:600}
 .nav-link{background:none;border:none;color:rgba(59,33,69,.35);padding:14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;letter-spacing:.05em;font-weight:500;transition:all .25s;text-decoration:none;white-space:nowrap}
 .nav-link:hover{color:rgba(59,33,69,.6)}
 .nav-link.active{color:#3B2145;border-bottom-color:#90A9EC}
@@ -175,10 +184,56 @@ body{background:#F7EBE0;font-family:'Jost',sans-serif;color:#3B2145;min-height:1
 <div class="hero"><div class="hero-inner">
   <div class="hero-greeting">Content Engine</div>
   <h1>Comment Command Center</h1>
-  <div class="hero-sub">AI-powered comment triage, sales intelligence &amp; direct reply</div>
 </div></div>
 <div class="nav-bar">
-  <a class="nav-link" href="/">Content Studio</a><a class="nav-link" href="/">DM Engine</a><a class="nav-link" href="/">ManyChat Flows</a><a class="nav-link" href="/">Brand Vault</a><a class="nav-link" href="/">Templates</a><a class="nav-link" href="/">Carousel Builder</a><a class="nav-link" href="/">Recent Carousels</a><a class="nav-link" href="/">Analytics</a><a class="nav-link active" href="/comments">Comments</a>
+  <a class="nav-link" href="/">Strategy</a>
+  <div class="nav-group">
+    <button class="nav-group-btn">Create &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','content')">Content</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','builder')">Carousels</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','stories_tab')">Stories</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','reels')">Reels</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','shownotes_tab')">Show Notes</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','adstudio_tab')">Ad Studio</a>
+    </div>
+  </div>
+  <div class="nav-group active">
+    <button class="nav-group-btn">Manage &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','calendar')">Calendar</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','dm')">DMs</a>
+      <a class="nav-link active" href="/comments">Comments</a>
+      <a class="nav-link" href="/manychat">Leads</a>
+    </div>
+  </div>
+  <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','explore')">Explore</a>
+  <div class="nav-group">
+    <button class="nav-group-btn">Analyze &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','analytics')">Analytics</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','perf_tab')">Performance</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','monitor')">Monitor</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','hashtag_tab')">Hashtags</a>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button class="nav-group-btn">Library &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','templates')">Templates</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','vault')">Vault</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','recent')">History</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','testimonial_tab')">Testimonials</a>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button class="nav-group-btn">Settings &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','webhooks_tab')">Webhooks</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','flows')">Flows</a>
+      <a class="nav-link" href="/" onclick="localStorage.setItem('ce-tab','triggers')">ManyChat Triggers</a>
+    </div>
+  </div>
 </div>
 <div class="main">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
