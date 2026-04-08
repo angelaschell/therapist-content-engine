@@ -1868,7 +1868,7 @@ if(maxH<30)maxH=slide.offsetHeight-66;
 var allText=textEl.querySelectorAll('.sl-upper,.sl-italic,.sl-cta-top,.sl-cta-bot');if(allText.length===0)allText=[textEl];allText.forEach(function(t){t.style.fontSize='';t.style.lineHeight=''});if(textEl.scrollHeight<=maxH)return;var scaleTries=0;while(textEl.scrollHeight>maxH&&scaleTries<20){scaleTries++;allText.forEach(function(t){var cs=window.getComputedStyle(t);var cur=parseFloat(cs.fontSize);var newSize=Math.max(cur*0.88,9);t.style.fontSize=newSize+'px';var curLh=parseFloat(cs.lineHeight);if(!isNaN(curLh)){t.style.lineHeight=Math.max(curLh*0.9,1.0)+''}});if(parseFloat(window.getComputedStyle(allText[0]).fontSize)<=9)break}})}
 
 function renderSvgSlides(tpl){
-// Check if this is an image-background template (has <image> elements or bg_urls)
+// Check if this is an image-background template (has <image> elements, bg_urls, or original_image_url)
 var hasImageBg=false;
 var bgUrls={hook:"",body:"",close:""};
 if(activeCustomSvgs){
@@ -1881,8 +1881,14 @@ if(activeCustomSvgs){
   if(closeMatch)bgUrls.close=closeMatch[1];
   // Also check bg_urls stored in template
   if(activeCustomSvgs.bg_urls){bgUrls.hook=activeCustomSvgs.bg_urls.hook||bgUrls.hook;bgUrls.body=activeCustomSvgs.bg_urls.body||bgUrls.body;bgUrls.close=activeCustomSvgs.bg_urls.close||bgUrls.close}
-  hasImageBg=!!(bgUrls.hook||bgUrls.body);
 }
+// Fallback: check template's original_image_url or full_analysis for background
+if(!bgUrls.hook&&activeCustomTemplate){
+  var fallbackUrl=activeCustomTemplate.original_image_url||"";
+  if(!fallbackUrl){try{var _faa=typeof activeCustomTemplate.full_analysis==="string"?JSON.parse(activeCustomTemplate.full_analysis):activeCustomTemplate.full_analysis;if(_faa&&_faa._bg_url)fallbackUrl=_faa._bg_url}catch(e){}}
+  if(fallbackUrl){bgUrls.hook=fallbackUrl;bgUrls.body=fallbackUrl;bgUrls.close=fallbackUrl}
+}
+hasImageBg=!!(bgUrls.hook||bgUrls.body);
 // If image-background template, render as HTML divs with background-image (supports color/font editing)
 if(hasImageBg){
   var t=activeCustomTemplate||{};
