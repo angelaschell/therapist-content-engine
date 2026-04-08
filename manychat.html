@@ -10,14 +10,23 @@
 body{background:#F7EBE0;color:#3B2145;font-family:'Jost',sans-serif;min-height:100vh}
 
 /* ─── HEADER + NAV ─────────────────────────────────────── */
-.hero{background:#F7EBE0;padding:28px 28px 0;text-align:center;border-bottom:1px solid rgba(59,33,69,.06)}
-.hero-inner{max-width:700px;margin:0 auto}
-.hero-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(210,199,255,.4);margin-bottom:10px}
-.hero-greeting{font-size:11px;letter-spacing:.35em;text-transform:uppercase;color:#90A9EC;margin-bottom:4px;font-weight:500}
-.hero h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:#3B2145;margin-bottom:4px}
-.hero-handle{font-size:12px;color:rgba(59,33,69,.3);margin-bottom:14px}
-.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;overflow-x:auto;justify-content:center;gap:2px}
-.tab{background:none;border:none;color:rgba(59,33,69,.35);padding:12px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s;text-decoration:none}
+.hero{background:#F7EBE0;padding:10px 24px;text-align:left;border-bottom:1px solid rgba(59,33,69,.06)}
+.hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.hero-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(210,199,255,.4);flex-shrink:0}
+.hero-greeting{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:#90A9EC;font-weight:500;line-height:1}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#3B2145;line-height:1.2;margin:0}
+.hero-handle{font-size:11px;color:rgba(59,33,69,.35)}
+.tabs{background:#F7EBE0;border-bottom:1px solid rgba(59,33,69,.08);display:flex;padding:0 16px;justify-content:center;gap:0;position:relative}
+.nav-group{position:relative}
+.nav-group-btn{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 16px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s}
+.nav-group-btn:hover{color:rgba(59,33,69,.6)}
+.nav-group.active>.nav-group-btn{color:#3B2145;border-bottom-color:#90A9EC}
+.nav-dropdown{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#F7EBE0;border:1px solid rgba(210,199,255,.3);border-radius:0 0 10px 10px;box-shadow:0 8px 24px rgba(59,33,69,.1);z-index:100;min-width:160px;padding:6px 0}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown .tab{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:none;color:rgba(59,33,69,.45);padding:9px 18px;font-size:11px;cursor:pointer;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .15s;text-decoration:none}
+.nav-dropdown .tab:hover{background:rgba(144,169,236,.1);color:#3B2145}
+.nav-dropdown .tab.active{color:#3B2145;background:rgba(144,169,236,.08);font-weight:600}
+.tab{background:none;border:none;color:rgba(59,33,69,.35);padding:14px 14px;font-size:11px;cursor:pointer;border-bottom:2px solid transparent;font-family:'Jost',sans-serif;white-space:nowrap;letter-spacing:.05em;font-weight:500;transition:all .25s;text-decoration:none}
 .tab:hover{color:rgba(59,33,69,.6)}
 .tab.active{color:#3B2145;border-bottom-color:#90A9EC}
 
@@ -194,22 +203,62 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
 <!-- HEADER -->
 <div class="hero"><div class="hero-inner">
   <img class="hero-photo" src="https://images.squarespace-cdn.com/content/v1/675a01f8c579e17302f7a0c7/07ed7361-ad28-4c7a-b080-b7c1bd28e9be/Angela+Schellenberg++Branding+%283%29.png" alt="Angela">
-  <div class="hero-greeting">Content Engine</div>
-  <h1>Lead CRM</h1>
-  <div class="hero-handle">ManyChat + Instagram Intelligence</div>
+  <div>
+    <div class="hero-greeting">Content Engine</div>
+    <h1>Lead CRM</h1>
+  </div>
 </div></div>
 
 <!-- NAV -->
 <div class="tabs">
-  <a class="tab" href="/">Content Studio</a>
-  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','dm')">DM Engine</a>
-  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','flows')">ManyChat Flows</a>
-  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','vault')">Brand Vault</a>
-  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','templates')">Templates</a>
-  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','builder')">Carousel Builder</a>
-  <a class="tab active" href="/manychat">Lead CRM</a>
-  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','analytics')">Analytics</a>
-  <a class="tab" href="/comments">Comments</a>
+  <a class="tab" href="/">Strategy</a>
+  <div class="nav-group">
+    <button class="nav-group-btn">Create &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','content')">Content</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','builder')">Carousels</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','stories_tab')">Stories</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','reels')">Reels</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','shownotes_tab')">Show Notes</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','adstudio_tab')">Ad Studio</a>
+    </div>
+  </div>
+  <div class="nav-group active">
+    <button class="nav-group-btn">Manage &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','calendar')">Calendar</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','dm')">DMs</a>
+      <a class="tab" href="/comments">Comments</a>
+      <a class="tab active" href="/manychat">Leads</a>
+    </div>
+  </div>
+  <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','explore')">Explore</a>
+  <div class="nav-group">
+    <button class="nav-group-btn">Analyze &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','analytics')">Analytics</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','perf_tab')">Performance</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','monitor')">Monitor</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','hashtag_tab')">Hashtags</a>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button class="nav-group-btn">Library &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','templates')">Templates</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','vault')">Vault</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','recent')">History</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','testimonial_tab')">Testimonials</a>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button class="nav-group-btn">Settings &#9662;</button>
+    <div class="nav-dropdown">
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','webhooks_tab')">Webhooks</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','flows')">Flows</a>
+      <a class="tab" href="/" onclick="localStorage.setItem('ce-tab','triggers')">ManyChat Triggers</a>
+    </div>
+  </div>
 </div>
 
 <div class="main">
@@ -232,6 +281,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <button class="subtab" onclick="showSection('actions',this)">Completed Actions</button>
   <button class="subtab" onclick="showSection('flodesk',this)">Flodesk Sync</button>
   <button class="subtab" onclick="showSection('predictions',this)">Predictions</button>
+  <button class="subtab" onclick="showSection('comments',this)">Comments <span class="badge" id="commentBadge">0</span></button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -405,6 +455,41 @@ textarea{resize:vertical;min-height:70px;line-height:1.6}
   <div id="predList"><div class="card" style="color:rgba(59,33,69,.3);text-align:center;padding:28px">Click "Refresh Predictions" to calculate conversion probabilities.</div></div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  SECTION: COMMENTS                                    -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="sec-comments" class="section" style="display:none">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Instagram Comments</div>
+      <div class="section-sub">Fetch, analyze, and reply to comments. Claude drafts responses automatically.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="crmFetchComments()" id="crmFetchBtn">Fetch Comments</button>
+      <button class="btn btn-sm" style="background:#D2C7FF;color:#3B2145" onclick="crmCategorizeComments()">AI Categorize</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <select id="crmCommentFilter" onchange="crmLoadComments()" style="font-size:12px;padding:6px 10px">
+      <option value="">All Comments</option>
+      <option value="potential_client">Potential Clients</option>
+      <option value="superfan">Superfans</option>
+      <option value="question">Questions</option>
+      <option value="engagement">Engagement</option>
+      <option value="testimonial">Testimonials</option>
+    </select>
+    <select id="crmCommentStatus" onchange="crmLoadComments()" style="font-size:12px;padding:6px 10px">
+      <option value="">All Status</option>
+      <option value="new">New</option>
+      <option value="replied">Replied</option>
+      <option value="flagged">Flagged</option>
+    </select>
+    <input type="text" id="crmCommentSearch" placeholder="Search comments..." style="flex:1;min-width:150px;font-size:12px;padding:6px 10px" onkeyup="if(event.key==='Enter')crmLoadComments()">
+    <span id="crmCommentCount" style="font-size:11px;color:rgba(59,33,69,.3)"></span>
+  </div>
+  <div id="crmCommentList"></div>
+</div>
+
 </div>
 
 <div class="footer"><p>&copy; 2026 Angela Schellenberg. All Rights Reserved.</p></div>
@@ -471,6 +556,7 @@ function showSection(id, el) {
   if (id === "actions") loadActions();
   if (id === "flodesk") loadFlodeskStatus();
   if (id === "predictions") loadPredictions();
+  if (id === "comments") crmLoadComments();
 }
 
 // ─── SYNC ──────────────────────────────────────────────────
@@ -1265,6 +1351,160 @@ function loadPredictions() {
     });
     document.getElementById("predList").innerHTML = html;
   }).catch(function(e) { document.getElementById("predList").innerHTML = '<div class="card" style="color:#c45a4a">Error: ' + e.message + '</div>'; });
+}
+
+// ─── COMMENTS IN CRM ──────────────────────────────────────
+function crmFetchComments() {
+  var btn = document.getElementById("crmFetchBtn");
+  btn.disabled = true; btn.textContent = "Fetching...";
+  document.getElementById("crmCommentList").innerHTML = '<div class="card" style="text-align:center;color:#90A9EC;padding:28px">Pulling comments from Instagram...</div>';
+  fetch(BACKEND + "/api/comments/fetch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ days: 30 }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      btn.disabled = false; btn.textContent = "Fetch Comments";
+      if (d.success || d.fetched) {
+        showToast("Fetched " + (d.fetched || 0) + " comments, " + (d.new_comments || 0) + " new.");
+        crmLoadComments();
+      } else {
+        showToast(d.error || "Fetch failed.", true);
+        document.getElementById("crmCommentList").innerHTML = '<div class="card" style="color:#c45a4a">' + (d.error || "Could not fetch comments. Check your Instagram token in Analytics.") + '</div>';
+      }
+    }).catch(function(e) {
+      btn.disabled = false; btn.textContent = "Fetch Comments";
+      showToast("Fetch error: " + e.message, true);
+    });
+}
+
+function crmCategorizeComments() {
+  showToast("AI categorizing comments...");
+  fetch(BACKEND + "/api/comments/categorize", { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      showToast("Categorized " + (d.categorized || 0) + " comments.");
+      crmLoadComments();
+    }).catch(function(e) { showToast("Error: " + e.message, true); });
+}
+
+function crmLoadComments() {
+  var category = document.getElementById("crmCommentFilter").value;
+  var status = document.getElementById("crmCommentStatus").value;
+  var search = document.getElementById("crmCommentSearch").value.trim();
+  var url = BACKEND + "/api/comments/list?limit=50&sort=recent";
+  if (category) url += "&category=" + encodeURIComponent(category);
+  if (status) url += "&status=" + encodeURIComponent(status);
+  if (search) url += "&search=" + encodeURIComponent(search);
+  fetch(url).then(function(r) { return r.json(); }).then(function(d) {
+    var comments = d.comments || [];
+    document.getElementById("crmCommentCount").textContent = comments.length + " comments";
+    document.getElementById("commentBadge").textContent = comments.filter(function(c) { return c.status === "new"; }).length;
+    if (!comments.length) {
+      document.getElementById("crmCommentList").innerHTML = '<div class="card" style="color:rgba(59,33,69,.3);text-align:center;padding:28px">No comments found. Click "Fetch Comments" to pull from Instagram.</div>';
+      return;
+    }
+    var html = "";
+    comments.forEach(function(c) {
+      var catColors = { potential_client: "#90A9EC", superfan: "#E5ACD7", question: "#FFC696", engagement: "#6fcf97", testimonial: "#D2C7FF", spam: "#c45a4a" };
+      var catColor = catColors[c.category] || "rgba(59,33,69,.2)";
+      var statusIcon = c.status === "replied" ? '<span style="color:#6fcf97;font-size:10px">&#10003; Replied</span>' : c.status === "flagged" ? '<span style="color:#FFC696;font-size:10px">&#9873; Flagged</span>' : '<span style="color:#90A9EC;font-size:10px">&#9679; New</span>';
+      html += '<div class="card" style="margin-bottom:8px;padding:16px" id="crm-comment-' + c.id + '">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">';
+      html += '<div><strong style="font-family:Cormorant Garamond,serif;font-size:15px">@' + (c.username || "unknown") + '</strong> ' + statusIcon;
+      if (c.category) html += ' <span style="font-size:9px;padding:2px 8px;border-radius:4px;background:' + catColor + '22;color:' + catColor + ';letter-spacing:.1em;text-transform:uppercase;font-weight:600">' + c.category + '</span>';
+      if (c.lead_score) html += ' <span style="font-size:10px;color:rgba(59,33,69,.3)">Score: ' + c.lead_score + '</span>';
+      html += '</div>';
+      html += '<span style="font-size:10px;color:rgba(59,33,69,.2)">' + (c.timestamp ? new Date(c.timestamp).toLocaleDateString() : "") + '</span>';
+      html += '</div>';
+      html += '<div style="font-family:Cormorant Garamond,serif;font-size:14px;line-height:1.6;color:#3B2145;margin-bottom:10px">' + (c.text || "") + '</div>';
+      // Reply draft area
+      html += '<div id="crm-reply-' + c.id + '">';
+      if (c.reply_draft) {
+        html += '<div style="background:rgba(144,169,236,.06);border:1px solid rgba(144,169,236,.15);border-radius:8px;padding:10px;margin-bottom:8px">';
+        html += '<div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;margin-bottom:4px">AI Draft</div>';
+        html += '<textarea id="crm-draft-' + c.id + '" style="width:100%;min-height:60px;font-size:13px;border:none;background:transparent;resize:vertical;font-family:Cormorant Garamond,serif;color:#3B2145">' + c.reply_draft + '</textarea>';
+        html += '</div>';
+      }
+      html += '</div>';
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+      html += '<button class="ghost" style="font-size:11px" onclick="crmAutoDraft(' + c.id + ')">AI Draft Reply</button>';
+      if (c.reply_draft) html += '<button class="btn" style="font-size:11px;padding:6px 14px" onclick="crmSendReply(' + c.id + ')">Send Reply</button>';
+      html += '<button class="ghost" style="font-size:11px" onclick="crmDeepAnalysis(' + c.id + ')">Deep Analysis</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+    document.getElementById("crmCommentList").innerHTML = html;
+  }).catch(function(e) {
+    document.getElementById("crmCommentList").innerHTML = '<div class="card" style="color:#c45a4a">Error loading comments: ' + e.message + '</div>';
+  });
+}
+
+function crmAutoDraft(commentId) {
+  var el = document.getElementById("crm-reply-" + commentId);
+  el.innerHTML = '<div style="color:#90A9EC;font-size:12px;padding:8px">Drafting reply...</div>';
+  fetch(BACKEND + "/api/comments/auto-draft/" + commentId, { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.reply_draft) {
+        el.innerHTML = '<div style="background:rgba(144,169,236,.06);border:1px solid rgba(144,169,236,.15);border-radius:8px;padding:10px;margin-bottom:8px">' +
+          '<div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#90A9EC;margin-bottom:4px">AI Draft</div>' +
+          '<textarea id="crm-draft-' + commentId + '" style="width:100%;min-height:60px;font-size:13px;border:none;background:transparent;resize:vertical;font-family:Cormorant Garamond,serif;color:#3B2145">' + d.reply_draft + '</textarea></div>';
+        // Add send button
+        var card = document.getElementById("crm-comment-" + commentId);
+        var btns = card.querySelector("div:last-child");
+        if (btns && !btns.querySelector(".btn")) {
+          var sendBtn = document.createElement("button");
+          sendBtn.className = "btn";
+          sendBtn.style.cssText = "font-size:11px;padding:6px 14px";
+          sendBtn.textContent = "Send Reply";
+          sendBtn.onclick = function() { crmSendReply(commentId); };
+          btns.insertBefore(sendBtn, btns.children[1]);
+        }
+      } else {
+        el.innerHTML = '<div style="color:#c45a4a;font-size:12px;padding:8px">' + (d.error || "Could not generate draft") + '</div>';
+      }
+    }).catch(function(e) {
+      el.innerHTML = '<div style="color:#c45a4a;font-size:12px;padding:8px">Error: ' + e.message + '</div>';
+    });
+}
+
+function crmSendReply(commentId) {
+  var textarea = document.getElementById("crm-draft-" + commentId);
+  if (!textarea || !textarea.value.trim()) { showToast("No reply text", true); return; }
+  if (!confirm("Post this reply to Instagram?")) return;
+  fetch(BACKEND + "/api/comments/reply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comment_id: commentId, reply_text: textarea.value.trim() }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success) {
+        showToast("Reply posted to Instagram!");
+        crmLoadComments();
+      } else {
+        showToast(d.error || "Failed to post reply", true);
+      }
+    }).catch(function(e) { showToast("Error: " + e.message, true); });
+}
+
+function crmDeepAnalysis(commentId) {
+  var el = document.getElementById("crm-reply-" + commentId);
+  el.innerHTML = '<div style="color:#90A9EC;font-size:12px;padding:8px">Running deep analysis...</div>';
+  fetch(BACKEND + "/api/comments/deep-analysis/" + commentId, { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.analysis) {
+        var a = d.analysis;
+        var html = '<div style="background:rgba(229,172,215,.06);border:1px solid rgba(229,172,215,.15);border-radius:8px;padding:12px;margin-bottom:8px">';
+        html += '<div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#E5ACD7;margin-bottom:6px">Deep Analysis</div>';
+        if (a.intent) html += '<div style="font-size:12px;margin-bottom:4px"><strong>Intent:</strong> ' + a.intent + '</div>';
+        if (a.emotional_state) html += '<div style="font-size:12px;margin-bottom:4px"><strong>Emotional State:</strong> ' + a.emotional_state + '</div>';
+        if (a.sales_opportunity) html += '<div style="font-size:12px;margin-bottom:4px"><strong>Sales Opportunity:</strong> ' + a.sales_opportunity + '</div>';
+        if (a.recommended_response) html += '<div style="font-size:12px;margin-bottom:4px"><strong>Recommended:</strong> ' + a.recommended_response + '</div>';
+        if (a.lead_score) html += '<div style="font-size:12px"><strong>Lead Score:</strong> ' + a.lead_score + '/100</div>';
+        html += '</div>';
+        el.innerHTML = html;
+      } else {
+        el.innerHTML = '<div style="color:#c45a4a;font-size:12px;padding:8px">' + (d.error || "Analysis failed") + '</div>';
+      }
+    }).catch(function(e) {
+      el.innerHTML = '<div style="color:#c45a4a;font-size:12px;padding:8px">Error: ' + e.message + '</div>';
+    });
 }
 
 // ─── INIT ──────────────────────────────────────────────────
