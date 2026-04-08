@@ -328,6 +328,15 @@ async def generate_svg_templates(req: Request):
         size_map = {"small": (52, 32, 36), "medium": (64, 38, 42), "large": (78, 44, 50), "xlarge": (96, 52, 58)}
         hook_size, body_size, close_size = size_map.get(text_size, size_map["large"])
 
+        # Text zone positioning (from drag editor, percentages → 1080x1350 pixels)
+        text_zone = analysis.get("text_zone", {})
+        tz_x = int(text_zone.get("x", 7) * 1080 / 100)
+        tz_y = int(text_zone.get("y", 25) * 1350 / 100)
+        tz_w = int(text_zone.get("w", 85) * 1080 / 100)
+        tz_h = int(text_zone.get("h", 50) * 1350 / 100)
+        # Hook subtitle position: below the main text zone
+        sub_y = tz_y + tz_h + 20
+
         # Watermark SVG
         wm = ""
         if watermark:
@@ -336,10 +345,10 @@ async def generate_svg_templates(req: Request):
         # Build deterministic SVGs with image backgrounds
         svg_hook = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
 <image href='{hook_bg_url}' x='0' y='0' width='1080' height='1350' preserveAspectRatio='xMidYMid slice'/>
-<foreignObject x='80' y='320' width='920' height='500' class='tz'>
+<foreignObject x='{tz_x}' y='{tz_y}' width='{tz_w}' height='{tz_h}' class='tz'>
   <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:{hook_text}; font-family:{title_font_family}; font-size:{hook_size}px; font-weight:{title_font_weight}; font-style:{title_font_style}; {title_transform} text-align:{text_align}; line-height:1.2; word-wrap:break-word;'></div>
 </foreignObject>
-<foreignObject x='100' y='830' width='880' height='100' class='tz'>
+<foreignObject x='{tz_x}' y='{sub_y}' width='{tz_w}' height='100' class='tz'>
   <div xmlns='http://www.w3.org/1999/xhtml' class='tz-sub' style='color:{hook_text}; font-family:{body_font_family}; font-size:24px; font-weight:400; text-align:{text_align}; line-height:1.4; letter-spacing:3px; text-transform:uppercase; opacity:0.7;'></div>
 </foreignObject>
 {wm}
@@ -347,14 +356,14 @@ async def generate_svg_templates(req: Request):
 
         svg_body = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
 <image href='{body_bg_url}' x='0' y='0' width='1080' height='1350' preserveAspectRatio='xMidYMid slice'/>
-<foreignObject x='100' y='300' width='880' height='750' class='tz'>
+<foreignObject x='{tz_x}' y='{tz_y}' width='{tz_w}' height='{tz_h}' class='tz'>
   <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:{text_color}; font-family:{body_font_family}; font-size:{body_size}px; font-weight:{body_font_weight}; font-style:{body_font_style}; text-align:{text_align}; line-height:1.5; word-wrap:break-word;'></div>
 </foreignObject>
 </svg>"""
 
         svg_close = f"""<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>
 <image href='{close_bg_url}' x='0' y='0' width='1080' height='1350' preserveAspectRatio='xMidYMid slice'/>
-<foreignObject x='100' y='350' width='880' height='600' class='tz'>
+<foreignObject x='{tz_x}' y='{tz_y}' width='{tz_w}' height='{tz_h}' class='tz'>
   <div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:{close_text}; font-family:{body_font_family}; font-size:{close_size}px; font-weight:{body_font_weight}; font-style:italic; text-align:{text_align}; line-height:1.45; word-wrap:break-word;'></div>
 </foreignObject>
 {wm}
