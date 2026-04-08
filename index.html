@@ -1953,7 +1953,7 @@ function syncPreviewTemplate(){
 // ─── RICH TEXT TOOLBAR ────────────────────────────────────
 var rtToolbar=null;
 function initRichTextToolbar(){
-  if(rtToolbar)return;
+  if(rtToolbar){updateRtBrandColors();return}
   rtToolbar=document.createElement("div");
   rtToolbar.className="rt-toolbar";
   rtToolbar.id="rtToolbar";
@@ -1962,11 +1962,27 @@ function initRichTextToolbar(){
     +'<button class="rt-btn" onmousedown="rtCmd(\'italic\',event)" title="Italic"><i>I</i></button>'
     +'<button class="rt-btn" onmousedown="rtCmd(\'underline\',event)" title="Underline"><u>U</u></button>'
     +'<div class="rt-sep"></div>'
-    +'<input type="color" class="rt-color-input" value="#3B2145" onchange="rtColor(this.value)" oninput="rtColor(this.value)" title="Text Color">'
+    +'<span id="rtBrandColors" style="display:flex;gap:2px"></span>'
+    +'<input type="color" class="rt-color-input" value="#3B2145" onchange="rtColor(this.value)" oninput="rtColor(this.value)" title="Custom Color">'
     +'<div class="rt-sep"></div>'
     +'<button class="rt-btn" onmousedown="rtSize(\'small\',event)" title="Smaller" style="font-size:10px">A</button>'
     +'<button class="rt-btn" onmousedown="rtSize(\'big\',event)" title="Bigger" style="font-size:16px">A</button>';
   document.body.appendChild(rtToolbar);
+  updateRtBrandColors();
+}
+function updateRtBrandColors(){
+  var el=document.getElementById("rtBrandColors");if(!el)return;
+  var colors=[];
+  // Get brand colors from active template
+  if(activeCustomTemplate){
+    try{var fa=typeof activeCustomTemplate.full_analysis==="string"?JSON.parse(activeCustomTemplate.full_analysis):activeCustomTemplate.full_analysis;
+    if(fa&&fa.brand_colors)colors=fa.brand_colors}catch(e){}
+    // Also add template text colors as quick picks
+    if(activeCustomTemplate.hook_text&&colors.indexOf(activeCustomTemplate.hook_text)===-1)colors.unshift(activeCustomTemplate.hook_text);
+    if(activeCustomTemplate.text_color&&colors.indexOf(activeCustomTemplate.text_color)===-1)colors.unshift(activeCustomTemplate.text_color);
+  }
+  if(!colors.length){el.innerHTML="";return}
+  el.innerHTML=colors.map(function(c){return '<div onmousedown="event.preventDefault();rtColor(\''+c+'\')" style="width:18px;height:18px;border-radius:3px;background:'+c+';cursor:pointer;border:1.5px solid rgba(255,255,255,.3);flex-shrink:0" title="'+c+'"></div>'}).join("");
 }
 function rtCmd(cmd,e){e.preventDefault();document.execCommand(cmd,false,null);syncSlideEdits()}
 function rtColor(color){document.execCommand("foreColor",false,color);syncSlideEdits()}
@@ -2222,6 +2238,16 @@ h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom
 var cpicks=[{key:"hook_bg",l:"Hook BG"},{key:"hook_text",l:"Hook Text"},{key:"sub_text",l:"Subtitle"},{key:"bg_color",l:"Body BG"},{key:"text_color",l:"Body Text"},{key:"close_bg",l:"Close BG"},{key:"close_text",l:"Close Text"}];
 cpicks.forEach(function(cp){h+='<div class="tpl-cpick"><input type="color" value="'+(data[cp.key]||"#cccccc")+'" onchange="updateTplColor(\''+cp.key+'\',this.value)" oninput="updateTplColor(\''+cp.key+'\',this.value)"><span class="tpl-cpick-label">'+cp.l+'</span><span class="tpl-cpick-hex" id="cpick-'+cp.key+'">'+(data[cp.key]||"")+'</span></div>'});
 h+='</div>';
+// Brand colors
+var bc=data.brand_colors||[];
+h+='<div style="margin-bottom:12px">';
+h+='<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:6px">Brand Colors</div>';
+h+='<div style="font-size:11px;color:rgba(59,33,69,.35);margin-bottom:8px">Add your brand hex colors. These show as quick-pick swatches when editing text in the carousel builder.</div>';
+h+='<div id="brandColorList" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
+bc.forEach(function(c,idx){h+='<div style="position:relative;display:inline-block"><div style="width:32px;height:32px;border-radius:6px;background:'+c+';border:2px solid rgba(59,33,69,.1);cursor:pointer" title="'+c+'" onclick="removeBrandColor('+idx+')"></div><div style="font-size:7px;text-align:center;color:rgba(59,33,69,.25);margin-top:2px">'+c+'</div></div>'});
+h+='</div>';
+h+='<div style="display:flex;gap:6px;align-items:center"><input type="color" id="newBrandColor" value="#8BADE0" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0"><input type="text" id="newBrandHex" placeholder="#8BADE0" style="width:80px;font-size:12px;padding:4px 8px" value="#8BADE0" oninput="document.getElementById(\'newBrandColor\').value=this.value"><button class="ghost" style="font-size:11px;padding:4px 10px" onclick="addBrandColor()">Add</button></div>';
+h+='</div>';
 // Font pickers
 h+='<div style="margin-bottom:12px">';
 h+='<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Fonts</div>';
@@ -2342,6 +2368,8 @@ function initLogoDrag(){
 }
 
 function updateTplColor(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;var hexEl=document.getElementById("cpick-"+key);if(hexEl)hexEl.textContent=value;renderTplResult(tplCurrentAnalysis)}
+function addBrandColor(){var hex=document.getElementById("newBrandHex").value.trim();if(!hex||!hex.match(/^#[0-9a-fA-F]{3,8}$/)){alert("Enter a valid hex color like #8BADE0");return}if(!tplCurrentAnalysis)return;if(!tplCurrentAnalysis.brand_colors)tplCurrentAnalysis.brand_colors=[];if(tplCurrentAnalysis.brand_colors.indexOf(hex)===-1)tplCurrentAnalysis.brand_colors.push(hex);renderTplResult(tplCurrentAnalysis)}
+function removeBrandColor(idx){if(!tplCurrentAnalysis||!tplCurrentAnalysis.brand_colors)return;tplCurrentAnalysis.brand_colors.splice(idx,1);renderTplResult(tplCurrentAnalysis)}
 function updateTplFont(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;renderTplResult(tplCurrentAnalysis)}
 
 function initTzEditor(){
