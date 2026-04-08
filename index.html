@@ -1839,7 +1839,60 @@ if(activeCustomSvgs&&activeCustomSvgs.svg_hook){renderSvgSlides(tpl);saveCarouse
 var brandColors=["#3B2145","#90A9EC","#D2C7FF","#FFC696","#F7EBE0","#D3E0F1"];var h='<div class="cr-scroll" id="slideScroll">';carouselSlides.forEach(function(s,i){h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+' <span style="font-size:8px;color:#90A9EC;cursor:pointer" onclick="toggleColorEditor('+i+')">(edit style)</span></div>';var slideClass="body-s";if(s.type==="hook")slideClass="hook-s";else if(s.type==="cta")slideClass="cta-s";else if(s.type==="close")slideClass="close-s";h+='<div class="slide '+slideClass+" tpl-"+tpl+'" id="slide-'+i+'" onclick="toggleColorEditor('+i+')">';if(s.type==="hook")h+='<div class="sl-text"><div class="sl-upper">'+s.upper+'</div><div class="sl-italic">'+s.italic+'</div></div>';else if(s.type==="cta")h+='<div class="sl-text"><div class="sl-cta-top">'+s.top+'</div><div class="sl-cta-bot">'+s.bottom+'</div></div>';else if(s.type==="close")h+='<div class="sl-text">'+s.text+'</div>';else h+='<div class="sl-text">'+s.html+'</div>';h+='<div class="sl-wm">@angelaschellenberg</div></div>';h+='<div class="sl-color-editor" id="ce-'+i+'">';h+='<div class="sl-color-row"><span class="sl-color-label">BG</span>';brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="bg" data-color="'+c+'"></div>'});h+='</div><div class="sl-color-row"><span class="sl-color-label">TEXT</span>';brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="text" data-color="'+c+'"></div>'});h+='</div><div class="sl-color-row" style="flex-wrap:wrap"><span class="sl-color-label" style="min-width:28px">FONT</span>';var allFonts=[{n:"Playfair",f:"Playfair Display,serif"},{n:"Cormorant",f:"Cormorant Garamond,serif"},{n:"Jost",f:"Jost,sans-serif"}];customFonts.forEach(function(cf){allFonts.push({n:cf.name,f:cf.font_family+",serif"})});allFonts.forEach(function(fnt){h+='<span class="sl-font-pill" style="font-family:'+fnt.f+'" onclick="setSlideFont('+i+',\''+fnt.f.replace(/'/g,"\\'")+'\',this)">'+fnt.n+'</span>'});h+='</div></div>';h+='<button class="ghost" style="margin-top:6px;font-size:11px" onclick="downloadSlide('+i+')">Download</button></div>'});h+="</div>";document.getElementById("renderedSlides").innerHTML=h;document.querySelectorAll(".sl-swatch").forEach(function(sw){sw.addEventListener("click",function(e){e.stopPropagation();var idx=parseInt(this.dataset.slide);var type=this.dataset.type;var color=this.dataset.color;setSlideColor(idx,type,color)})});if(activeCustomTemplate){applyCustomTemplateColors()}autoSizeSlideText();saveCarousel()}
 function autoSizeSlideText(){document.querySelectorAll('.slide').forEach(function(slide){var textEl=slide.querySelector('.sl-text');if(!textEl)return;var slideH=slide.offsetHeight;var maxH=slideH-66;var allText=textEl.querySelectorAll('.sl-upper,.sl-italic,.sl-cta-top,.sl-cta-bot');if(allText.length===0)allText=[textEl];allText.forEach(function(t){t.style.fontSize='';t.style.lineHeight=''});if(textEl.scrollHeight<=maxH)return;var scaleTries=0;while(textEl.scrollHeight>maxH&&scaleTries<20){scaleTries++;allText.forEach(function(t){var cs=window.getComputedStyle(t);var cur=parseFloat(cs.fontSize);var newSize=Math.max(cur*0.88,9);t.style.fontSize=newSize+'px';var curLh=parseFloat(cs.lineHeight);if(!isNaN(curLh)){t.style.lineHeight=Math.max(curLh*0.9,1.0)+''}});if(parseFloat(window.getComputedStyle(allText[0]).fontSize)<=9)break}})}
 
-function renderSvgSlides(tpl){var h='<div class="cr-scroll" id="slideScroll">';carouselSlides.forEach(function(s,i){var svgBase;if(s.type==="hook")svgBase=activeCustomSvgs.svg_hook;else if(s.type==="close")svgBase=activeCustomSvgs.svg_close;else svgBase=activeCustomSvgs.svg_body;if(!svgBase)svgBase=activeCustomSvgs.svg_body||activeCustomSvgs.svg_hook;var mainText="";var subText="";if(s.type==="hook"){mainText=s.upper||"";subText=s.italic||""}else if(s.type==="cta"){mainText=(s.top||"")+"<br>"+(s.bottom||"")}else if(s.type==="close"){mainText=s.text||""}else{mainText=s.html||s.text||""}var svgSized=svgBase.replace(/viewBox='0 0 1080 1350'/,"viewBox='0 0 1080 1350' width='324' height='405' preserveAspectRatio='xMidYMid meet'").replace(/viewBox="0 0 1080 1350"/,'viewBox="0 0 1080 1350" width="324" height="405" preserveAspectRatio="xMidYMid meet"');h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+'</div>';h+='<div id="slide-'+i+'" style="width:324px;height:405px;border-radius:10px;overflow:hidden;position:relative;cursor:pointer">'+svgSized+'</div>';h+='<button class="ghost" style="margin-top:6px;font-size:11px" onclick="downloadSlide('+i+')">Download</button></div>'});h+="</div>";document.getElementById("renderedSlides").innerHTML=h;
+function renderSvgSlides(tpl){
+// Check if this is an image-background template (has <image> elements or bg_urls)
+var hasImageBg=false;
+var bgUrls={hook:"",body:"",close:""};
+if(activeCustomSvgs){
+  // Extract image URLs from SVGs
+  var hookMatch=(activeCustomSvgs.svg_hook||"").match(/href='([^']+)'/)||(activeCustomSvgs.svg_hook||"").match(/href="([^"]+)"/);
+  var bodyMatch=(activeCustomSvgs.svg_body||"").match(/href='([^']+)'/)||(activeCustomSvgs.svg_body||"").match(/href="([^"]+)"/);
+  var closeMatch=(activeCustomSvgs.svg_close||"").match(/href='([^']+)'/)||(activeCustomSvgs.svg_close||"").match(/href="([^"]+)"/);
+  if(hookMatch)bgUrls.hook=hookMatch[1];
+  if(bodyMatch)bgUrls.body=bodyMatch[1];
+  if(closeMatch)bgUrls.close=closeMatch[1];
+  // Also check bg_urls stored in template
+  if(activeCustomSvgs.bg_urls){bgUrls.hook=activeCustomSvgs.bg_urls.hook||bgUrls.hook;bgUrls.body=activeCustomSvgs.bg_urls.body||bgUrls.body;bgUrls.close=activeCustomSvgs.bg_urls.close||bgUrls.close}
+  hasImageBg=!!(bgUrls.hook||bgUrls.body);
+}
+// If image-background template, render as HTML divs with background-image (supports color/font editing)
+if(hasImageBg){
+  var t=activeCustomTemplate||{};
+  var textColor=t.text_color||"#7A96C0";
+  var hookTextColor=t.hook_text||textColor;
+  var closeTextColor=t.close_text||textColor;
+  var brandColors=["#3B2145","#90A9EC","#D2C7FF","#FFC696","#F7EBE0","#7A96C0","#8BADE0","#E8C97A"];
+  var allFonts=[{n:"Playfair",f:"Playfair Display,serif"},{n:"Cormorant",f:"Cormorant Garamond,serif"},{n:"Jost",f:"Jost,sans-serif"}];
+  customFonts.forEach(function(cf){allFonts.push({n:cf.name,f:cf.font_family+",serif"})});
+  var h='<div class="cr-scroll" id="slideScroll">';
+  carouselSlides.forEach(function(s,i){
+    var bgUrl=bgUrls.body;var txtColor=textColor;
+    if(s.type==="hook"){bgUrl=bgUrls.hook||bgUrls.body;txtColor=hookTextColor}
+    else if(s.type==="close"){bgUrl=bgUrls.close||bgUrls.body;txtColor=closeTextColor}
+    h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+' <span style="font-size:8px;color:#90A9EC;cursor:pointer" onclick="toggleColorEditor('+i+')">(edit style)</span></div>';
+    h+='<div class="slide" id="slide-'+i+'" onclick="toggleColorEditor('+i+')" style="width:324px;height:405px;border-radius:10px;overflow:hidden;position:relative;cursor:pointer;background-image:url('+bgUrl+');background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:32px 36px">';
+    if(s.type==="hook"){h+='<div class="sl-text"><div class="sl-upper" style="color:'+hookTextColor+'">'+s.upper+'</div><div class="sl-italic" style="color:'+hookTextColor+';opacity:0.7">'+s.italic+'</div></div>'}
+    else if(s.type==="cta"){h+='<div class="sl-text"><div class="sl-cta-top" style="color:'+txtColor+'">'+s.top+'</div><div class="sl-cta-bot" style="color:'+txtColor+'">'+s.bottom+'</div></div>'}
+    else if(s.type==="close"){h+='<div class="sl-text" style="color:'+closeTextColor+';font-style:italic">'+s.text+'</div>'}
+    else{h+='<div class="sl-text" style="color:'+txtColor+'">'+s.html+'</div>'}
+    h+='<div class="sl-wm" style="color:'+txtColor+';opacity:0.35">@angelaschellenberg</div></div>';
+    // Color/font editor
+    h+='<div class="sl-color-editor" id="ce-'+i+'">';
+    h+='<div class="sl-color-row"><span class="sl-color-label">TEXT</span>';
+    brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="text" data-color="'+c+'"></div>'});
+    h+='</div><div class="sl-color-row" style="flex-wrap:wrap"><span class="sl-color-label" style="min-width:28px">FONT</span>';
+    allFonts.forEach(function(fnt){h+='<span class="sl-font-pill" style="font-family:'+fnt.f+'" onclick="setSlideFont('+i+',\''+fnt.f.replace(/'/g,"\\'")+'\',this)">'+fnt.n+'</span>'});
+    h+='</div></div>';
+    h+='<button class="ghost" style="margin-top:6px;font-size:11px" onclick="downloadSlide('+i+')">Download</button></div>';
+  });
+  h+="</div>";
+  document.getElementById("renderedSlides").innerHTML=h;
+  document.querySelectorAll(".sl-swatch").forEach(function(sw){sw.addEventListener("click",function(e){e.stopPropagation();setSlideColor(parseInt(this.dataset.slide),this.dataset.type,this.dataset.color)})});
+  autoSizeSlideText();saveCarousel();
+  return;
+}
+// LEGACY: pure SVG rendering (for hand-coded SVG templates like GTYM seed)
+var h='<div class="cr-scroll" id="slideScroll">';carouselSlides.forEach(function(s,i){var svgBase;if(s.type==="hook")svgBase=activeCustomSvgs.svg_hook;else if(s.type==="close")svgBase=activeCustomSvgs.svg_close;else svgBase=activeCustomSvgs.svg_body;if(!svgBase)svgBase=activeCustomSvgs.svg_body||activeCustomSvgs.svg_hook;var svgSized=svgBase.replace(/viewBox='0 0 1080 1350'/,"viewBox='0 0 1080 1350' width='324' height='405' preserveAspectRatio='xMidYMid meet'").replace(/viewBox="0 0 1080 1350"/,'viewBox="0 0 1080 1350" width="324" height="405" preserveAspectRatio="xMidYMid meet"');h+='<div class="sl-wrap"><div class="sl-num">Slide '+(i+1)+'</div>';h+='<div id="slide-'+i+'" style="width:324px;height:405px;border-radius:10px;overflow:hidden;position:relative;cursor:pointer">'+svgSized+'</div>';h+='<button class="ghost" style="margin-top:6px;font-size:11px" onclick="downloadSlide('+i+')">Download</button></div>'});h+="</div>";document.getElementById("renderedSlides").innerHTML=h;
 // Inject text into SVG foreignObjects
 carouselSlides.forEach(function(s,i){var el=document.getElementById("slide-"+i);if(!el)return;var mainZone=el.querySelector(".tz-main");var subZone=el.querySelector(".tz-sub");if(s.type==="hook"){if(mainZone)mainZone.innerHTML=s.upper||"";if(subZone)subZone.innerHTML=s.italic||""}else if(s.type==="cta"){if(mainZone)mainZone.innerHTML=(s.top||"")+"<br>"+(s.bottom||"")}else if(s.type==="close"){if(mainZone)mainZone.innerHTML=s.text||""}else{if(mainZone)mainZone.innerHTML=s.html||s.text||""}})}
 
