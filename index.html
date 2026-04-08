@@ -2059,7 +2059,9 @@ var sizeMap={"small":"20px","medium":"26px","large":"32px","xlarge":"40px"};
 var bodySize={"small":"14px","medium":"16px","large":"19px","xlarge":"22px"};
 var closeSize={"small":"15px","medium":"18px","large":"21px","xlarge":"25px"};
 var titleFont=fontMap[data.title_style]||fontMap["serif-bold"];
+if(data.title_style&&data.title_style.startsWith("custom:"))titleFont="'"+data.title_style.replace("custom:","")+"',serif;font-weight:600";
 var bodyFont=fontMap[data.body_style]||fontMap["serif-regular"];
+if(data.body_style&&data.body_style.startsWith("custom:"))bodyFont="'"+data.body_style.replace("custom:","")+"',serif;font-weight:400";
 var tSize=sizeMap[data.text_size]||"32px";
 var bSize=bodySize[data.text_size]||"16px";
 var cSize=closeSize[data.text_size]||"18px";
@@ -2102,9 +2104,32 @@ h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom
 var cpicks=[{key:"hook_bg",l:"Hook BG"},{key:"hook_text",l:"Hook Text"},{key:"bg_color",l:"Body BG"},{key:"text_color",l:"Body Text"},{key:"close_bg",l:"Close BG"},{key:"close_text",l:"Close Text"}];
 cpicks.forEach(function(cp){h+='<div class="tpl-cpick"><input type="color" value="'+(data[cp.key]||"#cccccc")+'" onchange="updateTplColor(\''+cp.key+'\',this.value)" oninput="updateTplColor(\''+cp.key+'\',this.value)"><span class="tpl-cpick-label">'+cp.l+'</span><span class="tpl-cpick-hex" id="cpick-'+cp.key+'">'+(data[cp.key]||"")+'</span></div>'});
 h+='</div>';
-// Compact specs
-h+='<div style="font-size:11px;color:rgba(59,33,69,.4);line-height:1.8">';
-h+='<strong style="color:#3B2145">Title:</strong> '+(data.title_style||"")+' · <strong style="color:#3B2145">Body:</strong> '+(data.body_style||"")+' · <strong style="color:#3B2145">Size:</strong> '+(data.text_size||"")+' · <strong style="color:#3B2145">Align:</strong> '+(data.text_align||"")+' · <strong style="color:#3B2145">Spacing:</strong> '+(data.spacing||"");
+// Font pickers
+h+='<div style="margin-bottom:12px">';
+h+='<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:500;margin-bottom:8px">Fonts</div>';
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+// Title font picker
+h+='<div><label style="font-size:10px;margin-bottom:4px">Title Font</label><select onchange="updateTplFont(\'title_style\',this.value)" style="font-size:12px;padding:6px 10px">';
+var titleOpts=[{v:"serif-bold",l:"Cormorant Bold"},{v:"serif-regular",l:"Cormorant Regular"},{v:"serif-italic",l:"Cormorant Italic"},{v:"sans-bold",l:"Jost Bold"},{v:"sans-light",l:"Jost Light"},{v:"sans-regular",l:"Jost Regular"},{v:"italic-serif",l:"Playfair Italic"},{v:"uppercase-sans",l:"Jost Uppercase"},{v:"uppercase-serif",l:"Cormorant Uppercase"}];
+titleOpts.forEach(function(o){h+='<option value="'+o.v+'"'+(data.title_style===o.v?' selected':'')+'>'+o.l+'</option>'});
+customFonts.forEach(function(cf){h+='<option value="custom:'+cf.font_family+'"'+(data.title_style===("custom:"+cf.font_family)?' selected':'')+'>'+cf.name+'</option>'});
+h+='</select></div>';
+// Body font picker
+h+='<div><label style="font-size:10px;margin-bottom:4px">Body Font</label><select onchange="updateTplFont(\'body_style\',this.value)" style="font-size:12px;padding:6px 10px">';
+var bodyOpts=[{v:"serif-regular",l:"Cormorant Regular"},{v:"serif-italic",l:"Cormorant Italic"},{v:"sans-regular",l:"Jost Regular"},{v:"sans-light",l:"Jost Light"},{v:"sans-medium",l:"Jost Medium"}];
+bodyOpts.forEach(function(o){h+='<option value="'+o.v+'"'+(data.body_style===o.v?' selected':'')+'>'+o.l+'</option>'});
+customFonts.forEach(function(cf){h+='<option value="custom:'+cf.font_family+'"'+(data.body_style===("custom:"+cf.font_family)?' selected':'')+'>'+cf.name+'</option>'});
+h+='</select></div>';
+h+='</div>';
+// Size and align
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">';
+h+='<div><label style="font-size:10px;margin-bottom:4px">Text Size</label><select onchange="updateTplFont(\'text_size\',this.value)" style="font-size:12px;padding:6px 10px">';
+["small","medium","large","xlarge"].forEach(function(s){h+='<option value="'+s+'"'+(data.text_size===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>'});
+h+='</select></div>';
+h+='<div><label style="font-size:10px;margin-bottom:4px">Alignment</label><select onchange="updateTplFont(\'text_align\',this.value)" style="font-size:12px;padding:6px 10px">';
+["center","left","right"].forEach(function(a){h+='<option value="'+a+'"'+(data.text_align===a?' selected':'')+'>'+a.charAt(0).toUpperCase()+a.slice(1)+'</option>'});
+h+='</select></div>';
+h+='</div>';
 h+='</div>';
 h+='</div>';
 h+='<div style="margin-top:12px"><div class="tpl-feedback-row"><textarea id="tplFeedback" placeholder="e.g. Make the hook slide darker, change body text to lavender"></textarea><button class="btn" onclick="regenTpl()">Regen Analysis</button></div></div>';
@@ -2126,6 +2151,7 @@ function saveTpl(){if(!tplCurrentAnalysis)return;var name=prompt("Name this temp
 function resetTpl(){tplImageData="";tplImages=[];tplCurrentAnalysis=null;tplCurrentSvgs=null;document.getElementById("tplPreviewImg").style.display="none";document.getElementById("tplPreviewImg").src="";document.getElementById("tplPreviewGrid").innerHTML="";document.getElementById("tplUploadZone").querySelector("div").textContent="Drop carousel screenshots here";document.getElementById("tplNotes").style.display="none";document.getElementById("tplNotesInput").value="";document.getElementById("tplAnalyzeBtn").style.display="none";document.getElementById("tplResult").style.display="none";document.getElementById("tplResult").innerHTML="";document.getElementById("tplLoader").style.display="none";document.getElementById("tpl-file-input").value=""}
 
 function updateTplColor(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;var hexEl=document.getElementById("cpick-"+key);if(hexEl)hexEl.textContent=value;renderTplResult(tplCurrentAnalysis)}
+function updateTplFont(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;renderTplResult(tplCurrentAnalysis)}
 
 // ── FONT UPLOAD ──
 var customFonts=[];
