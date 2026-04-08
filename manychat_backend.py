@@ -112,6 +112,17 @@ END $$;
 
 
 
+CREATE TABLE IF NOT EXISTS sync_log (
+  id BIGSERIAL PRIMARY KEY,
+  sync_type TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending',
+  records_synced INT DEFAULT 0,
+  error_message TEXT DEFAULT '',
+  started_at TIMESTAMPTZ DEFAULT now(),
+  completed_at TIMESTAMPTZ
+);
+
+
 CREATE TABLE IF NOT EXISTS manychat_triggers (
   id BIGSERIAL PRIMARY KEY,
   keyword TEXT NOT NULL UNIQUE,
@@ -294,9 +305,12 @@ async def manychat_webhook(request: Request):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-# ───────────────── SYNC (FIXED) ─────────────────
+# ───────────────── SYNC ─────────────────
 @router.post("/api/manychat/sync")
 async def sync_data():
+    if not MC_KEY:
+        return JSONResponse({"error": "MANYCHAT_API_KEY not configured"}, status_code=500)
+
     log_id = None
     try:
         log = insert_returning(
@@ -304,20 +318,84 @@ async def sync_data():
         )
         log_id = log["id"] if log else None
 
-        synced = 0
+        headers = {"Authorization": f"Bearer {MC_KEY}", "Accept": "application/json"}
+        flow_count = 0
+        tag_count = 0
+        sub_count = 0
 
-        async with httpx.AsyncClient() as c:
-            r = await c.get(f"{MC_API}/fb/page/getFlows", headers={"Authorization": f"Bearer {MC_KEY}"})
-            flows = r.json().get("data", {}).get("flows", [])
-            synced += len(flows)
+        async with httpx.AsyncClient(timeout=30) as c:
+            # Pull flows
+            try:
+                r = await c.get(f"{MC_API}/fb/page/getFlows", headers=headers)
+                if r.status_code == 200:
+                    flow_count = len(r.json().get("data", {}).get("flows", []))
+            except Exception as e:
+                print(f"[SYNC] Flows error: {e}")
 
+            # Pull tags
+            try:
+                r = await c.get(f"{MC_API}/fb/page/getTags", headers=headers)
+                if r.status_code == 200:
+                    tag_count = len(r.json().get("data", []))
+            except Exception as e:
+                print(f"[SYNC] Tags error: {e}")
+
+            # Pull subscribers (paginated)
+            try:
+                page = 1
+                while page <= 20:  # Safety limit
+                    r = await c.get(
+                        f"{MC_API}/fb/subscriber/getSubscribers",
+                        headers=headers,
+                        params={"page": page, "limit": 100}
+                    )
+                    if r.status_code != 200:
+                        break
+                    data = r.json().get("data", {})
+                    subs = data.get("data", [])
+                    if not subs:
+                        break
+
+                    for sub in subs:
+                        contact_id = str(sub.get("id", "")).strip()
+                        if not contact_id:
+                            continue
+                        first_name = (sub.get("first_name") or "").strip()
+                        last_name = (sub.get("last_name") or "").strip()
+                        ig_username = (sub.get("ig_username") or "").strip()
+                        email = (sub.get("email") or "").strip()
+
+                        try:
+                            execute("""
+                                INSERT INTO manychat_leads_clean
+                                (contact_id, first_name, last_name, ig_username, email, updated_at)
+                                VALUES (%s,%s,%s,%s,%s,now())
+                                ON CONFLICT (contact_id) DO UPDATE SET
+                                    first_name = COALESCE(NULLIF(EXCLUDED.first_name,''), manychat_leads_clean.first_name),
+                                    last_name = COALESCE(NULLIF(EXCLUDED.last_name,''), manychat_leads_clean.last_name),
+                                    ig_username = COALESCE(NULLIF(EXCLUDED.ig_username,''), manychat_leads_clean.ig_username),
+                                    email = COALESCE(NULLIF(EXCLUDED.email,''), manychat_leads_clean.email),
+                                    updated_at = now()
+                            """, (contact_id, first_name, last_name, ig_username, email))
+                            sub_count += 1
+                        except Exception as e:
+                            print(f"[SYNC] Sub insert error: {e}")
+
+                    # Check for next page
+                    if not data.get("next_page_url") and page >= data.get("last_page", page):
+                        break
+                    page += 1
+            except Exception as e:
+                print(f"[SYNC] Subscribers error: {e}")
+
+        total = flow_count + tag_count + sub_count
         if log_id:
             execute(
-                "UPDATE sync_log SET records_synced=%s, status='success', completed_at=now() WHERE id=%s",
-                (synced, log_id)
+                "UPDATE sync_log SET records_synced=%s, status='success', completed_at=now(), error_message=%s WHERE id=%s",
+                (total, json.dumps({"flows": flow_count, "tags": tag_count, "subscribers": sub_count}), log_id)
             )
 
-        return {"success": True, "synced": synced}
+        return {"success": True, "synced": total, "flows": flow_count, "tags": tag_count, "subscribers": sub_count}
 
     except Exception as e:
         if log_id:
@@ -325,6 +403,18 @@ async def sync_data():
                 "UPDATE sync_log SET status='error', error_message=%s WHERE id=%s",
                 (str(e), log_id)
             )
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ───────────────── SYNC STATUS ─────────────────
+@router.get("/api/manychat/sync/status")
+async def sync_status():
+    try:
+        rows = query("SELECT * FROM sync_log WHERE sync_type='subscribers' ORDER BY id DESC LIMIT 1")
+        if rows:
+            return {"last_sync": rows[0]}
+        return {"last_sync": None}
+    except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
