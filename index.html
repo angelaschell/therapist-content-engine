@@ -1894,11 +1894,12 @@ function switchTemplate(newTpl){
 }
 
 function switchCustomTemplate(templateId){
+  // Always clear SVGs immediately to prevent bleed from previous template
+  activeCustomSvgs=null;
   if(!templateId){
     activeCustomTemplate=null;
-    activeCustomSvgs=null;
-    // Re-apply default template
-    switchTemplate(currentTemplate||"naming");
+    // Re-render as HTML slides
+    renderSlides();
     return;
   }
   // Fetch full template with SVG data
@@ -1908,20 +1909,13 @@ function switchCustomTemplate(templateId){
       if(d.template.svg_template){
         try{activeCustomSvgs=JSON.parse(d.template.svg_template)}catch(e){activeCustomSvgs=null}
       }else{activeCustomSvgs=null}
-      // If SVG template, re-render slides entirely
-      if(activeCustomSvgs&&activeCustomSvgs.svg_hook){
-        renderSvgSlides(currentTemplate);
-      }else{
-        // Apply custom colors to existing slides
-        applyCustomTemplateColors();
-      }
-      cachedSlideImages=[];
-      saveCarousel();
+      // Always re-render slides fully to switch between SVG and HTML modes cleanly
+      renderSlides();
     }
   }).catch(function(e){
     console.log("Could not load custom template:",e);
     var t=savedTemplates.find(function(x){return x.id==templateId||String(x.id)===templateId});
-    if(t){activeCustomTemplate=t;activeCustomSvgs=null;applyCustomTemplateColors();cachedSlideImages=[]}
+    if(t){activeCustomTemplate=t;activeCustomSvgs=null;renderSlides()}
   });
 }
 
