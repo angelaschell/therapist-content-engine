@@ -91,6 +91,8 @@ def sb_storage_upload(bucket, path, file_bytes, content_type):
 
 ANALYZE_PROMPT = """You are a visual design analyst. Analyze this Instagram carousel slide screenshot and extract the exact visual style properties.
 
+IMPORTANT: Look at EVERYTHING in the screenshot — not just text and background color. Describe ALL decorative elements (shapes, lines, patterns, borders, textures, gradients, illustrations, ornaments, frames) in the description field. This description is used to generate the SVG template, so be extremely specific about what you see.
+
 Return ONLY valid JSON with no backticks:
 {
   "bg_color": "#hex of the background color",
@@ -105,61 +107,63 @@ Return ONLY valid JSON with no backticks:
   "text_align": "one of: center, left, right",
   "spacing": "one of: tight, normal, spacious, massive",
   "watermark": true or false,
-  "description": "2-3 sentence description of the overall visual style and what makes it distinctive",
+  "decorative_elements": "Detailed description of ALL visual elements beyond solid color: e.g. 'flowing pastel curves in blue #A8C4E8 and yellow #E8C97A across top-left and bottom-right corners, organic ribbon shapes with 20-30px stroke width at 30-40% opacity'. If the design is just solid color + text, say 'none'. Be specific about colors, positions, sizes, opacity, and shapes.",
+  "description": "2-3 sentence description of the overall visual style and what makes it distinctive. Include details about decorative elements, not just colors and fonts.",
   "suggested_name": "A short name for this style"
 }
 
-Be precise with hex colors. Look at actual pixels."""
+Be precise with hex colors. Look at actual pixels. Pay special attention to decorative/ornamental elements — they are what make each template unique."""
 
 
-SVG_GENERATE_PROMPT = """Look at this Instagram carousel slide screenshot carefully. Recreate its VISUAL DESIGN as three SVG slide templates.
+SVG_GENERATE_PROMPT = """You are an expert SVG designer. Your job is to look at the Instagram carousel slide screenshot(s) and produce SVG code that VISUALLY MATCHES the screenshot as closely as possible.
 
-Style analysis:
+This is the MOST IMPORTANT RULE: The SVG output must look like the screenshot when rendered. If someone looked at the screenshot and then at your SVG, they should think it is the same design. Do not simplify. Do not skip elements. RECREATE EVERYTHING YOU SEE.
+
+Style analysis for reference:
 {analysis}
 
-Generate THREE SVGs that MATCH the visual design of this screenshot. Each SVG is a slide background/layout with empty text zones where content will be injected later.
+WHAT TO RECREATE — examine the screenshot pixel by pixel:
+- Background color or gradient (if gradient, use <linearGradient> or <radialGradient>)
+- ALL decorative elements: shapes, lines, curves, borders, frames, circles, blobs, squiggles, chains, ribbons, patterns, ornaments, dividers, accent marks, corner decorations
+- Background textures or patterns (use SVG <pattern> elements or repeated shapes)
+- Any borders, frames, or outlines around the slide or text area
+- Drop shadows, glows, or overlay effects (use <filter> elements)
+- Color relationships: if some decorative elements are lighter/semi-transparent, match that opacity
+- If the design has organic flowing shapes, reproduce them with <path> curves using bezier control points
 
-CRITICAL SVG RULES:
+DO NOT just make a solid-color rectangle with text on it. That is WRONG unless the screenshot is literally just a solid color with text.
+
+SVG RULES:
 1. viewBox='0 0 1080 1350' and xmlns='http://www.w3.org/2000/svg'
-2. Use SINGLE QUOTES for all SVG attributes (the JSON wrapper uses double quotes)
-3. Start with a full <rect> for the background fill
-4. Recreate ALL visual elements: decorative lines, borders, accent shapes, dividers, gradients, rounded rectangles, subtle patterns
-5. If the design is minimal (solid color + text only), keep SVGs minimal too. Do not add elements that aren't in the screenshot.
-6. DO NOT include the actual text words from the screenshot
+2. Use SINGLE QUOTES for SVG attributes (JSON wrapper uses double quotes)
+3. Start with the full background (rect, gradient, or pattern)
+4. Then add ALL decorative/visual elements you see in the screenshot
+5. Then add the text zones (foreignObject) on top
+6. DO NOT include the actual text words from the screenshot — leave text zones empty
 
-TEXT ZONES - Include these in each SVG:
-For the main text area:
-<foreignObject x='80' y='[y-position]' width='920' height='[height]' class='tz'><div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:[text_color]; font-family:[font]; font-size:[size]px; text-align:[align]; line-height:1.3; word-wrap:break-word;'></div></foreignObject>
+TEXT ZONES — Include these in each SVG:
+Main text:
+<foreignObject x='80' y='[y]' width='920' height='[h]' class='tz'><div xmlns='http://www.w3.org/1999/xhtml' class='tz-main' style='color:[color]; font-family:[font]; font-size:[size]px; text-align:[align]; line-height:1.3; word-wrap:break-word;'></div></foreignObject>
 
-For subtitle (hook slide mainly):
-<foreignObject x='80' y='[y-position]' width='920' height='120' class='tz'><div xmlns='http://www.w3.org/1999/xhtml' class='tz-sub' style='color:[text_color]; font-family:[font]; font-size:[size]px; text-align:[align]; line-height:1.4; font-style:italic; opacity:0.7;'></div></foreignObject>
+Subtitle (hook slide):
+<foreignObject x='80' y='[y]' width='920' height='120' class='tz'><div xmlns='http://www.w3.org/1999/xhtml' class='tz-sub' style='color:[color]; font-family:[font]; font-size:[size]px; text-align:[align]; line-height:1.4; font-style:italic; opacity:0.7;'></div></foreignObject>
 
-Watermark at bottom (if design has one):
+Watermark (if visible in design):
 <text x='540' y='1290' text-anchor='middle' font-family='Jost, sans-serif' font-size='22' letter-spacing='8' fill='[color]' opacity='0.35'>@ANGELASCHELLENBERG</text>
 
-FONT SIZING GUIDE based on text_size:
-- Hook title: small=52px, medium=64px, large=78px, xlarge=96px
-- Body text: small=32px, medium=38px, large=44px, xlarge=52px
-- Close text: small=36px, medium=42px, large=50px, xlarge=58px
+FONT SIZING: Hook title: small=52, medium=64, large=78, xlarge=96. Body: small=32, medium=38, large=44, xlarge=52. Close: small=36, medium=42, large=50, xlarge=58.
 
-FONTS AVAILABLE (use these exact names):
-- Serif: 'Cormorant Garamond', serif
-- Sans: 'Jost', sans-serif
-- Display: 'Playfair Display', serif
+FONTS: 'Cormorant Garamond', serif | 'Jost', sans-serif | 'Playfair Display', serif
 
 THREE SLIDES:
-1. svg_hook: Uses hook_bg + hook_text. Large prominent title zone centered vertically. Subtitle zone below it.
-2. svg_body: Uses bg_color + text_color. Comfortable reading text zone, vertically centered.
-3. svg_close: Uses close_bg + close_text. Slightly smaller, reflective feel. Text zone centered.
+1. svg_hook — Hook/title slide. Match the screenshot's hook design: background + decorations + large title zone + subtitle zone.
+2. svg_body — Body content slide. Same visual style and decorations as the screenshot, with a reading text zone.
+3. svg_close — Closing slide. Same visual style. Text zone centered, reflective feel.
 
-TEXT ZONE POSITIONING:
-- Center the text zones vertically in the slide
-- Hook: main text zone around y=350, height=450. Subtitle around y=820, height=120
-- Body: main text zone around y=300, height=700
-- Close: main text zone around y=380, height=500
+If the screenshot shows the same background/decorations across all slides, use the same decorative elements in all three SVGs.
 
 Output ONLY valid JSON. No backticks. No explanation:
-{{"svg_hook": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_body": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_close": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>"}}"""
+{{"svg_hook": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_body": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_close": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>"}}""""""
 
 
 def detect_media_type(raw_data):
