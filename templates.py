@@ -261,6 +261,7 @@ async def generate_svg_templates(req: Request):
         # Upload images to Supabase storage for permanent hosting
         image_urls = []
         for i, img in enumerate(images):
+            uploaded = False
             if SUPABASE_URL and SUPABASE_KEY:
                 try:
                     clean_img = strip_base64_prefix(img)
@@ -272,14 +273,20 @@ async def generate_svg_templates(req: Request):
                         ext = "webp"
                     filename = f"template-bgs/{uuid.uuid4().hex}.{ext}"
                     url = sb_storage_upload("brand-assets", filename, img_bytes, f"image/{ext}")
-                    image_urls.append(url)
+                    if url and url.startswith("http"):
+                        image_urls.append(url)
+                        uploaded = True
+                        print(f"[TEMPLATE] Image {i} uploaded: {url[:80]}")
+                    else:
+                        print(f"[TEMPLATE] Image upload returned invalid URL: {url}")
                 except Exception as e:
                     print(f"[TEMPLATE] Image upload error: {e}")
-            if not image_urls or len(image_urls) <= i:
-                # Fallback: embed as base64 data URI
+            if not uploaded:
+                # Fallback: embed as base64 data URI directly in SVG
                 media_type = detect_media_type(img)
                 clean_img = strip_base64_prefix(img)
                 image_urls.append(f"data:{media_type};base64,{clean_img}")
+                print(f"[TEMPLATE] Image {i} using base64 fallback ({len(clean_img)//1000}KB)")
 
         # Use the uploaded images as backgrounds:
         # - 1 image: same background for all three slide types
@@ -679,7 +686,7 @@ async def delete_template(template_id: str):
 try:
     if DATABASE_URL:
         db_execute("ALTER TABLE carousel_templates ADD COLUMN IF NOT EXISTS logo_url TEXT DEFAULT ''")
-        # Remove old auto-seeded GTYM template (replaced by user-created image-bg version)
-        db_execute("DELETE FROM carousel_templates WHERE name = 'Grief Trauma & Your Mama' AND svg_template LIKE '%_CHAIN_DECO%' OR (name = 'Grief Trauma & Your Mama' AND svg_template LIKE '%stroke=#%' AND svg_template NOT LIKE '%<image%')")
+        # Remove old auto-seeded GTYM template only (match exact seed description)
+        db_execute("DELETE FROM carousel_templates WHERE name = 'Grief Trauma & Your Mama' AND description = 'Soft cream background with flowing pastel chain decorations in blue, yellow, and pink. Playful bold sans-serif hook with serif body text in muted blue. Designed for the Grief Trauma & Your Mama brand.'")
 except Exception:
     pass
