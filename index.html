@@ -2243,21 +2243,21 @@ h+='<div style="display:flex;gap:12px;margin-bottom:18px;overflow-x:auto">';
 h+='<div style="width:180px;height:225px;border-radius:10px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:20px;position:relative;'+hookBgStyle+';text-align:'+align+';box-shadow:0 4px 20px rgba(59,33,69,.1)">';
 h+='<div style="font-family:'+titleFont+';font-size:'+tSize+';color:'+(data.hook_text||"#F7EBE0")+';line-height:1.15">THIS IS YOUR HOOK</div>';
 h+='<div style="font-family:'+bodyFont+';font-size:12px;color:'+(data.sub_text||data.hook_text||"#F7EBE0")+';opacity:.6;margin-top:8px;font-style:italic">the subtitle goes here</div>';
-if(logoSrc){h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%)"><img src="'+logoSrc+'" style="height:20px;opacity:0.85"></div>'}
+if(logoSrc){var _lp=data.logo_pos||{x:50,y:92,size:22};h+='<div style="position:absolute;left:'+_lp.x+'%;top:'+_lp.y+'%;transform:translate(-50%,-50%)"><img src="'+logoSrc+'" style="height:'+(_lp.size||20)+'px;opacity:0.85"></div>'}
 else if(data.watermark){h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:6px;letter-spacing:2.5px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.35">@angelaschellenberg</div>'}
 h+='<div style="position:absolute;top:8px;left:12px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+(data.hook_text||"#F7EBE0")+';opacity:.3">Hook</div>';
 h+='</div>';
 // Body slide
 h+='<div style="width:180px;height:225px;border-radius:10px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:20px;position:relative;'+bodyBgStyle+';text-align:'+align+';box-shadow:0 4px 20px rgba(59,33,69,.1)">';
 h+='<div style="font-family:'+bodyFont+';font-size:'+bSize+';color:'+(data.text_color||"#3B2145")+';line-height:1.5">The body slide text would appear here with your extracted styling.</div>';
-if(logoSrc){h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%)"><img src="'+logoSrc+'" style="height:20px;opacity:0.85"></div>'}
+if(logoSrc){var _lp=data.logo_pos||{x:50,y:92,size:22};h+='<div style="position:absolute;left:'+_lp.x+'%;top:'+_lp.y+'%;transform:translate(-50%,-50%)"><img src="'+logoSrc+'" style="height:'+(_lp.size||20)+'px;opacity:0.85"></div>'}
 else if(data.watermark){h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:6px;letter-spacing:2.5px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.3">@angelaschellenberg</div>'}
 h+='<div style="position:absolute;top:8px;left:12px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+(data.text_color||"#3B2145")+';opacity:.3">Body</div>';
 h+='</div>';
 // Close slide
 h+='<div style="width:180px;height:225px;border-radius:10px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;align-items:'+align+';padding:20px;position:relative;'+closeBgStyle+';text-align:'+align+';box-shadow:0 4px 20px rgba(59,33,69,.1)">';
 h+='<div style="font-family:'+titleFont+';font-size:'+cSize+';color:'+(data.close_text||"#F7EBE0")+';line-height:1.5;font-style:italic">What would it mean to let yourself feel this?</div>';
-if(logoSrc){h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%)"><img src="'+logoSrc+'" style="height:20px;opacity:0.85"></div>'}
+if(logoSrc){var _lp=data.logo_pos||{x:50,y:92,size:22};h+='<div style="position:absolute;left:'+_lp.x+'%;top:'+_lp.y+'%;transform:translate(-50%,-50%)"><img src="'+logoSrc+'" style="height:'+(_lp.size||20)+'px;opacity:0.85"></div>'}
 else if(data.watermark){h+='<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:Jost,sans-serif;font-size:6px;letter-spacing:2.5px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.35">@angelaschellenberg</div>'}
 h+='<div style="position:absolute;top:8px;left:12px;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+(data.close_text||"#F7EBE0")+';opacity:.3">Close</div>';
 h+='</div>';
@@ -2372,7 +2372,6 @@ function updateLogoSize(val){
   var label=document.getElementById("logoSizeVal");
   if(label)label.textContent=val+"px";
   if(tplCurrentAnalysis){if(!tplCurrentAnalysis.logo_pos)tplCurrentAnalysis.logo_pos={x:50,y:92,size:22};tplCurrentAnalysis.logo_pos.size=parseInt(val)}
-  updateTplPreviewSlides();
 }
 function initLogoDrag(){
   var editor=document.getElementById("logoEditor");
@@ -2407,8 +2406,8 @@ function initLogoDrag(){
     if(lgh)lgh.classList.toggle("show",py>=48&&py<=52);
     if(lgv)lgv.classList.toggle("show",px>=48&&px<=52);
   });
-  document.addEventListener("mouseup",function(){if(dragging){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show");updateTplPreviewSlides()}else{dragging=false}});
-  document.addEventListener("touchend",function(){if(dragging){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show");updateTplPreviewSlides()}else{dragging=false}});
+  document.addEventListener("mouseup",function(){if(dragging){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show");if(tplCurrentAnalysis)renderTplResult(tplCurrentAnalysis)}else{dragging=false}});
+  document.addEventListener("touchend",function(){if(dragging){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show");if(tplCurrentAnalysis)renderTplResult(tplCurrentAnalysis)}else{dragging=false}});
 }
 
 function updateTplColor(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;var hexEl=document.getElementById("cpick-"+key);if(hexEl)hexEl.textContent=value;renderTplResult(tplCurrentAnalysis)}
