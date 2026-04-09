@@ -711,7 +711,9 @@ async def update_template(template_id: str, req: Request):
             except Exception as e:
                 print(f"Logo upload error: {e}")
 
-        full_analysis = json.dumps({**template_data, "logo_url": logo_url})
+        # Clean template_data — remove transient fields that shouldn't be persisted
+        clean_data = {k: v for k, v in template_data.items() if not k.startswith("_") and k != "logo_image"}
+        full_analysis = json.dumps({**clean_data, "logo_url": logo_url})
         wm = True
         try:
             wm = bool(template_data.get("watermark", True))
