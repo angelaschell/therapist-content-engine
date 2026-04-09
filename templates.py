@@ -164,7 +164,7 @@ THREE SLIDES:
 If the screenshot shows the same background/decorations across all slides, use the same decorative elements in all three SVGs.
 
 Output ONLY valid JSON. No backticks. No explanation:
-{{"svg_hook": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_body": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_close": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>"}}""""""
+{{"svg_hook": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_body": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>", "svg_close": "<svg viewBox='0 0 1080 1350' xmlns='http://www.w3.org/2000/svg'>...</svg>"}}"""
 
 
 def detect_media_type(raw_data):
