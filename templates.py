@@ -688,6 +688,15 @@ async def update_template(template_id: str, req: Request):
         data = await req.json()
         template_data = data.get("template", {})
         logo_image = data.get("logo_image", "")
+        name = data.get("name") or template_data.get("suggested_name") or "Untitled"
+
+        # Ensure defaults
+        if "brand_colors" not in template_data:
+            template_data["brand_colors"] = []
+        if "text_zone" not in template_data:
+            template_data["text_zone"] = {"x": 7, "y": 25, "w": 85, "h": 50}
+        if "logo_pos" not in template_data:
+            template_data["logo_pos"] = {"x": 50, "y": 92, "size": 22}
 
         # Upload new logo if provided
         logo_url = template_data.get("logo_url", "")
@@ -703,10 +712,15 @@ async def update_template(template_id: str, req: Request):
                 print(f"Logo upload error: {e}")
 
         full_analysis = json.dumps({**template_data, "logo_url": logo_url})
+        wm = True
+        try:
+            wm = bool(template_data.get("watermark", True))
+        except Exception:
+            wm = True
 
         db_execute(
             """UPDATE carousel_templates SET
-               name = COALESCE(%s, name),
+               name = %s,
                bg_color = %s, text_color = %s,
                hook_bg = %s, hook_text = %s,
                close_bg = %s, close_text = %s,
@@ -717,18 +731,19 @@ async def update_template(template_id: str, req: Request):
                full_analysis = %s,
                logo_url = %s
                WHERE id = %s""",
-            (data.get("name"), template_data.get("bg_color", "#F7EBE0"),
+            (name, template_data.get("bg_color", "#F7EBE0"),
              template_data.get("text_color", "#D2C7FF"),
              template_data.get("hook_bg", "#3B2145"), template_data.get("hook_text", "#F7EBE0"),
              template_data.get("close_bg", "#90A9EC"), template_data.get("close_text", "#F7EBE0"),
              template_data.get("title_style", "serif-bold"), template_data.get("body_style", "serif-regular"),
              template_data.get("text_size", "large"), template_data.get("text_align", "center"),
-             template_data.get("spacing", "spacious"), bool(template_data.get("watermark", True)),
+             template_data.get("spacing", "spacious"), wm,
              template_data.get("description", ""),
              full_analysis, logo_url or "", template_id)
         )
         return JSONResponse({"success": True})
     except Exception as e:
+        print(f"[TEMPLATE UPDATE ERROR] {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
