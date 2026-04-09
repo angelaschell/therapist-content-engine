@@ -177,6 +177,7 @@ option{background:#F7EBE0}
 .slide{width:324px;height:405px;background:#F7EBE0;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:2px;box-shadow:0 6px 24px rgba(59,33,69,.1);overflow:hidden}
 @media(max-width:560px){.slide{width:270px;height:338px}}
 .slide .sl-text{max-height:calc(100% - 60px);overflow:hidden}
+.slide .sl-text font,.slide .sl-text span[style*="color"]{display:inline!important}
 .slide.hook-s .sl-text{padding:0 44px}
 .slide.hook-s .sl-upper{font-family:'Playfair Display',serif;font-weight:700;font-size:34px;color:#B8ADE0;text-transform:uppercase;line-height:1.05;letter-spacing:1px;margin-bottom:6px}
 .slide.hook-s .sl-italic{font-family:'Playfair Display',serif;font-weight:400;font-style:italic;font-size:24px;color:#B8ADE0;line-height:1.2}
@@ -2022,7 +2023,7 @@ function updateRtBrandColors(){
   el.innerHTML=colors.map(function(c){return '<div onmousedown="event.preventDefault();rtColor(\''+c+'\')" style="width:18px;height:18px;border-radius:3px;background:'+c+';cursor:pointer;border:1.5px solid rgba(255,255,255,.3);flex-shrink:0" title="'+c+'"></div>'}).join("");
 }
 function rtCmd(cmd,e){e.preventDefault();document.execCommand(cmd,false,null);syncSlideEdits()}
-function rtColor(color){document.execCommand("foreColor",false,color);syncSlideEdits()}
+function rtColor(color){var sel=window.getSelection();if(!sel.rangeCount||sel.isCollapsed){document.execCommand("foreColor",false,color);syncSlideEdits();return}var range=sel.getRangeAt(0);var span=document.createElement("span");span.style.color=color;try{range.surroundContents(span)}catch(e){document.execCommand("foreColor",false,color);var fonts=document.querySelectorAll('font[color]');fonts.forEach(function(f){f.style.display='inline'})}syncSlideEdits()}
 function rtSize(dir,e){e.preventDefault();var sel=window.getSelection();if(!sel.rangeCount)return;var range=sel.getRangeAt(0);if(range.collapsed)return;var span=document.createElement("span");var parent=range.commonAncestorContainer;if(parent.nodeType===3)parent=parent.parentElement;var cs=window.getComputedStyle(parent);var cur=parseFloat(cs.fontSize)||16;var newSize=dir==="big"?Math.min(cur*1.15,60):Math.max(cur*0.85,8);range.surroundContents(span);span.style.fontSize=newSize+"px";syncSlideEdits()}
 function syncSlideEdits(){
   // Sync contenteditable changes back to carouselSlides
