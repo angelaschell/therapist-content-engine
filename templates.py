@@ -148,8 +148,9 @@ Main text:
 Subtitle (hook slide):
 <foreignObject x='80' y='[y]' width='920' height='120' class='tz'><div xmlns='http://www.w3.org/1999/xhtml' class='tz-sub' style='color:[color]; font-family:[font]; font-size:[size]px; text-align:[align]; line-height:1.4; font-style:italic; opacity:0.7;'></div></foreignObject>
 
-Watermark (if visible in design):
+Watermark (if visible in design and no logo_url is provided in the analysis):
 <text x='540' y='1290' text-anchor='middle' font-family='Jost, sans-serif' font-size='22' letter-spacing='8' fill='[color]' opacity='0.35'>@ANGELASCHELLENBERG</text>
+If logo_url IS provided in the analysis, do NOT include the text watermark — the system will add the logo image automatically.
 
 FONT SIZING: Hook title: small=52, medium=64, large=78, xlarge=96. Body: small=32, medium=38, large=44, xlarge=52. Close: small=36, medium=42, large=50, xlarge=58.
 
@@ -344,9 +345,19 @@ async def generate_svg_templates(req: Request):
         # Hook subtitle position: below the main text zone
         sub_y = tz_y + tz_h + 20
 
-        # Watermark SVG
+        # Watermark / Logo SVG
+        # Per-template: use logo image if provided, otherwise fall back to text handle
+        logo_url = analysis.get("logo_url", "")
+        logo_pos = analysis.get("logo_pos", {"x": 50, "y": 92, "size": 22})
         wm = ""
-        if watermark:
+        if logo_url:
+            # Convert logo_pos percentages to SVG coordinates (1080x1350 viewBox)
+            lx = int(logo_pos.get("x", 50) * 1080 / 100)
+            ly = int(logo_pos.get("y", 92) * 1350 / 100)
+            lh = int(logo_pos.get("size", 22) * 1350 / 100 / 5)  # scale to SVG
+            lw = lh * 3  # approximate aspect ratio
+            wm = f"<image href='{logo_url}' x='{lx - lw // 2}' y='{ly - lh // 2}' width='{lw}' height='{lh}' opacity='0.5' preserveAspectRatio='xMidYMid meet'/>"
+        elif watermark:
             wm = f"<text x='540' y='1280' text-anchor='middle' font-family='Jost,sans-serif' font-size='22' letter-spacing='4' fill='{text_color}' opacity='0.35'>@ANGELASCHELLENBERG</text>"
 
         # Build deterministic SVGs with image backgrounds
@@ -410,7 +421,7 @@ Regenerate all three SVGs applying the requested changes. Same rules as before:
 - viewBox='0 0 1080 1350', xmlns='http://www.w3.org/2000/svg'
 - Single quotes for SVG attributes
 - foreignObject text zones with class='tz', inner divs class='tz-main' and 'tz-sub'
-- Watermark text at bottom
+- Watermark text at bottom (only if no logo_url in analysis — the system handles logo images separately)
 - Empty text zone content
 
 Return ONLY valid JSON:
