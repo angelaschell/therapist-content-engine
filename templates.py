@@ -718,31 +718,41 @@ async def update_template(template_id: str, req: Request):
         except Exception:
             wm = True
 
-        db_execute(
-            """UPDATE carousel_templates SET
-               name = %s,
-               bg_color = %s, text_color = %s,
-               hook_bg = %s, hook_text = %s,
-               close_bg = %s, close_text = %s,
-               title_style = %s, body_style = %s,
-               text_size = %s, text_align = %s,
-               spacing = %s, watermark = %s,
-               description = %s,
-               full_analysis = %s,
-               logo_url = %s
-               WHERE id = %s""",
-            (name, template_data.get("bg_color", "#F7EBE0"),
-             template_data.get("text_color", "#D2C7FF"),
-             template_data.get("hook_bg", "#3B2145"), template_data.get("hook_text", "#F7EBE0"),
-             template_data.get("close_bg", "#90A9EC"), template_data.get("close_text", "#F7EBE0"),
-             template_data.get("title_style", "serif-bold"), template_data.get("body_style", "serif-regular"),
-             template_data.get("text_size", "large"), template_data.get("text_align", "center"),
-             template_data.get("spacing", "spacious"), wm,
-             template_data.get("description", ""),
-             full_analysis, logo_url or "", template_id)
-        )
+        # Use direct SQL connection for UPDATE to avoid db_execute issues
+        conn = get_db()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """UPDATE carousel_templates SET
+                   name = %s,
+                   bg_color = %s, text_color = %s,
+                   hook_bg = %s, hook_text = %s,
+                   close_bg = %s, close_text = %s,
+                   title_style = %s, body_style = %s,
+                   text_size = %s, text_align = %s,
+                   spacing = %s, watermark = %s,
+                   description = %s,
+                   full_analysis = %s,
+                   logo_url = %s
+                   WHERE id::text = %s""",
+                (str(name), str(template_data.get("bg_color", "#F7EBE0")),
+                 str(template_data.get("text_color", "#D2C7FF")),
+                 str(template_data.get("hook_bg", "#3B2145")), str(template_data.get("hook_text", "#F7EBE0")),
+                 str(template_data.get("close_bg", "#90A9EC")), str(template_data.get("close_text", "#F7EBE0")),
+                 str(template_data.get("title_style", "serif-bold")), str(template_data.get("body_style", "serif-regular")),
+                 str(template_data.get("text_size", "large")), str(template_data.get("text_align", "center")),
+                 str(template_data.get("spacing", "spacious")), wm,
+                 str(template_data.get("description", "")),
+                 full_analysis, str(logo_url or ""), str(template_id))
+            )
+            conn.commit()
+            cur.close()
+        finally:
+            conn.close()
         return JSONResponse({"success": True})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"[TEMPLATE UPDATE ERROR] {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
