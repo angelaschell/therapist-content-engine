@@ -176,7 +176,7 @@ option{background:#F7EBE0}
 .sl-num{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(59,33,69,.2)}
 .slide{width:324px;height:405px;background:#F7EBE0;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:2px;box-shadow:0 6px 24px rgba(59,33,69,.1);overflow:hidden}
 @media(max-width:560px){.slide{width:270px;height:338px}}
-.slide .sl-text{max-height:calc(100% - 60px);overflow:hidden}
+.slide .sl-text{max-height:none;overflow:visible}
 .slide .sl-text font,.slide .sl-text span[style*="color"]{display:inline!important}
 .slide.hook-s .sl-text{padding:0 44px}
 .slide.hook-s .sl-upper{font-family:'Playfair Display',serif;font-weight:700;font-size:34px;color:#B8ADE0;text-transform:uppercase;line-height:1.05;letter-spacing:1px;margin-bottom:6px}
@@ -1861,12 +1861,10 @@ else if(_wmLogo){h+='<div class="sl-wm" style="position:absolute;bottom:10px;lef
 else{h+='<div class="sl-wm">@angelaschellenberg</div>'}
 h+='</div>';h+='<div class="sl-color-editor" id="ce-'+i+'">';h+='<div class="sl-color-row"><span class="sl-color-label">BG</span>';brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="bg" data-color="'+c+'"></div>'});h+='</div><div class="sl-color-row"><span class="sl-color-label">TEXT</span>';brandColors.forEach(function(c){h+='<div class="sl-swatch" style="background:'+c+'" data-slide="'+i+'" data-type="text" data-color="'+c+'"></div>'});h+='</div><div class="sl-color-row" style="flex-wrap:wrap"><span class="sl-color-label" style="min-width:28px">FONT</span>';var allFonts=[{n:"Playfair",f:"Playfair Display,serif"},{n:"Cormorant",f:"Cormorant Garamond,serif"},{n:"Jost",f:"Jost,sans-serif"}];customFonts.forEach(function(cf){allFonts.push({n:cf.name,f:cf.font_family+",serif"})});allFonts.forEach(function(fnt){h+='<span class="sl-font-pill" style="font-family:'+fnt.f+'" onclick="setSlideFont('+i+',\''+fnt.f.replace(/'/g,"\\'")+'\',this)">'+fnt.n+'</span>'});h+='</div></div>';h+='<button class="ghost" style="margin-top:6px;font-size:11px" onclick="downloadSlide('+i+')">Download</button></div>'});h+="</div>";document.getElementById("renderedSlides").innerHTML=h;document.querySelectorAll(".sl-swatch").forEach(function(sw){sw.addEventListener("click",function(e){e.stopPropagation();var idx=parseInt(this.dataset.slide);var type=this.dataset.type;var color=this.dataset.color;setSlideColor(idx,type,color)})});if(activeCustomTemplate){applyCustomTemplateColors()}autoSizeSlideText();saveCarousel()}
 function autoSizeSlideText(){document.querySelectorAll('.slide').forEach(function(slide){var textEl=slide.querySelector('.sl-text');if(!textEl)return;
-// Use text zone height if positioned absolutely, otherwise use slide height minus padding
-var maxH;
-if(textEl.style.position==='absolute'&&textEl.style.height){maxH=textEl.offsetHeight}
-else{maxH=slide.offsetHeight-66}
-if(maxH<30)maxH=slide.offsetHeight-66;
-var allText=textEl.querySelectorAll('.sl-upper,.sl-italic,.sl-cta-top,.sl-cta-bot');if(allText.length===0)allText=[textEl];allText.forEach(function(t){t.style.fontSize='';t.style.lineHeight=''});if(textEl.scrollHeight<=maxH)return;var scaleTries=0;while(textEl.scrollHeight>maxH&&scaleTries<20){scaleTries++;allText.forEach(function(t){var cs=window.getComputedStyle(t);var cur=parseFloat(cs.fontSize);var newSize=Math.max(cur*0.88,9);t.style.fontSize=newSize+'px';var curLh=parseFloat(cs.lineHeight);if(!isNaN(curLh)){t.style.lineHeight=Math.max(curLh*0.9,1.0)+''}});if(parseFloat(window.getComputedStyle(allText[0]).fontSize)<=9)break}})}
+// Use full slide height as soft guide — text zone is for positioning, not clipping
+var maxH=slide.offsetHeight-40;
+if(maxH<50)maxH=slide.offsetHeight;
+var allText=textEl.querySelectorAll('.sl-upper,.sl-italic,.sl-cta-top,.sl-cta-bot');if(allText.length===0)allText=[textEl];allText.forEach(function(t){t.style.fontSize='';t.style.lineHeight=''});if(textEl.scrollHeight<=maxH)return;var scaleTries=0;while(textEl.scrollHeight>maxH&&scaleTries<12){scaleTries++;allText.forEach(function(t){var cs=window.getComputedStyle(t);var cur=parseFloat(cs.fontSize);var newSize=Math.max(cur*0.93,14);t.style.fontSize=newSize+'px'});if(parseFloat(window.getComputedStyle(allText[0]).fontSize)<=14)break}})}
 
 function renderSvgSlides(tpl){
 // Check if this is an image-background template (has <image> elements, bg_urls, or original_image_url)
