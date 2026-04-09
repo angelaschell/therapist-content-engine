@@ -2372,6 +2372,7 @@ function updateLogoSize(val){
   var label=document.getElementById("logoSizeVal");
   if(label)label.textContent=val+"px";
   if(tplCurrentAnalysis){if(!tplCurrentAnalysis.logo_pos)tplCurrentAnalysis.logo_pos={x:50,y:92,size:22};tplCurrentAnalysis.logo_pos.size=parseInt(val)}
+  updateTplPreviewSlides();
 }
 function initLogoDrag(){
   var editor=document.getElementById("logoEditor");
@@ -2406,8 +2407,8 @@ function initLogoDrag(){
     if(lgh)lgh.classList.toggle("show",py>=48&&py<=52);
     if(lgv)lgv.classList.toggle("show",px>=48&&px<=52);
   });
-  document.addEventListener("mouseup",function(){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show")});
-  document.addEventListener("touchend",function(){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show")});
+  document.addEventListener("mouseup",function(){if(dragging){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show");updateTplPreviewSlides()}else{dragging=false}});
+  document.addEventListener("touchend",function(){if(dragging){dragging=false;var lgh=document.getElementById("logoGuideH");var lgv=document.getElementById("logoGuideV");if(lgh)lgh.classList.remove("show");if(lgv)lgv.classList.remove("show");updateTplPreviewSlides()}else{dragging=false}});
 }
 
 function updateTplColor(key,value){if(!tplCurrentAnalysis)return;tplCurrentAnalysis[key]=value;var hexEl=document.getElementById("cpick-"+key);if(hexEl)hexEl.textContent=value;renderTplResult(tplCurrentAnalysis)}
@@ -2514,6 +2515,8 @@ function updateTplPreviewSlides(){
   if(!container)return; // preview slides have tz-live markers
   var data=tplCurrentAnalysis;
   var tz=data.text_zone||{x:7,y:25,w:85,h:50};
+  var lp=data.logo_pos||null;
+  var logoSrc=tplLogoData||data.logo_url||"";
   // Update inline styles on the 3 preview slides
   var slides=document.querySelectorAll(".tz-live-slide");
   slides.forEach(function(s){
@@ -2522,6 +2525,13 @@ function updateTplPreviewSlides(){
       inner.style.position="absolute";
       inner.style.left=tz.x+"%";inner.style.top=tz.y+"%";
       inner.style.width=tz.w+"%";inner.style.height=tz.h+"%";
+    }
+    // Update logo position and size in preview
+    var logoEl=s.querySelector("img");
+    if(logoEl&&logoSrc&&lp){
+      logoEl.parentElement.style.left=lp.x+"%";
+      logoEl.parentElement.style.top=lp.y+"%";
+      logoEl.style.height=(lp.size||22)+"px";
     }
   });
 }
