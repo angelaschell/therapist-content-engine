@@ -1911,12 +1911,12 @@ if(hasImageBg){
   if(_tfa&&_tfa.title_style&&_tfa.title_style.startsWith&&_tfa.title_style.startsWith("custom:")){var cf=_tfa.title_style.replace("custom:","");titleFontFamily="'"+cf+"',serif"}
   if(_tfa&&_tfa.body_style&&_tfa.body_style.startsWith&&_tfa.body_style.startsWith("custom:")){var cf=_tfa.body_style.replace("custom:","");bodyFontFamily="'"+cf+"',serif"}
   // Font sizes
-  var _smap={"small":{h:"22px",b:"16px",c:"18px"},"medium":{h:"28px",b:"19px",c:"21px"},"large":{h:"34px",b:"22px",c:"24px"},"xlarge":{h:"40px",b:"26px",c:"28px"}};
+  var _smap={"small":{h:"36px",b:"24px",c:"28px"},"medium":{h:"44px",b:"28px",c:"32px"},"large":{h:"52px",b:"32px",c:"36px"},"xlarge":{h:"60px",b:"38px",c:"42px"}};
   var _sz=_smap[t.text_size||"large"]||_smap["large"];
   var hookFontStyle="font-family:"+titleFontFamily+";font-weight:"+titleFontWeight+";font-size:"+_sz.h+";"+titleTransform;
   var bodyFontStyle="font-family:"+bodyFontFamily+";font-weight:"+bodyFontWeight+";font-size:"+_sz.b+";line-height:1.5";
   var closeFontStyle="font-family:"+bodyFontFamily+";font-weight:"+bodyFontWeight+";font-size:"+_sz.c+";line-height:1.45;font-style:italic";
-  var subFontStyle="font-family:"+bodyFontFamily+";font-weight:400;font-size:12px;letter-spacing:2px;text-transform:uppercase";
+  var subFontStyle="font-family:"+bodyFontFamily+";font-weight:400;font-size:18px;letter-spacing:2px;text-transform:uppercase";
   // Logo from full_analysis
   var _logoUrl=t.logo_url||"";
   if(!_logoUrl&&_tfa&&_tfa.logo_url)_logoUrl=_tfa.logo_url;

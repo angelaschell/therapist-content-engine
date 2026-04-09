@@ -585,7 +585,7 @@ async def save_template(req: Request):
 async def list_templates():
     """List all saved templates."""
     try:
-        result = db_query("SELECT id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,logo_url,created_at FROM carousel_templates ORDER BY created_at DESC")
+        result = db_query("SELECT id,name,bg_color,text_color,hook_bg,hook_text,close_bg,close_text,title_style,body_style,text_size,text_align,spacing,watermark,description,original_image_url,svg_template,logo_url,full_analysis,created_at FROM carousel_templates ORDER BY created_at DESC")
         templates = []
         for t in (result or []):
             has_svg = bool(t.get("svg_template"))
