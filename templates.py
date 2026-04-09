@@ -667,19 +667,7 @@ async def delete_font(font_id: str):
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
-# ── TEMPLATE BY ID (catch-all, must be last) ──
-
-@router.get("/{template_id}")
-async def get_template(template_id: str):
-    """Get a single template with full SVG data."""
-    try:
-        result = db_query("SELECT * FROM carousel_templates WHERE id = %s", (template_id,))
-        if result and len(result) > 0:
-            return JSONResponse({"success": True, "template": result[0]})
-        return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
-    except Exception as e:
-        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
-
+# ── UPDATE/DELETE must be BEFORE the catch-all GET ──
 
 @router.post("/update/{template_id}")
 async def update_template(template_id: str, req: Request):
@@ -690,7 +678,6 @@ async def update_template(template_id: str, req: Request):
         logo_image = data.get("logo_image", "")
         name = data.get("name") or template_data.get("suggested_name") or "Untitled"
 
-        # Ensure defaults
         if "brand_colors" not in template_data:
             template_data["brand_colors"] = []
         if "text_zone" not in template_data:
@@ -698,7 +685,6 @@ async def update_template(template_id: str, req: Request):
         if "logo_pos" not in template_data:
             template_data["logo_pos"] = {"x": 50, "y": 92, "size": 22}
 
-        # Upload new logo if provided
         logo_url = template_data.get("logo_url", "")
         if logo_image and SUPABASE_URL:
             try:
@@ -711,7 +697,6 @@ async def update_template(template_id: str, req: Request):
             except Exception as e:
                 print(f"Logo upload error: {e}")
 
-        # Clean template_data — remove transient fields that shouldn't be persisted
         clean_data = {k: v for k, v in template_data.items() if not k.startswith("_") and k != "logo_image"}
         full_analysis = json.dumps({**clean_data, "logo_url": logo_url})
         wm = True
@@ -720,22 +705,16 @@ async def update_template(template_id: str, req: Request):
         except Exception:
             wm = True
 
-        # Use direct SQL connection for UPDATE to avoid db_execute issues
         conn = get_db()
         try:
             cur = conn.cursor()
             cur.execute(
                 """UPDATE carousel_templates SET
-                   name = %s,
-                   bg_color = %s, text_color = %s,
-                   hook_bg = %s, hook_text = %s,
-                   close_bg = %s, close_text = %s,
-                   title_style = %s, body_style = %s,
-                   text_size = %s, text_align = %s,
-                   spacing = %s, watermark = %s,
-                   description = %s,
-                   full_analysis = %s,
-                   logo_url = %s
+                   name = %s, bg_color = %s, text_color = %s,
+                   hook_bg = %s, hook_text = %s, close_bg = %s, close_text = %s,
+                   title_style = %s, body_style = %s, text_size = %s, text_align = %s,
+                   spacing = %s, watermark = %s, description = %s,
+                   full_analysis = %s, logo_url = %s
                    WHERE id::text = %s""",
                 (str(name), str(template_data.get("bg_color", "#F7EBE0")),
                  str(template_data.get("text_color", "#D2C7FF")),
@@ -755,18 +734,33 @@ async def update_template(template_id: str, req: Request):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"[TEMPLATE UPDATE ERROR] {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
-@router.delete("/{template_id}")
+@router.post("/delete/{template_id}")
 async def delete_template(template_id: str):
     """Delete a template."""
     try:
-        db_execute("DELETE FROM carousel_templates WHERE id = %s", (template_id,))
+        db_execute("DELETE FROM carousel_templates WHERE id::text = %s", (str(template_id),))
         return JSONResponse({"success": True})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+# ── TEMPLATE BY ID (catch-all, MUST BE LAST) ──
+
+@router.get("/{template_id}")
+async def get_template(template_id: str):
+    """Get a single template with full SVG data."""
+    try:
+        result = db_query("SELECT * FROM carousel_templates WHERE id = %s", (template_id,))
+        if result and len(result) > 0:
+            return JSONResponse({"success": True, "template": result[0]})
+        return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 
 
 try:

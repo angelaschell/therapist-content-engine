@@ -2558,7 +2558,7 @@ if(t.original_image_url)tplCurrentAnalysis._original_image_url=t.original_image_
 if(t.svg_template){try{tplCurrentSvgs=typeof t.svg_template==="string"?JSON.parse(t.svg_template):t.svg_template}catch(e){tplCurrentSvgs=null}}
 renderTplResult(tplCurrentAnalysis)}
 
-function deleteTpl(id,name){if(!confirm("Delete template \""+name+"\"?"))return;fetch(BACKEND+"/api/templates/"+id,{method:"DELETE"}).then(function(r){return r.json()}).then(function(d){if(d.success){loadTemplateLibrary();loadCustomTemplateDropdown()}else{alert("Could not delete.")}}).catch(function(e){alert("Error: "+e.message)})}
+function deleteTpl(id,name){if(!confirm("Delete template \""+name+"\"?"))return;fetch(BACKEND+"/api/templates/delete/"+id,{method:"POST"}).then(function(r){return r.json()}).then(function(d){if(d.success){loadTemplateLibrary();loadCustomTemplateDropdown()}else{alert("Could not delete.")}}).catch(function(e){alert("Error: "+e.message)})}
 
 function loadCustomTemplateDropdown(){fetch(BACKEND+"/api/templates/").then(function(r){return r.json()}).then(function(d){var sel=document.getElementById("b-custom-template");if(!sel)return;var templates=d.templates||[];sel.innerHTML='<option value="">Use default style</option>';templates.forEach(function(t){sel.innerHTML+='<option value="'+t.id+'">'+t.name+'</option>'});var defaultId=localStorage.getItem("ce-default-template");if(defaultId){sel.value=defaultId;applyCustomTemplate();var sel2=document.getElementById("preview-custom-template");if(sel2){sel2.innerHTML='<option value="">No custom style</option>';templates.forEach(function(t){sel2.innerHTML+='<option value="'+t.id+'">'+t.name+'</option>'});sel2.value=defaultId}}}).catch(function(){})}
 
