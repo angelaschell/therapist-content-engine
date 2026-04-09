@@ -681,7 +681,7 @@ async def get_template(template_id: str):
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
-@router.put("/{template_id}")
+@router.post("/update/{template_id}")
 async def update_template(template_id: str, req: Request):
     """Update an existing template (brand colors, fonts, colors, logo, etc.)."""
     try:
