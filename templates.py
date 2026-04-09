@@ -356,7 +356,7 @@ async def generate_svg_templates(req: Request):
             ly = int(logo_pos.get("y", 92) * 1350 / 100)
             lh = int(logo_pos.get("size", 22) * 1350 / 100 / 5)  # scale to SVG
             lw = lh * 3  # approximate aspect ratio
-            wm = f"<image href='{logo_url}' x='{lx - lw // 2}' y='{ly - lh // 2}' width='{lw}' height='{lh}' opacity='0.5' preserveAspectRatio='xMidYMid meet'/>"
+            wm = f"<image href='{logo_url}' x='{lx - lw // 2}' y='{ly - lh // 2}' width='{lw}' height='{lh}' opacity='0.85' preserveAspectRatio='xMidYMid meet'/>"
         elif watermark:
             wm = f"<text x='540' y='1280' text-anchor='middle' font-family='Jost,sans-serif' font-size='22' letter-spacing='4' fill='{text_color}' opacity='0.35'>@ANGELASCHELLENBERG</text>"
 
