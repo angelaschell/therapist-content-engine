@@ -319,6 +319,134 @@ async def get_hashtags():
         return JSONResponse({"success": False, "error": str(e), "hashtags": []})
 
 
+# ── Research viral carousels by subject ───────────────────────
+@router.get("/api/explore/research")
+async def research_subject(request: Request):
+    """Search explore_posts for viral carousels matching a subject keyword.
+    Matches against hashtag OR caption (case-insensitive), sorted by likes.
+    This is the 'FYP' for carousel inspiration."""
+    try:
+        subject = request.query_params.get("subject", "").strip().lower()
+        limit = min(int(request.query_params.get("limit", "30")), 100)
+        carousel_only = request.query_params.get("carousel_only", "true").lower() == "true"
+
+        if not subject:
+            return JSONResponse({"success": False, "error": "subject query param required", "posts": []})
+
+        where = "WHERE (LOWER(caption) LIKE %s OR LOWER(hashtag) LIKE %s)"
+        pattern = f"%{subject}%"
+        params = [pattern, pattern]
+        if carousel_only:
+            where += " AND media_type = 'CAROUSEL_ALBUM'"
+
+        params.append(limit)
+        posts = query(
+            f"SELECT * FROM explore_posts {where} ORDER BY like_count DESC NULLS LAST LIMIT %s",
+            tuple(params)
+        )
+        return JSONResponse({
+            "success": True,
+            "subject": subject,
+            "count": len(posts),
+            "posts": posts,
+        })
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e), "posts": []}, status_code=500)
+
+
+# ── Refresh viral carousels for a specific subject ────────────
+@router.post("/api/explore/research-refresh")
+async def research_refresh(req: Request):
+    """Trigger a fresh Instagram scrape for a subject's hashtags, then return
+    the top carousels. Uses scraper.recommend_hashtags to map the subject to a
+    list of related tags, limits to 5 new tags (respecting the 30/week IG cap),
+    scrapes them, then queries the DB for results."""
+    try:
+        data = await req.json()
+        subject = (data.get("subject", "") or "").strip().lower()
+        if not subject:
+            return JSONResponse({"success": False, "error": "subject required"}, status_code=400)
+
+        # Pick related hashtags for the subject
+        try:
+            from scraper import recommend_hashtags
+            tags = recommend_hashtags(subject) or []
+        except Exception:
+            tags = []
+        # Ensure the raw subject (as a single-word tag) is first
+        raw_tag = re.sub(r"[^a-z0-9]", "", subject.replace(" ", ""))
+        if raw_tag and raw_tag not in tags:
+            tags = [raw_tag] + tags
+        tags = [t for t in tags if t][:5]  # keep it small to respect IG's 30/week cap
+
+        token, ig_id = await get_ig_credentials()
+        saved = 0
+        errors = []
+        if token and ig_id and tags:
+            for tag in tags:
+                try:
+                    h_id = await search_hashtag_id(tag, token, ig_id)
+                    if not h_id:
+                        errors.append(f"{tag}: not found")
+                        continue
+                    media = await get_top_media(h_id, token, ig_id, limit=30)
+                    for post in media:
+                        if not is_english(post.get("caption", "")):
+                            continue
+                        media_type = post.get("media_type", "")
+                        slide_urls = []
+                        if media_type == "CAROUSEL_ALBUM" and post.get("children"):
+                            for child in post["children"].get("data", []):
+                                if child.get("media_url"):
+                                    slide_urls.append({
+                                        "url": child["media_url"],
+                                        "type": child.get("media_type", "IMAGE")
+                                    })
+                        thumbnail = slide_urls[0]["url"] if slide_urls else (post.get("media_url") or "")
+                        try:
+                            execute(
+                                """INSERT INTO explore_posts
+                                   (ig_media_id, hashtag, media_type, caption, permalink, thumbnail_url, slide_urls, like_count, comments_count, timestamp)
+                                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                   ON CONFLICT (ig_media_id) DO UPDATE SET
+                                   like_count=EXCLUDED.like_count, comments_count=EXCLUDED.comments_count""",
+                                (post.get("id", ""), tag, media_type,
+                                 post.get("caption", "")[:5000], post.get("permalink", ""),
+                                 thumbnail, json.dumps(slide_urls),
+                                 int(post.get("like_count", 0) or 0), int(post.get("comments_count", 0) or 0),
+                                 post.get("timestamp", None))
+                            )
+                            saved += 1
+                        except Exception as e:
+                            print(f"research-refresh insert error for {tag}: {e}")
+                except Exception as e:
+                    errors.append(f"{tag}: {str(e)[:100]}")
+
+        # Now query the DB for carousels matching the subject
+        pattern = f"%{subject}%"
+        posts = query(
+            """SELECT * FROM explore_posts
+               WHERE (LOWER(caption) LIKE %s OR LOWER(hashtag) LIKE %s)
+               AND media_type = 'CAROUSEL_ALBUM'
+               ORDER BY like_count DESC NULLS LAST LIMIT %s""",
+            (pattern, pattern, 30)
+        )
+        return JSONResponse({
+            "success": True,
+            "subject": subject,
+            "hashtags_searched": tags,
+            "saved": saved,
+            "errors": errors if errors else None,
+            "count": len(posts),
+            "posts": posts,
+            "ig_connected": bool(token and ig_id),
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 # ── Save a post to personal inspo library ─────────────────────
 @router.post("/api/explore/save")
 async def save_to_inspo(req: Request):
