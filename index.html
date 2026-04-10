@@ -562,6 +562,24 @@ option{background:#F7EBE0}
 
 <!-- CAROUSEL BUILDER (original) -->
 <div id="builder" class="tab-panel" style="display:none">
+
+  <!-- CAROUSEL BRAINSTORM CHAT -->
+  <div class="card" id="carouselChatCard" style="padding:18px 20px;margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#90A9EC;font-weight:600">Brainstorm Chat</div>
+        <div style="font-size:12px;color:rgba(59,33,69,.4);margin-top:2px">Drop an idea. I'll help you shape it into a carousel.</div>
+      </div>
+      <button class="ghost" style="font-size:11px;padding:4px 10px" onclick="clearCarouselChat()">Clear</button>
+    </div>
+    <div id="carouselChatMessages" style="max-height:280px;overflow-y:auto;padding:10px 4px;display:none;border-top:1px solid rgba(59,33,69,.06);border-bottom:1px solid rgba(59,33,69,.06);margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="carouselChatInput" placeholder="e.g. I want to post about feeling invisible at family holidays after mom died" style="flex:1;min-height:54px;font-size:13px;resize:vertical" onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();sendCarouselChat()}"></textarea>
+      <button class="btn" id="carouselChatSendBtn" style="white-space:nowrap" onclick="sendCarouselChat()">Send</button>
+    </div>
+    <div style="font-size:10px;color:rgba(59,33,69,.3);margin-top:6px">Tip: Cmd/Ctrl+Enter to send. Click any reply to copy it to your Topic field below.</div>
+  </div>
+
   <div class="step-bar" id="stepBar">
     <span class="step-pill current" id="sp1">1. Topic</span><span class="step-arrow">&#8594;</span>
     <span class="step-pill" id="sp2">2. Scraper</span><span class="step-arrow">&#8594;</span>
@@ -1715,6 +1733,66 @@ checkAuth();
 
 var uploadedAssets=[],viralPosts=[],viralSelected=[],carouselSlides=[],captionText="",savedViralContext="",savedAnalysisContext="",savedResearch="",viralHooks=[],currentTemplate="naming",lastTriggerRanking=[],savedStyleRef="",previewSlideIdx=0;
 function renderPreviewSlide(){}
+
+// ---- Carousel Brainstorm Chat ----
+var carouselChatHistory=[];
+function escapeHtmlCC(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function renderCarouselChat(){
+  var box=document.getElementById("carouselChatMessages");
+  if(!box)return;
+  if(!carouselChatHistory.length){box.style.display="none";box.innerHTML="";return}
+  box.style.display="block";
+  var html="";
+  carouselChatHistory.forEach(function(m,i){
+    var isUser=m.role==="user";
+    var bg=isUser?"rgba(144,169,236,.14)":"rgba(210,199,255,.18)";
+    var align=isUser?"flex-end":"flex-start";
+    var label=isUser?"you":"angela engine";
+    var clickable=!isUser?"cursor:pointer;":"";
+    var onClick=!isUser?' onclick="useChatReplyAsTopic('+i+')" title="Click to copy to Topic field"':'';
+    html+='<div style="display:flex;justify-content:'+align+';margin-bottom:8px">';
+    html+='<div style="max-width:85%;background:'+bg+';border-radius:12px;padding:10px 14px;'+clickable+'"'+onClick+'>';
+    html+='<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(59,33,69,.4);margin-bottom:4px">'+label+'</div>';
+    html+='<div style="font-size:13px;line-height:1.55;color:#3B2145;white-space:pre-wrap">'+escapeHtmlCC(m.content)+'</div>';
+    html+='</div></div>';
+  });
+  box.innerHTML=html;
+  box.scrollTop=box.scrollHeight;
+}
+function sendCarouselChat(){
+  var input=document.getElementById("carouselChatInput");
+  var btn=document.getElementById("carouselChatSendBtn");
+  if(!input)return;
+  var text=(input.value||"").trim();
+  if(!text)return;
+  carouselChatHistory.push({role:"user",content:text});
+  input.value="";
+  carouselChatHistory.push({role:"assistant",content:"thinking..."});
+  renderCarouselChat();
+  btn.disabled=true;btn.textContent="...";
+  var payload={messages:carouselChatHistory.filter(function(m,i){return !(m.role==="assistant"&&i===carouselChatHistory.length-1)})};
+  fetch(BACKEND+"/api/carousel-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      carouselChatHistory.pop(); // remove the "thinking..." placeholder
+      if(d&&d.reply){carouselChatHistory.push({role:"assistant",content:d.reply})}
+      else{carouselChatHistory.push({role:"assistant",content:"(error: "+((d&&d.error)||"no reply")+")"})}
+      renderCarouselChat();
+    })
+    .catch(function(err){
+      carouselChatHistory.pop();
+      carouselChatHistory.push({role:"assistant",content:"(network error: "+err.message+")"});
+      renderCarouselChat();
+    })
+    .finally(function(){btn.disabled=false;btn.textContent="Send"});
+}
+function clearCarouselChat(){carouselChatHistory=[];renderCarouselChat()}
+function useChatReplyAsTopic(i){
+  var m=carouselChatHistory[i];
+  if(!m||m.role!=="assistant")return;
+  var topic=document.getElementById("b-topic");
+  if(topic){topic.value=m.content;topic.focus();topic.scrollIntoView({behavior:"smooth",block:"center"})}
+}
 
 function addStyleRef(){
   var container=document.getElementById("styleRefEntries");

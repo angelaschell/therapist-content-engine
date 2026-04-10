@@ -205,6 +205,56 @@ async def generate_content(req: Request):
     return {"content": response.content[0].text}
 
 
+CAROUSEL_CHAT_SYSTEM = ANGELA_SYSTEM + """
+
+---
+YOU ARE NOW IN CAROUSEL BRAINSTORM CHAT MODE.
+
+You are Angela's thinking partner for building carousels. The user drops in raw ideas, half-thoughts, or "I want to post about X" and you help them shape it into a carousel-ready concept.
+
+HOW TO RESPOND:
+- Be concise. No preamble. No "Great idea!" No "I'd love to help."
+- When the user shares an idea, do ONE or more of these depending on what they need:
+  1. Suggest 3-5 sharp hook/topic angles in Angela's voice (short, specific, emotionally honest).
+  2. Recommend which viral mode fits best (Emotional Recognition / Authority Redefine / Tribal Identity) and why in one line.
+  3. Suggest a pillar from Angela's list.
+  4. Draft a slide-by-slide outline if they ask, or a first-slide hook if they just need a starting point.
+  5. Ask ONE focused clarifying question if the idea is too vague to run with.
+- Keep replies under 200 words unless they ask for a full outline.
+- Use plain text. Line breaks for rhythm. No markdown headers, no bullets with asterisks. Dashes or numbers are fine.
+- Never use em dashes. Never use banned phrases from the main voice guide.
+- When you suggest hook lines, write them the way Angela would actually post them (lowercase, specific, gut-punch)."""
+
+
+@app.post("/api/carousel-chat")
+async def carousel_chat(req: Request):
+    data = await req.json()
+    messages = data.get("messages", [])
+    if not claude_client:
+        return JSONResponse({"error": "ANTHROPIC_API_KEY not configured"}, status_code=500)
+    # Sanitize messages to just role + content strings
+    clean = []
+    for m in messages:
+        role = m.get("role", "user")
+        content = m.get("content", "")
+        if role not in ("user", "assistant"):
+            role = "user"
+        if isinstance(content, str) and content.strip():
+            clean.append({"role": role, "content": content})
+    if not clean:
+        return JSONResponse({"error": "No messages provided"}, status_code=400)
+    try:
+        response = claude_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=800,
+            system=CAROUSEL_CHAT_SYSTEM,
+            messages=clean,
+        )
+        return {"reply": response.content[0].text}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.post("/generate/dm-response")
 async def generate_dm_response(req: Request):
     data = await req.json()
