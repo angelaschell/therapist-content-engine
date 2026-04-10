@@ -535,6 +535,94 @@ VOICE: Strategic but genuine. The funnel awareness should be invisible to the re
 }
 
 
+@app.post("/api/carousel/viral-search")
+async def carousel_viral_search(req: Request):
+    """Search for trending carousel hooks/formats in the mental health/therapy niche.
+    Uses Perplexity if available, otherwise falls back to Claude to simulate trend research.
+    Returns a list of 5 posts with fields: hook, format, slide_count, why_it_works.
+    """
+    data = await req.json()
+    keyword = (data.get("keyword", "") or "").strip()
+    if not keyword:
+        return JSONResponse({"success": False, "error": "Keyword required"}, status_code=400)
+
+    schema_instruction = (
+        "Return 5 trending Instagram carousel posts from the mental health, therapy, grief, trauma, "
+        "or attachment niche that relate to the keyword. Each item must have these exact fields: "
+        "hook (the slide 1 hook text, punchy and specific), format (the carousel structure in one phrase "
+        "like 'Naming list', 'Authority redefine', 'We know... tribal list', 'Framework explainer'), "
+        "slide_count (integer), why_it_works (one sentence on the psychological or emotional lever). "
+        'Return ONLY valid JSON, no backticks: {"posts": [{"hook":"...","format":"...","slide_count":8,"why_it_works":"..."}]}'
+    )
+
+    def parse_json(text):
+        clean = (text or "").strip()
+        if clean.startswith("```"):
+            clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        try:
+            return json.loads(clean)
+        except Exception:
+            pass
+        m = re.search(r'\{[\s\S]*"posts"\s*:\s*\[[\s\S]*\]\s*\}', clean)
+        if m:
+            try:
+                return json.loads(m.group())
+            except Exception:
+                try:
+                    return json.loads(re.sub(r',\s*([}\]])', r'\1', m.group()))
+                except Exception:
+                    return None
+        return None
+
+    # 1. Try Perplexity first
+    if PERPLEXITY_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(
+                    "https://api.perplexity.ai/chat/completions",
+                    headers={"Authorization": f"Bearer {PERPLEXITY_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "model": "sonar",
+                        "messages": [
+                            {"role": "system", "content": "You research trending Instagram carousel posts in the mental health and therapy niche. You return ONLY valid JSON matching the schema the user requests."},
+                            {"role": "user", "content": f"Keyword: {keyword}\n\n{schema_instruction}"},
+                        ],
+                    },
+                    timeout=30,
+                )
+            if resp.status_code == 200:
+                content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+                parsed = parse_json(content)
+                if parsed and isinstance(parsed.get("posts"), list) and len(parsed["posts"]) > 0:
+                    return JSONResponse({"success": True, "source": "perplexity", "posts": parsed["posts"][:5]})
+        except Exception:
+            pass
+
+    # 2. Fallback to Claude
+    if not claude_client:
+        return JSONResponse({"success": False, "error": "No PERPLEXITY_API_KEY or ANTHROPIC_API_KEY configured"}, status_code=500)
+    try:
+        claude_resp = claude_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1200,
+            messages=[{"role": "user", "content": (
+                f"Simulate trend research for Instagram carousels in the mental health / therapy / grief / trauma niche "
+                f"for the keyword: {keyword}\n\n"
+                "Draw on well-known viral patterns (naming posts, 'we know...' tribal lists, authority redefines, "
+                "framework explainers, pull quotes). Each of the 5 results should feel like a real trending post hook "
+                "you might see from a therapist on Instagram.\n\n"
+                f"{schema_instruction}"
+            )}],
+        )
+        text = claude_resp.content[0].text
+        parsed = parse_json(text)
+        if parsed and isinstance(parsed.get("posts"), list) and len(parsed["posts"]) > 0:
+            return JSONResponse({"success": True, "source": "claude", "posts": parsed["posts"][:5]})
+        return JSONResponse({"success": False, "error": "Could not parse trend research", "raw": text[:500]})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 @app.post("/api/carousel")
 async def generate_carousel(req: Request):
     data = await req.json()
@@ -550,11 +638,34 @@ async def generate_carousel(req: Request):
     trigger_label = data.get("trigger_label", "")
     trigger_description = data.get("trigger_description", "")
     all_triggers = data.get("all_triggers", [])
+    user_brief = (data.get("user_brief", "") or "").strip()
+    inspiration_post = data.get("inspiration_post", "") or ""
+    if isinstance(inspiration_post, dict):
+        ip_parts = []
+        if inspiration_post.get("hook"):
+            ip_parts.append(f"Hook: {inspiration_post.get('hook')}")
+        if inspiration_post.get("format"):
+            ip_parts.append(f"Format: {inspiration_post.get('format')}")
+        if inspiration_post.get("slide_count"):
+            ip_parts.append(f"Slide count: {inspiration_post.get('slide_count')}")
+        if inspiration_post.get("why_it_works"):
+            ip_parts.append(f"Why it works: {inspiration_post.get('why_it_works')}")
+        inspiration_post = "\n".join(ip_parts)
+    inspiration_post = inspiration_post.strip() if isinstance(inspiration_post, str) else ""
 
     template = TEMPLATE_RULES.get(template_type, TEMPLATE_RULES["naming"])
     template_rules = template["rules"]
 
     context_block = ""
+    if user_brief:
+        context_block += f"\n\nUSER BRIEF (PRIMARY CREATIVE DIRECTION — this is the most important input, write the carousel to match what Angela described here):\n{user_brief}"
+    if inspiration_post:
+        context_block += (
+            "\n\nINSPIRATION POST (use ONLY as a structural scaffold — same hook pattern, same format, same slide count rhythm. "
+            "Rewrite EVERY line completely in Angela's voice. Do NOT copy any phrasing from the inspiration. "
+            "The reader should never be able to tell this post was inspired by the original — only the SHAPE carries over, not the words):\n"
+            f"{inspiration_post}"
+        )
     if viral_context:
         context_block += f"\n\nVIRAL POSTS:\n{viral_context}"
     if analysis_context:
