@@ -18,7 +18,7 @@ logger = logging.getLogger("publisher")
 
 router = APIRouter(prefix="/api/publish", tags=["publisher"])
 
-GRAPH_API_BASE = "https://graph.facebook.com/v19.0"
+GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 STORAGE_BUCKET = "carousel-slides"
@@ -395,8 +395,8 @@ async def publish_carousel(req: Request):
 
     if len(images) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 images")
-    if len(images) > 10:
-        raise HTTPException(status_code=400, detail="Instagram carousels support a maximum of 10 slides on this API version. You have " + str(len(images)) + ". Please reduce the slide count.")
+    if len(images) > 20:
+        raise HTTPException(status_code=400, detail="Instagram carousels support a maximum of 20 slides. You have " + str(len(images)) + ". Please reduce the slide count.")
 
     # Verify images are publicly accessible before calling Instagram API
     for i, img_url in enumerate(images):
@@ -458,8 +458,8 @@ async def publish_carousel_from_slides(req: Request):
 
     if len(slides) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 slides")
-    if len(slides) > 10:
-        raise HTTPException(status_code=400, detail="Instagram carousels support a maximum of 10 slides on this API version. You have " + str(len(slides)) + ". Please reduce the slide count.")
+    if len(slides) > 20:
+        raise HTTPException(status_code=400, detail="Instagram carousels support a maximum of 20 slides. You have " + str(len(slides)) + ". Please reduce the slide count.")
 
     batch_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:8]
     image_urls = []
