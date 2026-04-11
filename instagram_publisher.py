@@ -72,6 +72,12 @@ async def upload_to_supabase(image_data_base64: str, filename: str) -> str:
 # SINGLE SLIDE UPLOAD (fixes large carousel issue)
 # ─────────────────────────────────────────────
 
+@router.get("/version")
+async def publisher_version():
+    """Returns the Graph API version the backend is using. Useful for verifying deploys."""
+    return {"graph_api": GRAPH_API_BASE, "max_slides": 20}
+
+
 @router.post("/upload-slide")
 async def upload_single_slide(req: Request):
     """
@@ -432,10 +438,18 @@ async def publish_carousel(req: Request):
         except HTTPException as e:
             raise HTTPException(status_code=e.status_code, detail=f"Slide {i+1} processing failed: {e.detail}")
 
+    logger.info(f"Creating CAROUSEL container with {len(child_ids)} children on {GRAPH_API_BASE}")
     try:
         container = await graph_post(f"{ig_id}/media", {"media_type": "CAROUSEL", "children": ",".join(child_ids), "caption": caption, "access_token": page_token})
         await wait_for_container(container["id"], page_token)
     except HTTPException as e:
+        detail_str = str(e.detail) if e.detail else ""
+        # Detect Instagram's #100 "too many attachments" and give actionable guidance
+        if "#100" in detail_str and ("too little or too many" in detail_str or "Unsupported post type" in detail_str):
+            if len(images) > 10:
+                raise HTTPException(status_code=400, detail=f"Instagram rejected your {len(images)}-slide carousel. Your Instagram account has not yet been enabled for 20-slide carousels (this is a gradual rollout from Instagram). Reduce your carousel to 10 or fewer slides and try again. [{GRAPH_API_BASE}]")
+            else:
+                raise HTTPException(status_code=400, detail=f"Instagram rejected this {len(images)}-slide carousel with error #100. Some child containers may be invalid. Try regenerating the carousel from scratch. [{GRAPH_API_BASE}]")
         raise HTTPException(status_code=e.status_code, detail=f"Carousel container failed: {e.detail}")
 
     try:
