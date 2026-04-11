@@ -19,6 +19,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 MC_API = "https://api.manychat.com"
 MC_KEY = os.environ.get("MANYCHAT_API_KEY", "")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+MC_WEBHOOK_SECRET = os.environ.get("MANYCHAT_WEBHOOK_SECRET", "")
 
 # ───────────────── DB HELPERS ─────────────────
 def get_conn():
@@ -177,6 +178,21 @@ CREATE TABLE IF NOT EXISTS manychat_triggers (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS manychat_flows (
+  id BIGSERIAL PRIMARY KEY,
+  namespace TEXT NOT NULL UNIQUE,
+  name TEXT DEFAULT '',
+  folder TEXT DEFAULT '',
+  last_seen TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS manychat_tags (
+  id BIGSERIAL PRIMARY KEY,
+  tag_id TEXT NOT NULL UNIQUE,
+  name TEXT DEFAULT '',
+  last_seen TIMESTAMPTZ DEFAULT now()
+);
+
 """
 
 SEED_TRIGGERS = [
@@ -294,9 +310,29 @@ async def delete_trigger(trigger_id: int):
 
 
 # ───────────────── WEBHOOK ─────────────────
+def verify_manychat_secret(request: Request) -> bool:
+    """Reject unauthenticated webhook traffic when MANYCHAT_WEBHOOK_SECRET is set.
+
+    ManyChat's External Request node supports custom headers — configure it to send
+    X-ManyChat-Secret: <value> matching the MANYCHAT_WEBHOOK_SECRET env var.
+    If the env var is empty, verification is skipped (keeps local dev easy).
+    """
+    if not MC_WEBHOOK_SECRET:
+        return True
+    provided = (
+        request.headers.get("x-manychat-secret")
+        or request.headers.get("X-ManyChat-Secret")
+        or ""
+    )
+    return provided == MC_WEBHOOK_SECRET
+
+
 @router.post("/api/manychat/webhook")
 async def manychat_webhook(request: Request):
     try:
+        if not verify_manychat_secret(request):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+
         body = await request.json()
 
         contact_id = str(
@@ -369,19 +405,46 @@ async def sync_data():
         sub_count = 0
 
         async with httpx.AsyncClient(timeout=30) as c:
-            # Pull flows
+            # Pull flows (store namespace + name so Claude can reference real flows)
             try:
                 r = await c.get(f"{MC_API}/fb/page/getFlows", headers=headers)
                 if r.status_code == 200:
-                    flow_count = len(r.json().get("data", {}).get("flows", []))
+                    flows = r.json().get("data", {}).get("flows", []) or []
+                    flow_count = len(flows)
+                    for f in flows:
+                        namespace = (f.get("ns") or f.get("namespace") or "").strip()
+                        if not namespace:
+                            continue
+                        execute(
+                            """INSERT INTO manychat_flows (namespace, name, folder, last_seen)
+                               VALUES (%s, %s, %s, now())
+                               ON CONFLICT (namespace) DO UPDATE SET
+                                 name = EXCLUDED.name,
+                                 folder = EXCLUDED.folder,
+                                 last_seen = now()""",
+                            (namespace, (f.get("name") or "").strip(), (f.get("folder") or "").strip()),
+                        )
             except Exception as e:
                 print(f"[SYNC] Flows error: {e}")
 
-            # Pull tags
+            # Pull tags (store name + id so we can tag leads by name, not count)
             try:
                 r = await c.get(f"{MC_API}/fb/page/getTags", headers=headers)
                 if r.status_code == 200:
-                    tag_count = len(r.json().get("data", []))
+                    tags = r.json().get("data", []) or []
+                    tag_count = len(tags)
+                    for t in tags:
+                        tag_id = str(t.get("id") or "").strip()
+                        if not tag_id:
+                            continue
+                        execute(
+                            """INSERT INTO manychat_tags (tag_id, name, last_seen)
+                               VALUES (%s, %s, now())
+                               ON CONFLICT (tag_id) DO UPDATE SET
+                                 name = EXCLUDED.name,
+                                 last_seen = now()""",
+                            (tag_id, (t.get("name") or "").strip()),
+                        )
             except Exception as e:
                 print(f"[SYNC] Tags error: {e}")
 

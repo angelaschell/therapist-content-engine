@@ -112,6 +112,8 @@ async def sync_preview(req: Request):
     min_heat = int(req.query_params.get("min_heat", "30"))
     funnel_stages = req.query_params.get("funnel_stages", "engaged,conversation,booked")
     only_unsynced = req.query_params.get("only_unsynced", "true").lower() == "true"
+    claude_category = req.query_params.get("claude_category", "").strip()
+    claude_product_fit = req.query_params.get("claude_product_fit", "").strip()
 
     stages = [s.strip() for s in funnel_stages.split(",") if s.strip()]
 
@@ -127,11 +129,18 @@ async def sync_preview(req: Request):
         params.extend(stages)
     if only_unsynced:
         conditions.append("flodesk_synced = false")
+    if claude_category:
+        conditions.append("analysis->>'category' = %s")
+        params.append(claude_category)
+    if claude_product_fit:
+        conditions.append("analysis->>'product_fit' = %s")
+        params.append(claude_product_fit)
 
     where = " AND ".join(conditions)
     subs = query(
-        f"SELECT id, mc_id, full_name, email, ig_username, heat_score, funnel_stage, flodesk_synced "
-        f"FROM manychat_subscribers WHERE {where} ORDER BY heat_score DESC LIMIT 200",
+        f"SELECT id, contact_id, first_name, last_name, email, ig_username, "
+        f"heat_score, funnel_stage, flodesk_synced, analysis "
+        f"FROM manychat_leads_clean WHERE {where} ORDER BY heat_score DESC LIMIT 200",
         tuple(params)
     )
 
@@ -140,10 +149,14 @@ async def sync_preview(req: Request):
 
 @router.post("/api/flodesk/sync")
 async def sync_to_flodesk(req: Request):
-    """Sync subscribers to Flodesk. Adds them as subscribers and optionally to a segment."""
+    """Sync subscribers to Flodesk. Adds them as subscribers and optionally to a segment.
+
+    If no explicit segment_id is given, the lead's claude_category + claude_product_fit
+    are looked up in flodesk_segment_map to route automatically.
+    """
     data = await req.json()
     segment_id = data.get("segment_id")
-    mc_ids = data.get("mc_ids", [])
+    contact_ids = data.get("contact_ids") or data.get("mc_ids") or []
     min_heat = data.get("min_heat", 30)
     funnel_stages = data.get("funnel_stages", ["engaged", "conversation", "booked"])
     only_unsynced = data.get("only_unsynced", True)
@@ -152,12 +165,12 @@ async def sync_to_flodesk(req: Request):
         return JSONResponse({"error": "FLODESK_API_KEY not configured"}, status_code=400)
 
     # Build query for subscribers to sync
-    if mc_ids:
-        placeholders = ",".join(["%s"] * len(mc_ids))
+    if contact_ids:
+        placeholders = ",".join(["%s"] * len(contact_ids))
         subs = query(
-            f"SELECT * FROM manychat_subscribers WHERE mc_id IN ({placeholders}) "
+            f"SELECT * FROM manychat_leads_clean WHERE contact_id IN ({placeholders}) "
             f"AND email != '' AND email IS NOT NULL AND do_not_contact = false",
-            tuple(mc_ids)
+            tuple(contact_ids)
         )
     else:
         conditions = ["do_not_contact = false", "email != ''", "email IS NOT NULL"]
@@ -173,7 +186,7 @@ async def sync_to_flodesk(req: Request):
             conditions.append("flodesk_synced = false")
         where = " AND ".join(conditions)
         subs = query(
-            f"SELECT * FROM manychat_subscribers WHERE {where} ORDER BY heat_score DESC LIMIT 200",
+            f"SELECT * FROM manychat_leads_clean WHERE {where} ORDER BY heat_score DESC LIMIT 200",
             tuple(params)
         )
 
@@ -184,11 +197,10 @@ async def sync_to_flodesk(req: Request):
     errors = []
 
     for sub in subs:
-        email = sub.get("email", "").strip()
+        email = (sub.get("email") or "").strip()
         if not email:
             continue
         try:
-            # Create or update subscriber in Flodesk
             first = sub.get("first_name", "") or ""
             last = sub.get("last_name", "") or ""
             payload = {
@@ -196,15 +208,29 @@ async def sync_to_flodesk(req: Request):
                 "first_name": first,
                 "last_name": last,
             }
-            if segment_id:
-                payload["segment_ids"] = [segment_id]
+
+            # Resolve segment: explicit override → claude_category/product_fit map → none
+            target_segment = segment_id
+            if not target_segment:
+                analysis = sub.get("analysis") or {}
+                if isinstance(analysis, str):
+                    try:
+                        analysis = json.loads(analysis)
+                    except Exception:
+                        analysis = {}
+                target_segment = resolve_segment_for_lead(
+                    analysis.get("category", ""),
+                    analysis.get("product_fit", ""),
+                )
+            if target_segment:
+                payload["segment_ids"] = [target_segment]
 
             await flodesk_request("POST", "/subscribers", payload)
 
             # Mark as synced in our DB
             execute(
-                "UPDATE manychat_subscribers SET flodesk_synced = true, updated_at = now() WHERE mc_id = %s",
-                (sub["mc_id"],)
+                "UPDATE manychat_leads_clean SET flodesk_synced = true, updated_at = now() WHERE contact_id = %s",
+                (sub["contact_id"],)
             )
             synced += 1
         except Exception as e:
@@ -217,8 +243,8 @@ async def sync_to_flodesk(req: Request):
     })
 
 
-@router.post("/api/flodesk/sync-one/{mc_id}")
-async def sync_one_subscriber(mc_id: str, req: Request):
+@router.post("/api/flodesk/sync-one/{contact_id}")
+async def sync_one_subscriber(contact_id: str, req: Request):
     """Sync a single subscriber to Flodesk."""
     data = await req.json() if req.headers.get("content-type", "").startswith("application/json") else {}
     segment_id = data.get("segment_id")
@@ -227,8 +253,8 @@ async def sync_one_subscriber(mc_id: str, req: Request):
         return JSONResponse({"error": "FLODESK_API_KEY not configured"}, status_code=400)
 
     sub = query_one(
-        "SELECT * FROM manychat_subscribers WHERE mc_id = %s AND email != '' AND email IS NOT NULL",
-        (mc_id,)
+        "SELECT * FROM manychat_leads_clean WHERE contact_id = %s AND email != '' AND email IS NOT NULL",
+        (contact_id,)
     )
     if not sub:
         return JSONResponse({"error": "Subscriber not found or has no email"}, status_code=404)
@@ -239,14 +265,138 @@ async def sync_one_subscriber(mc_id: str, req: Request):
             "first_name": sub.get("first_name", "") or "",
             "last_name": sub.get("last_name", "") or "",
         }
-        if segment_id:
-            payload["segment_ids"] = [segment_id]
+
+        target_segment = segment_id
+        if not target_segment:
+            analysis = sub.get("analysis") or {}
+            if isinstance(analysis, str):
+                try:
+                    analysis = json.loads(analysis)
+                except Exception:
+                    analysis = {}
+            target_segment = resolve_segment_for_lead(
+                analysis.get("category", ""),
+                analysis.get("product_fit", ""),
+            )
+        if target_segment:
+            payload["segment_ids"] = [target_segment]
 
         await flodesk_request("POST", "/subscribers", payload)
         execute(
-            "UPDATE manychat_subscribers SET flodesk_synced = true, updated_at = now() WHERE mc_id = %s",
-            (mc_id,)
+            "UPDATE manychat_leads_clean SET flodesk_synced = true, updated_at = now() WHERE contact_id = %s",
+            (contact_id,)
         )
         return JSONResponse({"success": True, "email": sub["email"]})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ── Flodesk segment mapping (claude_category + claude_product_fit → segment_id) ──
+# Managed via the flodesk_segment_map table, falls through to FLODESK_DEFAULT_SEGMENT.
+
+SEGMENT_MAP_SCHEMA = """
+CREATE TABLE IF NOT EXISTS flodesk_segment_map (
+  id BIGSERIAL PRIMARY KEY,
+  claude_category TEXT DEFAULT '',
+  claude_product_fit TEXT DEFAULT '',
+  segment_id TEXT NOT NULL,
+  label TEXT DEFAULT '',
+  priority INT DEFAULT 100,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS flodesk_segment_map_lookup
+  ON flodesk_segment_map (claude_category, claude_product_fit, priority);
+"""
+
+try:
+    if DATABASE_URL:
+        execute(SEGMENT_MAP_SCHEMA)
+except Exception as e:
+    print("[FLODESK SEGMENT MAP SCHEMA ERROR]", e)
+
+
+def resolve_segment_for_lead(category: str, product_fit: str) -> str:
+    """Look up the right Flodesk segment for a lead.
+
+    Tries most-specific match first (category + product_fit), then category alone,
+    then product_fit alone, then the FLODESK_DEFAULT_SEGMENT env var.
+    """
+    category = (category or "").strip().lower()
+    product_fit = (product_fit or "").strip().lower()
+
+    try:
+        # Most specific: both match
+        if category and product_fit:
+            rows = query(
+                "SELECT segment_id FROM flodesk_segment_map "
+                "WHERE claude_category = %s AND claude_product_fit = %s "
+                "ORDER BY priority ASC LIMIT 1",
+                (category, product_fit),
+            )
+            if rows:
+                return rows[0]["segment_id"]
+
+        # Category only
+        if category:
+            rows = query(
+                "SELECT segment_id FROM flodesk_segment_map "
+                "WHERE claude_category = %s AND claude_product_fit = '' "
+                "ORDER BY priority ASC LIMIT 1",
+                (category,),
+            )
+            if rows:
+                return rows[0]["segment_id"]
+
+        # Product fit only
+        if product_fit:
+            rows = query(
+                "SELECT segment_id FROM flodesk_segment_map "
+                "WHERE claude_product_fit = %s AND claude_category = '' "
+                "ORDER BY priority ASC LIMIT 1",
+                (product_fit,),
+            )
+            if rows:
+                return rows[0]["segment_id"]
+    except Exception as e:
+        print(f"[FLODESK SEGMENT RESOLVE] {e}")
+
+    return os.environ.get("FLODESK_DEFAULT_SEGMENT", "")
+
+
+@router.get("/api/flodesk/segment-map")
+async def list_segment_map():
+    try:
+        rows = query("SELECT * FROM flodesk_segment_map ORDER BY priority ASC, id ASC")
+        return {"mappings": rows}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.post("/api/flodesk/segment-map")
+async def create_segment_map(req: Request):
+    try:
+        body = await req.json()
+        segment_id = (body.get("segment_id") or "").strip()
+        if not segment_id:
+            return JSONResponse({"error": "segment_id is required"}, status_code=400)
+        category = (body.get("claude_category") or "").strip().lower()
+        product_fit = (body.get("claude_product_fit") or "").strip().lower()
+        label = (body.get("label") or "").strip()
+        priority = int(body.get("priority") or 100)
+        execute(
+            "INSERT INTO flodesk_segment_map (claude_category, claude_product_fit, segment_id, label, priority) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (category, product_fit, segment_id, label, priority),
+        )
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.delete("/api/flodesk/segment-map/{map_id}")
+async def delete_segment_map(map_id: int):
+    try:
+        execute("DELETE FROM flodesk_segment_map WHERE id = %s", (map_id,))
+        return {"success": True}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)

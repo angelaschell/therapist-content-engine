@@ -14,6 +14,7 @@ from instagram_publisher import router as publisher_router, start_scheduler
 from templates import router as templates_router
 from comments_backend import router as comments_router
 from manychat_backend import router as manychat_router
+from claude_manychat_reply import router as claude_manychat_reply_router
 from vizard_backend import router as vizard_router
 from explore_backend import router as explore_router
 from instagram_caption_extractor import router as caption_router
@@ -49,6 +50,7 @@ app.include_router(publisher_router)
 app.include_router(templates_router)
 app.include_router(comments_router)
 app.include_router(manychat_router)
+app.include_router(claude_manychat_reply_router)
 app.include_router(vizard_router)
 app.include_router(explore_router)
 app.include_router(caption_router)
